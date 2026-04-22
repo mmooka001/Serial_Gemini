@@ -1,0 +1,244 @@
+{
+    "classes": [
+        {
+            "className": "SerialManager",
+            "lineNumber": 11,
+            "methods": [
+                {
+                    "access": "public",
+                    "index": 7,
+                    "lineNumber": 29,
+                    "name": "availablePorts",
+                    "returnType": "QVariantList"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "portName",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "baudRate",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 8,
+                    "lineNumber": 30,
+                    "name": "openPort",
+                    "returnType": "bool"
+                },
+                {
+                    "access": "public",
+                    "index": 9,
+                    "lineNumber": 31,
+                    "name": "closePort",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "data",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isHex",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 10,
+                    "lineNumber": 32,
+                    "name": "sendData",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "data",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isHex",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "checksumType",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 11,
+                    "lineNumber": 33,
+                    "name": "sendDataWithChecksum",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "window",
+                            "type": "QQuickWindow*"
+                        },
+                        {
+                            "name": "onTop",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 12,
+                    "lineNumber": 34,
+                    "name": "setStayOnTop",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "lineNumber": 14,
+                    "name": "isOpen",
+                    "notify": "isOpenChanged",
+                    "override": false,
+                    "read": "isOpen",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "virtual": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "lineNumber": 15,
+                    "name": "currentPort",
+                    "notify": "currentPortChanged",
+                    "override": false,
+                    "read": "currentPort",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QString",
+                    "user": false,
+                    "virtual": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "lineNumber": 16,
+                    "name": "baudRate",
+                    "notify": "baudRateChanged",
+                    "override": false,
+                    "read": "baudRate",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "virtual": false,
+                    "write": "setBaudRate"
+                }
+            ],
+            "qualifiedClassName": "SerialManager",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "lineNumber": 37,
+                    "name": "isOpenChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "lineNumber": 38,
+                    "name": "currentPortChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "lineNumber": 39,
+                    "name": "baudRateChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "ascii",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "hex",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isSent",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 3,
+                    "lineNumber": 40,
+                    "name": "dataReceived",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "ascii",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "hex",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 4,
+                    "isCloned": true,
+                    "lineNumber": 40,
+                    "name": "dataReceived",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "error",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 5,
+                    "lineNumber": 41,
+                    "name": "errorOccurred",
+                    "returnType": "void"
+                }
+            ],
+            "slots": [
+                {
+                    "access": "private",
+                    "index": 6,
+                    "lineNumber": 44,
+                    "name": "readData",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "SerialManager.h",
+    "outputRevision": 69
+}

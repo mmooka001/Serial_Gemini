@@ -1,0 +1,223 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-45961a94c1abe2272e84.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "MySerial_Gemini",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17,
+						18
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini-Debug-31c7948e705d4029c648.json",
+					"name" : "MySerial_Gemini",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini_autogen-Debug-e88eaa39e7cb69e4d698.json",
+					"name" : "MySerial_Gemini_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini_autogen_timestamp_deps-Debug-0ab1d1d300687b19187a.json",
+					"name" : "MySerial_Gemini_autogen_timestamp_deps",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini_copy_qml::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini_copy_qml-Debug-ea1deb6ce5261dbfcbc6.json",
+					"name" : "MySerial_Gemini_copy_qml",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini_copy_res::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini_copy_res-Debug-d84cd7661f841036a75d.json",
+					"name" : "MySerial_Gemini_copy_res",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini_qmlimportscan::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini_qmlimportscan-Debug-47d9b40e7a99bbbe74c4.json",
+					"name" : "MySerial_Gemini_qmlimportscan",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini_qmllint::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini_qmllint-Debug-85148ee308e9316e99a3.json",
+					"name" : "MySerial_Gemini_qmllint",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini_qmllint_json::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini_qmllint_json-Debug-5b9a5757cb20d8396a24.json",
+					"name" : "MySerial_Gemini_qmllint_json",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini_qmllint_module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini_qmllint_module-Debug-3d87f60fcb6a1649c828.json",
+					"name" : "MySerial_Gemini_qmllint_module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "MySerial_Gemini_qmltyperegistration::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-MySerial_Gemini_qmltyperegistration-Debug-d768b20971d361034114.json",
+					"name" : "MySerial_Gemini_qmltyperegistration",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_aotstats::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_aotstats-Debug-4ae89744f6ed1390d941.json",
+					"name" : "all_aotstats",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint-Debug-8d67369d234e00c32aad.json",
+					"name" : "all_qmllint",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint_json::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint_json-Debug-2dc2511728fa8703081b.json",
+					"name" : "all_qmllint_json",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmllint_module::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmllint_module-Debug-ec28859fcac357659e4e.json",
+					"name" : "all_qmllint_module",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "all_qmltyperegistrations::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-all_qmltyperegistrations-Debug-bd7dcf9f2fc991db2132.json",
+					"name" : "all_qmltyperegistrations",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "clean_qml_context_properties::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-clean_qml_context_properties-Debug-4a44da6500365af1a772.json",
+					"name" : "clean_qml_context_properties",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "dump_qml_context_properties::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-dump_qml_context_properties-Debug-30da48bf46f4f3cb9784.json",
+					"name" : "dump_qml_context_properties",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "generate_qmlls_build_ini_file::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-generate_qmlls_build_ini_file-Debug-f7a4a8e7a80ee956e759.json",
+					"name" : "generate_qmlls_build_ini_file",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "module_MySerial_Gemini_aotstats_target::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-module_MySerial_Gemini_aotstats_target-Debug-0c98a7da7018ac1a6083.json",
+					"name" : "module_MySerial_Gemini_aotstats_target",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "E:/Workspace_QT/MySerial_Gemini/build/Desktop_Qt_6_11_0_MinGW_64_bit-Debug",
+		"source" : "E:/Workspace_QT/MySerial_Gemini"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}
