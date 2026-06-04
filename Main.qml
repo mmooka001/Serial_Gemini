@@ -9,8 +9,8 @@ Window {
     id: window
     width: 1250
     height: 850
-    minimumWidth: 800
-    minimumHeight: 650
+    minimumWidth: 700
+    minimumHeight: 550
     visible: true
     title: qsTr("MySerial Gemini")
     color: "transparent"
@@ -452,7 +452,7 @@ Window {
                             ComboBox { 
                                 id: portCombo
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 40
+                                Layout.preferredHeight: 34
                                 model: serialManager.availablePorts()
                                 textRole: "name"
                                 background: Rectangle { color: clInput
@@ -505,7 +505,7 @@ Window {
                             ComboBox { 
                                 id: baudCombo
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 40
+                                Layout.preferredHeight: 34
                                 model: [9600, 19200, 38400, 57600, 115200, 230400, 256000, 460800, 921600, 1000000, 2000000]
                                 currentIndex: 4
                                 background: Rectangle { color: clInput
@@ -553,7 +553,7 @@ Window {
                             ComboBox {
                                 id: dataBitsCombo
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 36
+                                Layout.preferredHeight: 32
                                 model: [5, 6, 7, 8]
                                 currentIndex: 3
                                 background: Rectangle { color: clInput
@@ -644,7 +644,7 @@ Window {
                             ComboBox {
                                 id: flowCombo
                                 Layout.fillWidth: true
-                                Layout.preferredHeight: 36
+                                Layout.preferredHeight: 32
                                 model: ["None", "Hardware", "Software"]
                                 currentIndex: 0
                                 background: Rectangle { color: clInput; radius: 8; border.color: flowCombo.activeFocus ? clHighlight : clBorder }
@@ -812,14 +812,14 @@ Window {
                                              layoutDirection: model.isSent ? Qt.RightToLeft : Qt.LeftToRight
                                             Rectangle {
                                                 width: msgText.implicitWidth + 30
-                                                 height: msgText.implicitHeight + 14
+                                                 height: Math.max(msgText.implicitHeight + 8, 28)
                                                  radius: 16
                                                  color: model.isSent ? clHighlight : (isDark ? "#323336" : "#E8EAEF")
                                                 TextEdit { id: msgText
                                                  text: model.isHexMode ? model.contentHex : model.contentAscii
                                                  width: Math.min(implicitWidth, terminalView.width * 0.75)
                                                  anchors.centerIn: parent
-                                                 verticalAlignment: Text.AlignVCenter
+                                                 topPadding: 2; bottomPadding: 2
                                                  color: model.isSent ? "white" : whiteText
                                                  font.family: "Consolas"
                                                  font.pixelSize: 13
@@ -1100,7 +1100,7 @@ Window {
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         anchors.right: activityBar.left
-                        color: clCard
+                        color: isDark ? "#252628" : "#E8EAED"
                         radius: 12
                         border.color: clBorder
                         clip: true
@@ -1333,8 +1333,8 @@ Window {
                                                     color: cmdMouse.containsMouse
                                                            ? (isDark ? "#333537" : "#F5F6F8")
                                                            : "transparent"
-                                                    border.color: cmdMouse.containsMouse ? clHighlight : "transparent"
-                                                    border.width: cmdMouse.containsMouse ? 1 : 0
+                                                    border.color: cmdMouse.containsMouse ? clHighlight : (isDark ? "#3a3d40" : "#DEE2E6")
+                                                    border.width: 1
 
                                                     property int cmdIdx: index
                                                     property string mapKey: index + ":" + cmdIdx
@@ -1384,14 +1384,25 @@ Window {
                                                             onEditingFinished: commandStore.updateCommand(index, cmdIdx, text, modelData.payload)
                                                         }
 
-                                                        // Payload preview
-                                                        Text {
-                                                            Layout.preferredWidth: Math.min(implicitWidth, 80)
-                                                            text: modelData.payload || "..."
+                                                        // Payload
+                                                        TextField {
+                                                            Layout.fillWidth: true
+                                                            Layout.preferredWidth: 80
+                                                            text: modelData.payload || ""
                                                             color: clText
                                                             font.family: "Consolas"
                                                             font.pixelSize: 10
-                                                            elide: Text.ElideRight
+                                                            padding: 2
+                                                            placeholderText: "payload"
+                                                            placeholderTextColor: grayPlaceholder
+                                                            background: Rectangle {
+                                                                radius: 3
+                                                                color: parent.activeFocus ? clInput : "transparent"
+                                                                border.color: parent.activeFocus ? clHighlight : "transparent"
+                                                                border.width: parent.activeFocus ? 1 : 0
+                                                            }
+                                                            selectByMouse: true
+                                                            onEditingFinished: commandStore.updateCommand(index, cmdIdx, modelData.name, text)
                                                         }
 
                                                         // HEX/TXT badge
