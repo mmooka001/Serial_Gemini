@@ -32,7 +32,9 @@ Window {
     readonly property color grayPlaceholder: isDark ? "#666666" : "#707070"
     readonly property color clTitleBg: isDark ? "#323335" : "#F1F3F4"
 
-    property bool sideBarOpen: false 
+    property bool sideBarOpen: false
+    property int activePanel: -1          // -1=none, 0=指令, 1=码表, 2=设置
+    property int featurePanelWidth: 300
     property bool globalRxHex: true 
     property bool globalTxHex: true 
     property bool globalTimestamp: true
@@ -933,6 +935,81 @@ Window {
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+
+                // ── Right Column: Activity Bar + Feature Panel ──
+                Item {
+                    Layout.preferredWidth: activePanel >= 0 ? (featurePanelWidth + 50) : 50
+                    Layout.fillHeight: true
+                    Layout.leftMargin: 8
+                    clip: true
+
+                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+
+                    // Activity Bar (fixed on right edge)
+                    Rectangle {
+                        id: activityBar
+                        width: 50
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        color: isDark ? "#252628" : "#E8EAED"
+                        radius: 12
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.topMargin: 8
+                            anchors.bottomMargin: 8
+                            spacing: 4
+
+                            Repeater {
+                                model: [
+                                    { icon: "📋", label: "指令" },
+                                    { icon: "📊", label: "码表" },
+                                    { icon: "⚙️", label: "设置" }
+                                ]
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 48
+                                    radius: 8
+                                    color: activePanel === index ? (isDark ? Qt.rgba(53/255, 116/255, 240/255, 0.2) : Qt.rgba(53/255, 116/255, 240/255, 0.15)) : (actMouseArea.containsMouse ? (isDark ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.05)) : "transparent")
+                                    border.color: activePanel === index ? clHighlight : "transparent"
+                                    border.width: activePanel === index ? 1 : 0
+
+                                    Column {
+                                        anchors.centerIn: parent
+                                        spacing: 2
+                                        Text {
+                                            text: modelData.icon
+                                            font.pixelSize: 18
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                        Text {
+                                            text: modelData.label
+                                            font.pixelSize: 9
+                                            color: activePanel === index ? clHighlight : clText
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: actMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onClicked: {
+                                            if (activePanel === index) {
+                                                activePanel = -1
+                                            } else {
+                                                activePanel = index
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Item { Layout.fillHeight: true }
                         }
                     }
                 }
