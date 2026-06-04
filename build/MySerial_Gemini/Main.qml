@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import MySerial_Gemini
 import com.gemini.serial
+import QtQuick.Dialogs
 
 Window {
     id: window
@@ -32,7 +33,10 @@ Window {
     readonly property color grayPlaceholder: isDark ? "#666666" : "#707070"
     readonly property color clTitleBg: isDark ? "#323335" : "#F1F3F4"
 
-    property bool sideBarOpen: false 
+    property int activePanel: -1          // -1=none, 0=指令, 1=码表, 2=设置
+    property int featurePanelWidth: 300
+    property int clickOffset: 0           // Click animation offset
+    readonly property int centerWidth: width - 260 - (activePanel >= 0 ? featurePanelWidth + 50 + 8 : 50) - 46
     property bool globalRxHex: true 
     property bool globalTxHex: true 
     property bool globalTimestamp: true
@@ -43,6 +47,7 @@ Window {
     property string deleteType: ""
     property int targetGroupIdx: -1
     property int targetCmdIdx: -1
+    property var checkedMap: ({})
 
     Rectangle {
         id: rootRect
@@ -437,21 +442,6 @@ Window {
                         }
 
                         Item { Layout.fillHeight: true }
-                        
-                        Button { 
-                            text: sideBarOpen ? "隐藏指令预设" : "显示指令预设"
-                            Layout.fillWidth: true
-                             Layout.preferredHeight: 38
-                            background: Rectangle { color: "transparent"
-                             radius: 8
-                             border.color: parent.hovered ? clHighlight : "transparent" }
-                            contentItem: Text { text: parent.text
-                             color: parent.hovered ? clHighlight : "#888"
-                             font.pixelSize: 12
-                             horizontalAlignment: Text.AlignHCenter
-                             verticalAlignment: Text.AlignVCenter }
-                            onClicked: { sideBarOpen = !sideBarOpen }
-                        }
                     }
                 }
 
@@ -585,7 +575,7 @@ Window {
                                      Text { text: "接收:"
                                      color: "#777"
                                      font.pixelSize: 10
-                                     visible: window.width > 950 }
+                                     visible: centerWidth > 350 }
                                     Row { Repeater { model: ["TXT", "HEX"]
                                      Button { width: window.width > 800 ? 45 : 35
                                      height: 26
@@ -614,7 +604,7 @@ Window {
                                      Text { text: "发送:"
                                      color: "#777"
                                      font.pixelSize: 10
-                                     visible: window.width > 950 }
+                                     visible: centerWidth > 350 }
                                     Row { Repeater { model: ["TXT", "HEX"]
                                      Button { width: window.width > 800 ? 50 : 38
                                      height: 26
@@ -643,7 +633,7 @@ Window {
                                      Text { text: "日志:"
                                      color: "#777"
                                      font.pixelSize: 10
-                                     visible: window.width > 950 }
+                                     visible: centerWidth > 420 }
                                     Button { width: window.width > 800 ? 45 : 35
                                      height: 26
                                      contentItem: Text { text: "TIME"
@@ -760,179 +750,482 @@ Window {
                     }
                 }
 
-                Rectangle {
-                    id: commandSideBar
-                     Layout.preferredWidth: sideBarOpen ? 300 : 0
-                     Layout.fillHeight: true
-                     Layout.leftMargin: sideBarOpen ? 15 : 0
-                     color: clCard
-                     radius: 15
-                     border.color: clBorder
-                     clip: true
-                    Behavior on Layout.preferredWidth { SpringAnimation { spring: 3
-                     damping: 0.7 } }
-                    Behavior on Layout.leftMargin { NumberAnimation { duration: 200 } }
-                    
-                    ColumnLayout {
-                        width: 300
-                         height: parent.height
-                         anchors.margins: 0
-                         spacing: 15
-                        RowLayout {
-                            Layout.fillWidth: true
-                             Layout.topMargin: 20
-                             Layout.leftMargin: 15
-                             Layout.rightMargin: 15
-                            Text { text: "指令预设库"
-                             color: clHighlight
-                             font.bold: true
-                             font.pixelSize: 15 }
-                            Item { Layout.fillWidth: true }
-                            Button { text: "＋分组"
-                             flat: true
-                             contentItem: Text { text: parent.text
-                             color: clHighlight
-                             font.pixelSize: 11
-                             font.bold: true }
-                             background: Rectangle { radius: 8
-                             color: parent.hovered ? Qt.rgba(1,1,1,0.05) : "transparent" }
-                             onClicked: { commandStore.addGroup("新分组") } }
-                        }
-                        Rectangle {
-                            id: searchBox
-                            Layout.fillWidth: true
-                             Layout.preferredHeight: 38
-                             Layout.leftMargin: 20
-                             Layout.rightMargin: 20
-                             Layout.topMargin: 5
-                             color: clInput
-                             radius: 10
-                            TextField { 
-                                id: searchField
-                                anchors.fill: parent
-                                leftPadding: 35
-                                verticalAlignment: TextField.AlignVCenter
-                                placeholderText: "搜索指令..."
-                                color: whiteText
-                                font.pixelSize: 12
-                                background: null
-                                Text { text: "🔍"
-                                 x: 12
-                                 anchors.verticalCenter: parent.verticalCenter
-                                 opacity: 0.4
-                                 color: clText }
+                // ── Right Column: Feature Panel + Activity Bar ──
+                Item {
+                    Layout.preferredWidth: activePanel >= 0 ? (featurePanelWidth + 50) : 50
+                    Layout.fillHeight: true
+                    Layout.leftMargin: 8 + clickOffset
+                    clip: true
+
+                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+
+                    // Feature Panel (slides out from left of activity bar)
+                    Rectangle {
+                        id: featurePanel
+                        width: activePanel >= 0 ? featurePanelWidth : 0
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        anchors.right: activityBar.left
+                        color: clCard
+                        radius: 12
+                        border.color: clBorder
+                        clip: true
+
+                        visible: activePanel >= 0
+
+                        Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+
+                        // Drag handle on left edge for resizing
+                        MouseArea {
+                            id: panelDragHandle
+                            width: 6
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            cursorShape: Qt.SizeHorCursor
+                            property real dragStartX: 0
+                            property int dragStartWidth: 0
+                            onPressed: function(mouse) {
+                                dragStartX = mouse.x
+                                dragStartWidth = featurePanelWidth
+                            }
+                            onPositionChanged: function(mouse) {
+                                if (pressed) {
+                                    var delta = dragStartX - mouse.x
+                                    var newWidth = Math.max(200, Math.min(500, dragStartWidth + delta))
+                                    featurePanelWidth = newWidth
+                                }
                             }
                         }
-                        ListView {
-                            id: groupList
-                             Layout.fillWidth: true
-                             Layout.fillHeight: true
-                             model: commandStore.groups
-                             spacing: 12
-                             clip: true
-                            delegate: ColumnLayout {
-                                width: groupList.width
-                                 spacing: 8
-                                 property int groupIdx: index
-                                Rectangle {
+
+                        StackLayout {
+                            id: featurePanelStack
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            currentIndex: activePanel >= 0 ? activePanel : 0
+
+                            // Tab 0: 指令 (Command Presets)
+                            ColumnLayout {
+                                spacing: 8
+
+                                // Header
+                                RowLayout {
                                     Layout.fillWidth: true
-                                     height: 38
-                                     color: Qt.rgba(1, 1, 1, 0.03)
-                                     radius: 10
-                                     Layout.leftMargin: 10
-                                     Layout.rightMargin: 10
-                                    RowLayout {
-                                        anchors.fill: parent
-                                         anchors.leftMargin: 10
-                                         anchors.rightMargin: 10
-                                        Text { text: "📂 " + modelData.name
-                                         color: whiteText
-                                         font.bold: true
-                                         font.pixelSize: 12
-                                         Layout.fillWidth: true }
-                                        Button { text: "＋"
-                                         width: 24
-                                         flat: true
-                                         contentItem: Text { text: parent.text
-                                         color: clHighlight
-                                         font.pixelSize: 14
-                                         horizontalAlignment: Text.AlignHCenter }
-                                         background: Rectangle { radius: 8
-                                         color: parent.hovered ? Qt.rgba(1,1,1,0.05) : "transparent" }
-                                         onClicked: { commandStore.addCommand(groupIdx, "新指令", "", globalTxHex) } }
-                                        Button { text: "✕"
-                                         width: 24
-                                         flat: true
-                                         contentItem: Text { text: parent.text
-                                         color: "#666"
-                                         font.pixelSize: 12
-                                         horizontalAlignment: Text.AlignHCenter }
-                                         background: Rectangle { radius: 8
-                                         color: parent.hovered ? Qt.rgba(1,0,0,0.1) : "transparent" }
-                                         onClicked: { deleteType = "group"
-                                         targetGroupIdx = groupIdx
-                                         deleteConfirmOverlay.visible = true } }
+                                    Text {
+                                        text: "指令预设库"
+                                        color: clHighlight
+                                        font.bold: true
+                                        font.pixelSize: 15
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                    Button {
+                                        text: "＋分组"
+                                        flat: true
+                                        font.pixelSize: 12
+                                        contentItem: Text {
+                                            text: parent.text
+                                            color: clHighlight
+                                            font: parent.font
+                                        }
+                                        background: Rectangle { color: "transparent" }
+                                        onClicked: commandStore.addGroup("新分组")
                                     }
                                 }
-                                ColumnLayout {
+
+                                // Search Box
+                                Rectangle {
                                     Layout.fillWidth: true
-                                     spacing: 6
-                                     Layout.leftMargin: 15
-                                     Layout.rightMargin: 15
-                                    Repeater {
-                                        model: modelData.commands
-                                        delegate: Rectangle {
+                                    height: 36
+                                    radius: 8
+                                    color: clInput
+                                    border.color: clBorder
+                                    border.width: 1
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 10
+                                        anchors.rightMargin: 10
+                                        spacing: 0
+
+                                        Text {
+                                            text: "🔍"
+                                            font.pixelSize: 13
+                                            color: grayPlaceholder
+                                        }
+
+                                        TextField {
+                                            id: cmdSearchField
                                             Layout.fillWidth: true
-                                             height: 65
-                                             radius: 12
-                                             color: Qt.rgba(1, 1, 1, 0.02)
-                                             border.color: clBorder
-                                            ColumnLayout {
+                                            placeholderText: "搜索指令..."
+                                            placeholderTextColor: grayPlaceholder
+                                            background: Rectangle { color: "transparent" }
+                                            color: whiteText
+                                            font.pixelSize: 12
+                                            leftPadding: 8
+                                            selectByMouse: true
+                                        }
+                                    }
+                                }
+
+                                // Command List
+                                ListView {
+                                    id: cmdListView
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    spacing: 6
+                                    model: commandStore.groups
+
+                                    delegate: ColumnLayout {
+                                        width: cmdListView.width
+                                        spacing: 4
+
+                                        property var group: modelData
+                                        property bool groupExpanded: true
+
+                                        // Group Header
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 38
+                                            radius: 10
+                                            color: groupHeaderMouse.containsMouse
+                                                   ? (isDark ? "#45484b" : "#E8EAED")
+                                                   : (isDark ? "#3a3d40" : "#FFFFFF")
+                                            border.color: isDark ? "#3a3d40" : "#DEE2E6"
+                                            border.width: isDark ? 0 : 1
+
+                                            MouseArea {
+                                                id: groupHeaderMouse
                                                 anchors.fill: parent
-                                                 anchors.margins: 8
-                                                 spacing: 4
-                                                RowLayout {
-                                                    TextField { text: modelData.name
-                                                     color: whiteText
-                                                     font.bold: true
-                                                     font.pixelSize: 11
-                                                     Layout.fillWidth: true
-                                                     background: null
-                                                     onEditingFinished: { commandStore.updateCommand(groupIdx, index, text, modelData.payload) } }
-                                                    Button { text: "🚀"
-                                                     width: 24
-                                                     height: 24
-                                                     flat: true
-                                                     background: Rectangle { radius: 8
-                                                     color: parent.hovered ? Qt.rgba(1,1,1,0.05) : "transparent" }
-                                                     onClicked: { serialManager.sendData(modelData.payload, modelData.isHex) } }
-                                                    Button { text: "✕"
-                                                     width: 24
-                                                     height: 24
-                                                     flat: true
-                                                     contentItem: Text { text: parent.text
-                                                     color: "#666"
-                                                     horizontalAlignment: Text.AlignHCenter }
-                                                     background: Rectangle { radius: 8
-                                                     color: parent.hovered ? Qt.rgba(1,0,0,0.1) : "transparent" }
-                                                     onClicked: { deleteType = "cmd"
-                                                     targetGroupIdx = groupIdx
-                                                     targetCmdIdx = index
-                                                     deleteConfirmOverlay.visible = true } }
+                                                hoverEnabled: true
+                                                onClicked: groupExpanded = !groupExpanded
+                                            }
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 10
+                                                anchors.rightMargin: 6
+                                                spacing: 6
+
+                                                Text {
+                                                    text: groupExpanded ? "📂" : "📁"
+                                                    font.pixelSize: 14
                                                 }
-                                                TextField { text: modelData.payload
-                                                 color: clText
-                                                 font.family: "Consolas"
-                                                 font.pixelSize: 10
-                                                 Layout.fillWidth: true
-                                                 background: Rectangle { color: clInput
-                                                 radius: 6 }
-                                                 onEditingFinished: { commandStore.updateCommand(groupIdx, index, modelData.name, text) } }
+
+                                                TextField {
+                                                    id: groupNameField
+                                                    Layout.fillWidth: true
+                                                    text: group.name
+                                                    color: whiteText
+                                                    font.bold: true
+                                                    font.pixelSize: 12
+                                                    background: Rectangle { color: "transparent" }
+                                                    selectByMouse: true
+                                                    readOnly: true
+                                                    onEditingFinished: {
+                                                        commandStore.updateGroupName(index, text)
+                                                        readOnly = true
+                                                    }
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        enabled: groupNameField.readOnly
+                                                        onDoubleClicked: {
+                                                            groupNameField.readOnly = false
+                                                            groupNameField.forceActiveFocus()
+                                                            groupNameField.selectAll()
+                                                        }
+                                                    }
+                                                }
+
+                                                Button {
+                                                    text: "＋"
+                                                    flat: true
+                                                    font.pixelSize: 14
+                                                    contentItem: Text {
+                                                        text: parent.text
+                                                        color: clHighlight
+                                                        font: parent.font
+                                                    }
+                                                    background: Rectangle { color: "transparent" }
+                                                    onClicked: commandStore.addCommand(index, "新指令", "", false)
+                                                }
+
+                                                Button {
+                                                    text: "✕"
+                                                    flat: true
+                                                    font.pixelSize: 13
+                                                    contentItem: Text {
+                                                        text: parent.text
+                                                        color: clAccent
+                                                        font: parent.font
+                                                    }
+                                                    background: Rectangle { color: "transparent" }
+                                                    onClicked: {
+                                                        deleteType = "group"
+                                                        targetGroupIdx = index
+                                                        targetCmdIdx = -1
+                                                        deleteConfirmOverlay.visible = true
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Commands under this group
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            visible: groupExpanded
+                                            spacing: 4
+
+                                            Repeater {
+                                                model: group.commands
+
+                                                delegate: Rectangle {
+                                                    Layout.fillWidth: true
+                                                    height: 65
+                                                    radius: 12
+                                                    color: cmdMouse.containsMouse
+                                                           ? (isDark ? "#333537" : "#F5F6F8")
+                                                           : (isDark ? "#2b2d30" : "#FFFFFF")
+                                                    border.color: isDark ? "#333537" : "#DEE2E6"
+                                                    border.width: isDark ? 0 : 1
+
+                                                    property int cmdIdx: index
+                                                    property string mapKey: index + ":" + cmdIdx
+
+                                                    MouseArea {
+                                                        id: cmdMouse
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        acceptedButtons: Qt.NoButton
+                                                    }
+
+                                                    RowLayout {
+                                                        anchors.fill: parent
+                                                        anchors.leftMargin: 8
+                                                        anchors.rightMargin: 6
+                                                        anchors.topMargin: 4
+                                                        spacing: 4
+
+                                                        CheckBox {
+                                                            id: cmdCheck
+                                                            checked: checkedMap[mapKey] === true
+                                                            onToggled: {
+                                                                var m = Object.assign({}, checkedMap)
+                                                                if (checked) m[mapKey] = true
+                                                                else delete m[mapKey]
+                                                                checkedMap = m
+                                                            }
+                                                        }
+
+                                                        TextField {
+                                                            Layout.fillWidth: true
+                                                            Layout.preferredWidth: 80
+                                                            text: modelData.name
+                                                            color: whiteText
+                                                            font.bold: true
+                                                            font.pixelSize: 11
+                                                            background: Rectangle { color: "transparent" }
+                                                            selectByMouse: true
+                                                            onEditingFinished: commandStore.updateCommand(index, cmdIdx, text, modelData.payload)
+                                                        }
+
+                                                        Button {
+                                                            text: "🚀"
+                                                            flat: true
+                                                            font.pixelSize: 13
+                                                            contentItem: Text {
+                                                                text: parent.text
+                                                                font: parent.font
+                                                            }
+                                                            background: Rectangle { color: "transparent" }
+                                                            onClicked: window.sendCommand(modelData.payload, modelData.isHex || false)
+                                                        }
+
+                                                        Button {
+                                                            text: "✕"
+                                                            flat: true
+                                                            font.pixelSize: 12
+                                                            contentItem: Text {
+                                                                text: parent.text
+                                                                color: clAccent
+                                                                font: parent.font
+                                                            }
+                                                            background: Rectangle { color: "transparent" }
+                                                            onClicked: {
+                                                                deleteType = "command"
+                                                                targetGroupIdx = index
+                                                                targetCmdIdx = cmdIdx
+                                                                deleteConfirmOverlay.visible = true
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Payload field (below)
+                                                    TextField {
+                                                        anchors.left: parent.left
+                                                        anchors.right: parent.right
+                                                        anchors.bottom: parent.bottom
+                                                        anchors.leftMargin: 44
+                                                        anchors.rightMargin: 8
+                                                        anchors.bottomMargin: 4
+                                                        height: 22
+                                                        text: modelData.payload
+                                                        color: clText
+                                                        font.family: "Consolas"
+                                                        font.pixelSize: 10
+                                                        background: Rectangle {
+                                                            radius: 4
+                                                            color: clInput
+                                                        }
+                                                        selectByMouse: true
+                                                        placeholderText: "payload..."
+                                                        placeholderTextColor: grayPlaceholder
+                                                        onEditingFinished: commandStore.updateCommand(index, cmdIdx, modelData.name, text)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Empty state
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: commandStore.groups.length === 0
+                                        text: "暂无指令分组\n点击「＋分组」添加"
+                                        color: grayPlaceholder
+                                        font.pixelSize: 12
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+                                }
+
+                                // Bottom Bar
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "▶ 循环发送"
+                                        font.pixelSize: 11
+                                        onClicked: {
+                                            var cmds = []
+                                            for (var key in checkedMap) {
+                                                var parts = key.split(":")
+                                                var gIdx = parseInt(parts[0])
+                                                var cIdx = parseInt(parts[1])
+                                                if (commandStore.groups[gIdx] && commandStore.groups[gIdx].commands[cIdx]) {
+                                                    var cmd = commandStore.groups[gIdx].commands[cIdx]
+                                                    cmds.push({ payload: cmd.payload, isHex: cmd.isHex || false })
+                                                }
+                                            }
+                                            if (cmds.length > 0) {
+                                                for (var i = 0; i < cmds.length; i++) {
+                                                    window.sendCommand(cmds[i].payload, cmds[i].isHex)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Button {
+                                        text: "导入"
+                                        font.pixelSize: 11
+                                        onClicked: importFileDialog.open()
+                                    }
+
+                                    Button {
+                                        text: "导出"
+                                        font.pixelSize: 11
+                                        onClicked: exportFileDialog.open()
+                                    }
+                                }
+                            }
+
+                            // Tab 1: 码表 (Code Table)
+                            Item {
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "码表工具 - 重构中..."
+                                    color: clText
+                                    font.pixelSize: 14
+                                }
+                            }
+
+                            // Tab 2: 设置 (Settings)
+                            Item {
+                                Text {
+                                    anchors.centerIn: parent
+                                    text: "设置面板 - 重构中..."
+                                    color: clText
+                                    font.pixelSize: 14
+                                }
+                            }
+                        }
+                    }
+
+                    // Activity Bar (fixed on right edge)
+                    Rectangle {
+                        id: activityBar
+                        width: 50
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        color: isDark ? "#252628" : "#E8EAED"
+                        radius: 12
+
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.topMargin: 8
+                            anchors.bottomMargin: 8
+                            spacing: 4
+
+                            Repeater {
+                                id: activityRepeater
+                                model: [
+                                    { icon: "📋", label: "指令" },
+                                    { icon: "📊", label: "码表" },
+                                    { icon: "⚙️", label: "设置" }
+                                ]
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.preferredHeight: 48
+                                    radius: 8
+                                    color: activePanel === index ? (isDark ? Qt.rgba(53/255, 116/255, 240/255, 0.2) : Qt.rgba(53/255, 116/255, 240/255, 0.15)) : (actDelegateMouseArea.containsMouse ? (isDark ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.05)) : "transparent")
+                                    border.color: activePanel === index ? clHighlight : "transparent"
+                                    border.width: activePanel === index ? 1 : 0
+
+                                    Column {
+                                        anchors.centerIn: parent
+                                        spacing: 2
+                                        Text {
+                                            text: modelData.icon
+                                            font.pixelSize: 18
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                        Text {
+                                            text: modelData.label
+                                            font.pixelSize: 9
+                                            color: activePanel === index ? clHighlight : clText
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        id: actDelegateMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        onClicked: {
+                                            if (activePanel === index) {
+                                                activePanel = -1
+                                            } else {
+                                                activePanel = index
                                             }
                                         }
                                     }
                                 }
                             }
+
+                            Item { Layout.fillHeight: true }
                         }
                     }
                 }
@@ -1123,6 +1416,22 @@ Window {
             }
         }
 
+        // FileDialogs for import/export
+        FileDialog {
+            id: importFileDialog
+            title: "导入指令预设"
+            nameFilters: ["JSON files (*.json)", "All files (*)"]
+            fileMode: FileDialog.OpenFile
+            onAccepted: commandStore.importFromFile(selectedFile.toString().replace("file:///", ""))
+        }
+        FileDialog {
+            id: exportFileDialog
+            title: "导出指令预设"
+            nameFilters: ["JSON files (*.json)", "All files (*)"]
+            fileMode: FileDialog.SaveFile
+            onAccepted: commandStore.exportToFile(selectedFile.toString().replace("file:///", ""))
+        }
+
         Rectangle {
             id: statusBar
             width: parent.width
@@ -1228,5 +1537,21 @@ Window {
                 terminalView.positionViewAtEnd()
             }
         }
+    }
+
+    // Sync line ending mode from settingsStore to serialManager
+    Connections {
+        target: settingsStore
+        function onLineEndingModeChanged() {
+            serialManager.lineEndingMode = settingsStore.lineEndingMode
+        }
+        function onCustomLineEndingChanged() {
+            // Custom line ending support can be added later
+        }
+    }
+
+    // Initialize line ending mode on startup
+    Component.onCompleted: {
+        serialManager.lineEndingMode = settingsStore.lineEndingMode
     }
 }

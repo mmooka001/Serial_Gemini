@@ -522,4 +522,8 @@ CMakeFiles/MySerial_Gemini.dir/MySerial_Gemini_autogen/mocs_compilation.cpp.obj:
  D:/Qt/6.11.0/mingw_64/include/QtQmlIntegration/qqmlintegration.h \
  D:/Qt/6.11.0/mingw_64/include/QtQml/qqmldebug.h \
  D:/Qt/6.11.0/mingw_64/include/QtQml/qqmlinfo.h \
- D:/Qt/6.11.0/mingw_64/include/QtQml/qqmlerror.h
+ D:/Qt/6.11.0/mingw_64/include/QtQml/qqmlerror.h \
+ E:\Workspace_QT\MySerial_Gemini\build\MySerial_Gemini_autogen\EWIEGA46WW/moc_SettingsStore.cpp \
+ E:/Workspace_QT/MySerial_Gemini/SettingsStore.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QSettings \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qsettings.h

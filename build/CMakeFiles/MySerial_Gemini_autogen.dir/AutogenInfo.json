@@ -1136,6 +1136,12 @@
 			"MU",
 			"EWIEGA46WW/moc_SerialManager.cpp",
 			null
+		],
+		[
+			"E:/Workspace_QT/MySerial_Gemini/SettingsStore.h",
+			"MU",
+			"EWIEGA46WW/moc_SettingsStore.cpp",
+			null
 		]
 	],
 	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],

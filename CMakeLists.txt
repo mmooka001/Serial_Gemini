@@ -20,6 +20,7 @@ qt_add_executable(MySerial_Gemini
     SerialManager.h SerialManager.cpp
     ChecksumHelper.h
     CommandStore.h
+    SettingsStore.h
     app_icon.rc
 )
 

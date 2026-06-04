@@ -2,3 +2,4 @@
 #include "EWIEGA46WW/moc_ChecksumHelper.cpp"
 #include "EWIEGA46WW/moc_CommandStore.cpp"
 #include "EWIEGA46WW/moc_SerialManager.cpp"
+#include "EWIEGA46WW/moc_SettingsStore.cpp"

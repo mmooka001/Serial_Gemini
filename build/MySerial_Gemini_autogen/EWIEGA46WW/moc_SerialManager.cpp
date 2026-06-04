@@ -43,6 +43,7 @@ template <> constexpr inline auto SerialManager::qt_create_metaobjectdata<qt_met
         "",
         "currentPortChanged",
         "baudRateChanged",
+        "lineEndingModeChanged",
         "dataReceived",
         "ascii",
         "hex",
@@ -66,7 +67,8 @@ template <> constexpr inline auto SerialManager::qt_create_metaobjectdata<qt_met
         "window",
         "onTop",
         "isOpen",
-        "currentPort"
+        "currentPort",
+        "lineEndingMode"
     };
 
     QtMocHelpers::UintData qt_methods {
@@ -76,48 +78,52 @@ template <> constexpr inline auto SerialManager::qt_create_metaobjectdata<qt_met
         QtMocHelpers::SignalData<void()>(3, 2, QMC::AccessPublic, QMetaType::Void),
         // Signal 'baudRateChanged'
         QtMocHelpers::SignalData<void()>(4, 2, QMC::AccessPublic, QMetaType::Void),
+        // Signal 'lineEndingModeChanged'
+        QtMocHelpers::SignalData<void()>(5, 2, QMC::AccessPublic, QMetaType::Void),
         // Signal 'dataReceived'
-        QtMocHelpers::SignalData<void(const QString &, const QString &, bool)>(5, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 6 }, { QMetaType::QString, 7 }, { QMetaType::Bool, 8 },
+        QtMocHelpers::SignalData<void(const QString &, const QString &, bool)>(6, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 7 }, { QMetaType::QString, 8 }, { QMetaType::Bool, 9 },
         }}),
         // Signal 'dataReceived'
-        QtMocHelpers::SignalData<void(const QString &, const QString &)>(5, 2, QMC::AccessPublic | QMC::MethodCloned, QMetaType::Void, {{
-            { QMetaType::QString, 6 }, { QMetaType::QString, 7 },
+        QtMocHelpers::SignalData<void(const QString &, const QString &)>(6, 2, QMC::AccessPublic | QMC::MethodCloned, QMetaType::Void, {{
+            { QMetaType::QString, 7 }, { QMetaType::QString, 8 },
         }}),
         // Signal 'errorOccurred'
-        QtMocHelpers::SignalData<void(const QString &)>(9, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 10 },
+        QtMocHelpers::SignalData<void(const QString &)>(10, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 11 },
         }}),
         // Slot 'readData'
-        QtMocHelpers::SlotData<void()>(11, 2, QMC::AccessPrivate, QMetaType::Void),
+        QtMocHelpers::SlotData<void()>(12, 2, QMC::AccessPrivate, QMetaType::Void),
         // Method 'availablePorts'
-        QtMocHelpers::MethodData<QVariantList()>(12, 2, QMC::AccessPublic, 0x80000000 | 13),
+        QtMocHelpers::MethodData<QVariantList()>(13, 2, QMC::AccessPublic, 0x80000000 | 14),
         // Method 'openPort'
-        QtMocHelpers::MethodData<bool(const QString &, int)>(14, 2, QMC::AccessPublic, QMetaType::Bool, {{
-            { QMetaType::QString, 15 }, { QMetaType::Int, 16 },
+        QtMocHelpers::MethodData<bool(const QString &, int)>(15, 2, QMC::AccessPublic, QMetaType::Bool, {{
+            { QMetaType::QString, 16 }, { QMetaType::Int, 17 },
         }}),
         // Method 'closePort'
-        QtMocHelpers::MethodData<void()>(17, 2, QMC::AccessPublic, QMetaType::Void),
+        QtMocHelpers::MethodData<void()>(18, 2, QMC::AccessPublic, QMetaType::Void),
         // Method 'sendData'
-        QtMocHelpers::MethodData<void(const QString &, bool)>(18, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 19 }, { QMetaType::Bool, 20 },
+        QtMocHelpers::MethodData<void(const QString &, bool)>(19, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 20 }, { QMetaType::Bool, 21 },
         }}),
         // Method 'sendDataWithChecksum'
-        QtMocHelpers::MethodData<void(const QString &, bool, int)>(21, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 19 }, { QMetaType::Bool, 20 }, { QMetaType::Int, 22 },
+        QtMocHelpers::MethodData<void(const QString &, bool, int)>(22, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 20 }, { QMetaType::Bool, 21 }, { QMetaType::Int, 23 },
         }}),
         // Method 'setStayOnTop'
-        QtMocHelpers::MethodData<void(QQuickWindow *, bool)>(23, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { 0x80000000 | 24, 25 }, { QMetaType::Bool, 26 },
+        QtMocHelpers::MethodData<void(QQuickWindow *, bool)>(24, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { 0x80000000 | 25, 26 }, { QMetaType::Bool, 27 },
         }}),
     };
     QtMocHelpers::UintData qt_properties {
         // property 'isOpen'
-        QtMocHelpers::PropertyData<bool>(27, QMetaType::Bool, QMC::DefaultPropertyFlags, 0),
+        QtMocHelpers::PropertyData<bool>(28, QMetaType::Bool, QMC::DefaultPropertyFlags, 0),
         // property 'currentPort'
-        QtMocHelpers::PropertyData<QString>(28, QMetaType::QString, QMC::DefaultPropertyFlags, 1),
+        QtMocHelpers::PropertyData<QString>(29, QMetaType::QString, QMC::DefaultPropertyFlags, 1),
         // property 'baudRate'
-        QtMocHelpers::PropertyData<int>(16, QMetaType::Int, QMC::DefaultPropertyFlags | QMC::Writable | QMC::StdCppSet, 2),
+        QtMocHelpers::PropertyData<int>(17, QMetaType::Int, QMC::DefaultPropertyFlags | QMC::Writable | QMC::StdCppSet, 2),
+        // property 'lineEndingMode'
+        QtMocHelpers::PropertyData<int>(30, QMetaType::Int, QMC::DefaultPropertyFlags | QMC::Writable | QMC::StdCppSet, 3),
     };
     QtMocHelpers::UintData qt_enums {
     };
@@ -142,25 +148,26 @@ void SerialManager::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         case 0: _t->isOpenChanged(); break;
         case 1: _t->currentPortChanged(); break;
         case 2: _t->baudRateChanged(); break;
-        case 3: _t->dataReceived((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[3]))); break;
-        case 4: _t->dataReceived((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2]))); break;
-        case 5: _t->errorOccurred((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
-        case 6: _t->readData(); break;
-        case 7: { QVariantList _r = _t->availablePorts();
+        case 3: _t->lineEndingModeChanged(); break;
+        case 4: _t->dataReceived((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[3]))); break;
+        case 5: _t->dataReceived((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2]))); break;
+        case 6: _t->errorOccurred((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
+        case 7: _t->readData(); break;
+        case 8: { QVariantList _r = _t->availablePorts();
             if (_a[0]) *reinterpret_cast<QVariantList*>(_a[0]) = std::move(_r); }  break;
-        case 8: { bool _r = _t->openPort((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])));
+        case 9: { bool _r = _t->openPort((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])));
             if (_a[0]) *reinterpret_cast<bool*>(_a[0]) = std::move(_r); }  break;
-        case 9: _t->closePort(); break;
-        case 10: _t->sendData((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2]))); break;
-        case 11: _t->sendDataWithChecksum((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[3]))); break;
-        case 12: _t->setStayOnTop((*reinterpret_cast<std::add_pointer_t<QQuickWindow*>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2]))); break;
+        case 10: _t->closePort(); break;
+        case 11: _t->sendData((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2]))); break;
+        case 12: _t->sendDataWithChecksum((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[3]))); break;
+        case 13: _t->setStayOnTop((*reinterpret_cast<std::add_pointer_t<QQuickWindow*>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2]))); break;
         default: ;
         }
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         switch (_id) {
         default: *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType(); break;
-        case 12:
+        case 13:
             switch (*reinterpret_cast<int*>(_a[1])) {
             default: *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType(); break;
             case 0:
@@ -176,9 +183,11 @@ void SerialManager::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
             return;
         if (QtMocHelpers::indexOfMethod<void (SerialManager::*)()>(_a, &SerialManager::baudRateChanged, 2))
             return;
-        if (QtMocHelpers::indexOfMethod<void (SerialManager::*)(const QString & , const QString & , bool )>(_a, &SerialManager::dataReceived, 3))
+        if (QtMocHelpers::indexOfMethod<void (SerialManager::*)()>(_a, &SerialManager::lineEndingModeChanged, 3))
             return;
-        if (QtMocHelpers::indexOfMethod<void (SerialManager::*)(const QString & )>(_a, &SerialManager::errorOccurred, 5))
+        if (QtMocHelpers::indexOfMethod<void (SerialManager::*)(const QString & , const QString & , bool )>(_a, &SerialManager::dataReceived, 4))
+            return;
+        if (QtMocHelpers::indexOfMethod<void (SerialManager::*)(const QString & )>(_a, &SerialManager::errorOccurred, 6))
             return;
     }
     if (_c == QMetaObject::ReadProperty) {
@@ -187,6 +196,7 @@ void SerialManager::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         case 0: *reinterpret_cast<bool*>(_v) = _t->isOpen(); break;
         case 1: *reinterpret_cast<QString*>(_v) = _t->currentPort(); break;
         case 2: *reinterpret_cast<int*>(_v) = _t->baudRate(); break;
+        case 3: *reinterpret_cast<int*>(_v) = _t->lineEndingMode(); break;
         default: break;
         }
     }
@@ -194,6 +204,7 @@ void SerialManager::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         void *_v = _a[0];
         switch (_id) {
         case 2: _t->setBaudRate(*reinterpret_cast<int*>(_v)); break;
+        case 3: _t->setLineEndingMode(*reinterpret_cast<int*>(_v)); break;
         default: break;
         }
     }
@@ -218,20 +229,20 @@ int SerialManager::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 13)
+        if (_id < 14)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 13;
+        _id -= 14;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 13)
+        if (_id < 14)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 13;
+        _id -= 14;
     }
     if (_c == QMetaObject::ReadProperty || _c == QMetaObject::WriteProperty
             || _c == QMetaObject::ResetProperty || _c == QMetaObject::BindableProperty
             || _c == QMetaObject::RegisterPropertyMetaType) {
         qt_static_metacall(this, _c, _id, _a);
-        _id -= 3;
+        _id -= 4;
     }
     return _id;
 }
@@ -255,14 +266,20 @@ void SerialManager::baudRateChanged()
 }
 
 // SIGNAL 3
-void SerialManager::dataReceived(const QString & _t1, const QString & _t2, bool _t3)
+void SerialManager::lineEndingModeChanged()
 {
-    QMetaObject::activate<void>(this, &staticMetaObject, 3, nullptr, _t1, _t2, _t3);
+    QMetaObject::activate(this, &staticMetaObject, 3, nullptr);
 }
 
-// SIGNAL 5
+// SIGNAL 4
+void SerialManager::dataReceived(const QString & _t1, const QString & _t2, bool _t3)
+{
+    QMetaObject::activate<void>(this, &staticMetaObject, 4, nullptr, _t1, _t2, _t3);
+}
+
+// SIGNAL 6
 void SerialManager::errorOccurred(const QString & _t1)
 {
-    QMetaObject::activate<void>(this, &staticMetaObject, 5, nullptr, _t1);
+    QMetaObject::activate<void>(this, &staticMetaObject, 6, nullptr, _t1);
 }
 QT_WARNING_POP

@@ -14,6 +14,7 @@ class SerialManager : public QObject
     Q_PROPERTY(bool isOpen READ isOpen NOTIFY isOpenChanged)
     Q_PROPERTY(QString currentPort READ currentPort NOTIFY currentPortChanged)
     Q_PROPERTY(int baudRate READ baudRate WRITE setBaudRate NOTIFY baudRateChanged)
+    Q_PROPERTY(int lineEndingMode READ lineEndingMode WRITE setLineEndingMode NOTIFY lineEndingModeChanged)
 
 public:
     explicit SerialManager(QObject *parent = nullptr);
@@ -24,6 +25,13 @@ public:
     int baudRate() const { return m_serialPort->baudRate(); }
     void setBaudRate(int baud) {
         if (m_serialPort->setBaudRate(baud)) emit baudRateChanged();
+    }
+    int lineEndingMode() const { return m_lineEndingMode; }
+    void setLineEndingMode(int mode) {
+        if (m_lineEndingMode != mode) {
+            m_lineEndingMode = mode;
+            emit lineEndingModeChanged();
+        }
     }
 
     Q_INVOKABLE QVariantList availablePorts();
@@ -37,6 +45,7 @@ signals:
     void isOpenChanged();
     void currentPortChanged();
     void baudRateChanged();
+    void lineEndingModeChanged();
     void dataReceived(const QString &ascii, const QString &hex, bool isSent = false);
     void errorOccurred(const QString &error);
 
@@ -45,6 +54,7 @@ private slots:
 
 private:
     QSerialPort *m_serialPort;
+    int m_lineEndingMode = 0;
 };
 
 #endif // SERIALMANAGER_H

@@ -99,11 +99,11 @@ clean: CMakeFiles/MySerial_Gemini_autogen.dir/clean
 # Target rules for target CMakeFiles/MySerial_Gemini.dir
 
 # All Build rule for target.
+CMakeFiles/MySerial_Gemini.dir/all: CMakeFiles/MySerial_Gemini_copy_res.dir/all
 CMakeFiles/MySerial_Gemini.dir/all: CMakeFiles/MySerial_Gemini_copy_qml.dir/all
 CMakeFiles/MySerial_Gemini.dir/all: CMakeFiles/generate_qmlls_build_ini_file.dir/all
-CMakeFiles/MySerial_Gemini.dir/all: CMakeFiles/MySerial_Gemini_qmlimportscan.dir/all
-CMakeFiles/MySerial_Gemini.dir/all: CMakeFiles/MySerial_Gemini_copy_res.dir/all
 CMakeFiles/MySerial_Gemini.dir/all: CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir/all
+CMakeFiles/MySerial_Gemini.dir/all: CMakeFiles/MySerial_Gemini_qmlimportscan.dir/all
 CMakeFiles/MySerial_Gemini.dir/all: CMakeFiles/MySerial_Gemini_autogen.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\MySerial_Gemini.dir\build.make CMakeFiles/MySerial_Gemini.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\MySerial_Gemini.dir\build.make CMakeFiles/MySerial_Gemini.dir/build
@@ -123,8 +123,8 @@ MySerial_Gemini: CMakeFiles/MySerial_Gemini.dir/rule
 
 # codegen rule for target.
 CMakeFiles/MySerial_Gemini.dir/codegen: CMakeFiles/generate_qmlls_build_ini_file.dir/all
-CMakeFiles/MySerial_Gemini.dir/codegen: CMakeFiles/MySerial_Gemini_qmlimportscan.dir/all
 CMakeFiles/MySerial_Gemini.dir/codegen: CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir/all
+CMakeFiles/MySerial_Gemini.dir/codegen: CMakeFiles/MySerial_Gemini_qmlimportscan.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\MySerial_Gemini.dir\build.make CMakeFiles/MySerial_Gemini.dir/codegen
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\Workspace_QT\MySerial_Gemini\build\CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19 "Finished codegen for target MySerial_Gemini"
 .PHONY : CMakeFiles/MySerial_Gemini.dir/codegen
@@ -654,10 +654,10 @@ CMakeFiles/MySerial_Gemini_qmlimportscan.dir/clean:
 # Target rules for target CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir
 
 # All Build rule for target.
+CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir/all: CMakeFiles/MySerial_Gemini_copy_res.dir/all
 CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir/all: CMakeFiles/MySerial_Gemini_copy_qml.dir/all
 CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir/all: CMakeFiles/generate_qmlls_build_ini_file.dir/all
 CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir/all: CMakeFiles/MySerial_Gemini_qmlimportscan.dir/all
-CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir/all: CMakeFiles/MySerial_Gemini_copy_res.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\MySerial_Gemini_autogen_timestamp_deps.dir\build.make CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\MySerial_Gemini_autogen_timestamp_deps.dir\build.make CMakeFiles/MySerial_Gemini_autogen_timestamp_deps.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=E:\Workspace_QT\MySerial_Gemini\build\CMakeFiles --progress-num= "Built target MySerial_Gemini_autogen_timestamp_deps"

@@ -35,6 +35,8 @@ Window {
 
     property int activePanel: -1          // -1=none, 0=指令, 1=码表, 2=设置
     property int featurePanelWidth: 300
+    property int clickOffset: 0           // Click animation offset
+    readonly property int centerWidth: width - 260 - (activePanel >= 0 ? featurePanelWidth + 50 + 8 : 50) - 46
     property bool globalRxHex: true 
     property bool globalTxHex: true 
     property bool globalTimestamp: true
@@ -573,7 +575,7 @@ Window {
                                      Text { text: "接收:"
                                      color: "#777"
                                      font.pixelSize: 10
-                                     visible: window.width > 950 }
+                                     visible: centerWidth > 350 }
                                     Row { Repeater { model: ["TXT", "HEX"]
                                      Button { width: window.width > 800 ? 45 : 35
                                      height: 26
@@ -602,7 +604,7 @@ Window {
                                      Text { text: "发送:"
                                      color: "#777"
                                      font.pixelSize: 10
-                                     visible: window.width > 950 }
+                                     visible: centerWidth > 350 }
                                     Row { Repeater { model: ["TXT", "HEX"]
                                      Button { width: window.width > 800 ? 50 : 38
                                      height: 26
@@ -631,7 +633,7 @@ Window {
                                      Text { text: "日志:"
                                      color: "#777"
                                      font.pixelSize: 10
-                                     visible: window.width > 950 }
+                                     visible: centerWidth > 420 }
                                     Button { width: window.width > 800 ? 45 : 35
                                      height: 26
                                      contentItem: Text { text: "TIME"
@@ -752,7 +754,7 @@ Window {
                 Item {
                     Layout.preferredWidth: activePanel >= 0 ? (featurePanelWidth + 50) : 50
                     Layout.fillHeight: true
-                    Layout.leftMargin: 8
+                    Layout.leftMargin: 8 + clickOffset
                     clip: true
 
                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
@@ -773,6 +775,29 @@ Window {
                         visible: activePanel >= 0
 
                         Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
+
+                        // Drag handle on left edge for resizing
+                        MouseArea {
+                            id: panelDragHandle
+                            width: 6
+                            anchors.left: parent.left
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            cursorShape: Qt.SizeHorCursor
+                            property real dragStartX: 0
+                            property int dragStartWidth: 0
+                            onPressed: function(mouse) {
+                                dragStartX = mouse.x
+                                dragStartWidth = featurePanelWidth
+                            }
+                            onPositionChanged: function(mouse) {
+                                if (pressed) {
+                                    var delta = dragStartX - mouse.x
+                                    var newWidth = Math.max(200, Math.min(500, dragStartWidth + delta))
+                                    featurePanelWidth = newWidth
+                                }
+                            }
+                        }
 
                         StackLayout {
                             id: featurePanelStack
@@ -1512,5 +1537,21 @@ Window {
                 terminalView.positionViewAtEnd()
             }
         }
+    }
+
+    // Sync line ending mode from settingsStore to serialManager
+    Connections {
+        target: settingsStore
+        function onLineEndingModeChanged() {
+            serialManager.lineEndingMode = settingsStore.lineEndingMode
+        }
+        function onCustomLineEndingChanged() {
+            // Custom line ending support can be added later
+        }
+    }
+
+    // Initialize line ending mode on startup
+    Component.onCompleted: {
+        serialManager.lineEndingMode = settingsStore.lineEndingMode
     }
 }

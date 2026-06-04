@@ -3,7 +3,6 @@
 
 E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/6.11.0/mingw_64/include/QtCore/QByteArray
- D:/Qt/6.11.0/mingw_64/include/QtCore/QDateTime
  D:/Qt/6.11.0/mingw_64/include/QtCore/QDir
  D:/Qt/6.11.0/mingw_64/include/QtCore/QEvent
  D:/Qt/6.11.0/mingw_64/include/QtCore/QFile
@@ -12,22 +11,16 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/6.11.0/mingw_64/include/QtCore/QJsonDocument
  D:/Qt/6.11.0/mingw_64/include/QtCore/QJsonObject
  D:/Qt/6.11.0/mingw_64/include/QtCore/QList
- D:/Qt/6.11.0/mingw_64/include/QtCore/QMap
  D:/Qt/6.11.0/mingw_64/include/QtCore/QMargins
  D:/Qt/6.11.0/mingw_64/include/QtCore/QObject
  D:/Qt/6.11.0/mingw_64/include/QtCore/QRect
  D:/Qt/6.11.0/mingw_64/include/QtCore/QRectF
- D:/Qt/6.11.0/mingw_64/include/QtCore/QSettings
  D:/Qt/6.11.0/mingw_64/include/QtCore/QSize
  D:/Qt/6.11.0/mingw_64/include/QtCore/QSizeF
  D:/Qt/6.11.0/mingw_64/include/QtCore/QStandardPaths
- D:/Qt/6.11.0/mingw_64/include/QtCore/QString
- D:/Qt/6.11.0/mingw_64/include/QtCore/QTextStream
- D:/Qt/6.11.0/mingw_64/include/QtCore/QTimer
  D:/Qt/6.11.0/mingw_64/include/QtCore/QUrl
  D:/Qt/6.11.0/mingw_64/include/QtCore/QVariant
  D:/Qt/6.11.0/mingw_64/include/QtCore/QVariantList
- D:/Qt/6.11.0/mingw_64/include/QtCore/QVariantMap
  D:/Qt/6.11.0/mingw_64/include/QtCore/q17memory.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/q20bit.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/q20functional.h
@@ -139,7 +132,6 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/6.11.0/mingw_64/include/QtCore/qscopedpointer.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qscopeguard.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qset.h
- D:/Qt/6.11.0/mingw_64/include/QtCore/qsettings.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qshareddata.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qshareddata_impl.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qsharedpointer.h
@@ -173,7 +165,6 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/6.11.0/mingw_64/include/QtCore/qtenvironmentvariables.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qtextstream.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qtformat_impl.h
- D:/Qt/6.11.0/mingw_64/include/QtCore/qtimer.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qtimezone.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qtmetamacros.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qtnoop.h
@@ -191,7 +182,6 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/6.11.0/mingw_64/include/QtCore/quuid.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qvariant.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qvariantlist.h
- D:/Qt/6.11.0/mingw_64/include/QtCore/qvariantmap.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qvarlengtharray.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qversionnumber.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qversiontagging.h
@@ -1241,83 +1231,23 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/Tools/mingw1310_64/x86_64-w64-mingw32/include/wchar.h
  D:/Qt/Tools/mingw1310_64/x86_64-w64-mingw32/include/wctype.h
  E:/DevTools/cmake-4.2.1/bin/cmake.exe
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeCXXCompiler.cmake.in
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeCXXCompilerABI.cpp
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeCXXInformation.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeCheckCompilerFlagCommonPatterns.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeCommonLanguageInclude.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeCompilerIdDetection.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeDetermineCXXCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeDetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeDetermineCompilerABI.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeDetermineCompilerId.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeDetermineCompilerSupport.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeDetermineRCCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeFindBinUtils.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeFindDependencyMacro.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeGenericSystem.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeInitializeConfigs.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeLanguageInformation.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeMinGWFindMake.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeParseImplicitIncludeInfo.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeParseImplicitLinkInfo.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeParseLibraryArchitecture.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeRCCompiler.cmake.in
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeRCInformation.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeSystemSpecificInformation.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeSystemSpecificInitialize.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeTestCXXCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeTestCompilerCommon.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CMakeTestRCCompiler.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CheckCXXCompilerFlag.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CheckCXXSourceCompiles.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CheckIncludeFileCXX.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/CheckLibraryExists.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/ADSP-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/ARMCC-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/ARMClang-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/AppleClang-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Borland-DetermineCompiler.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/CMakeCommonCompilerMacros.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Clang-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Clang-DetermineCompilerInternal.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Compaq-CXX-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Cray-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/CrayClang-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Diab-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Embarcadero-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Fujitsu-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/FujitsuClang-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/GHS-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/GNU-CXX-DetermineCompiler.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/GNU-CXX.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/GNU-FindBinUtils.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/GNU.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/HP-CXX-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/IAR-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/IBMCPP-CXX-DetermineVersionInternal.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/IBMClang-CXX-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Intel-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/IntelLLVM-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/LCC-CXX-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/MSVC-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/NVHPC-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/NVIDIA-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/OpenWatcom-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/OrangeC-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/PGI-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/PathScale-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Renesas-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/SCO-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/SunPro-CXX-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/TI-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/TIClang-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Tasking-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/VisualAge-CXX-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/Watcom-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/XL-CXX-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/XLClang-CXX-DetermineCompiler.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Compiler/zOS-CXX-DetermineCompiler.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/FindPackageHandleStandardArgs.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/FindPackageMessage.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/FindThreads.cmake
@@ -1325,17 +1255,13 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/GNUInstallDirs.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Internal/CMakeCXXLinkerInformation.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Internal/CMakeCommonLinkerInformation.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Internal/CMakeDetermineLinkerId.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Internal/CMakeInspectCXXLinker.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Internal/CheckCompilerFlag.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Internal/CheckFlagCommonConfig.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Internal/CheckSourceCompiles.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Internal/FeatureTesting.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Platform/Linker/GNU.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Platform/Linker/Windows-CXX.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Platform/Linker/Windows-GNU-CXX.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Platform/Linker/Windows-GNU.cmake
- E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Platform/Windows-Determine-CXX.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Platform/Windows-GNU-CXX-ABI.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Platform/Windows-GNU-CXX.cmake
  E:/DevTools/cmake-4.2.1/share/cmake-4.2/Modules/Platform/Windows-GNU.cmake
@@ -1346,12 +1272,8 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  E:/Workspace_QT/MySerial_Gemini/CMakeLists.txt
  E:/Workspace_QT/MySerial_Gemini/ChecksumHelper.h
  E:/Workspace_QT/MySerial_Gemini/CommandStore.h
- E:/Workspace_QT/MySerial_Gemini/DataEncoder.h
- E:/Workspace_QT/MySerial_Gemini/QuickInputStore.h
- E:/Workspace_QT/MySerial_Gemini/RecordStore.h
  E:/Workspace_QT/MySerial_Gemini/SerialManager.cpp
  E:/Workspace_QT/MySerial_Gemini/SerialManager.h
- E:/Workspace_QT/MySerial_Gemini/SettingsStore.h
  E:/Workspace_QT/MySerial_Gemini/build/.qt/qml_imports/MySerial_Gemini_conf.cmake
  E:/Workspace_QT/MySerial_Gemini/build/CMakeFiles/4.2.1/CMakeCXXCompiler.cmake
  E:/Workspace_QT/MySerial_Gemini/build/CMakeFiles/4.2.1/CMakeRCCompiler.cmake

@@ -1,3 +1,4 @@
 E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/include/../EWIEGA46WW/moc_ChecksumHelper.cpp.json
 E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/include/../EWIEGA46WW/moc_CommandStore.cpp.json
 E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/include/../EWIEGA46WW/moc_SerialManager.cpp.json
+E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/include/../EWIEGA46WW/moc_SettingsStore.cpp.json

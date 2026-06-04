@@ -12,6 +12,7 @@ MySerial_Gemini_autogen/timestamp: \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/QObject \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/QRect \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/QRectF \
+	D:/Qt/6.11.0/mingw_64/include/QtCore/QSettings \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/QSize \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/QSizeF \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/QStandardPaths \
@@ -129,6 +130,7 @@ MySerial_Gemini_autogen/timestamp: \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/qscopedpointer.h \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/qscopeguard.h \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/qset.h \
+	D:/Qt/6.11.0/mingw_64/include/QtCore/qsettings.h \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/qshareddata.h \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/qshareddata_impl.h \
 	D:/Qt/6.11.0/mingw_64/include/QtCore/qsharedpointer.h \
@@ -1270,6 +1272,7 @@ MySerial_Gemini_autogen/timestamp: \
 	E:/Workspace_QT/MySerial_Gemini/CommandStore.h \
 	E:/Workspace_QT/MySerial_Gemini/SerialManager.cpp \
 	E:/Workspace_QT/MySerial_Gemini/SerialManager.h \
+	E:/Workspace_QT/MySerial_Gemini/SettingsStore.h \
 	E:/Workspace_QT/MySerial_Gemini/build/.qt/qml_imports/MySerial_Gemini_conf.cmake \
 	E:/Workspace_QT/MySerial_Gemini/build/CMakeFiles/4.2.1/CMakeCXXCompiler.cmake \
 	E:/Workspace_QT/MySerial_Gemini/build/CMakeFiles/4.2.1/CMakeRCCompiler.cmake \

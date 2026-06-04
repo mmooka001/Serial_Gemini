@@ -80,6 +80,11 @@ void SerialManager::sendData(const QString &data, bool isHex)
         bytes = data.toUtf8();
     }
 
+    // Append line ending based on mode
+    if (m_lineEndingMode == 1) bytes.append("\r\n");      // CRLF
+    else if (m_lineEndingMode == 2) bytes.append("\n");   // LF
+    else if (m_lineEndingMode == 3) bytes.append("\r");   // CR
+
     m_serialPort->write(bytes);
     m_serialPort->flush();
 
@@ -108,6 +113,11 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
         QByteArray checksum = ChecksumHelper::calculate(bytes, (ChecksumHelper::ChecksumType)checksumType);
         bytes.append(checksum);
     }
+
+    // Append line ending based on mode
+    if (m_lineEndingMode == 1) bytes.append("\r\n");      // CRLF
+    else if (m_lineEndingMode == 2) bytes.append("\n");   // LF
+    else if (m_lineEndingMode == 3) bytes.append("\r");   // CR
 
     m_serialPort->write(bytes);
     m_serialPort->flush();

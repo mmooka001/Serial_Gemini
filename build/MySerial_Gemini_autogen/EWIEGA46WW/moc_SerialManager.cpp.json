@@ -6,8 +6,8 @@
             "methods": [
                 {
                     "access": "public",
-                    "index": 7,
-                    "lineNumber": 29,
+                    "index": 8,
+                    "lineNumber": 37,
                     "name": "availablePorts",
                     "returnType": "QVariantList"
                 },
@@ -23,15 +23,15 @@
                             "type": "int"
                         }
                     ],
-                    "index": 8,
-                    "lineNumber": 30,
+                    "index": 9,
+                    "lineNumber": 38,
                     "name": "openPort",
                     "returnType": "bool"
                 },
                 {
                     "access": "public",
-                    "index": 9,
-                    "lineNumber": 31,
+                    "index": 10,
+                    "lineNumber": 39,
                     "name": "closePort",
                     "returnType": "void"
                 },
@@ -47,8 +47,8 @@
                             "type": "bool"
                         }
                     ],
-                    "index": 10,
-                    "lineNumber": 32,
+                    "index": 11,
+                    "lineNumber": 40,
                     "name": "sendData",
                     "returnType": "void"
                 },
@@ -68,8 +68,8 @@
                             "type": "int"
                         }
                     ],
-                    "index": 11,
-                    "lineNumber": 33,
+                    "index": 12,
+                    "lineNumber": 41,
                     "name": "sendDataWithChecksum",
                     "returnType": "void"
                 },
@@ -85,8 +85,8 @@
                             "type": "bool"
                         }
                     ],
-                    "index": 12,
-                    "lineNumber": 34,
+                    "index": 13,
+                    "lineNumber": 42,
                     "name": "setStayOnTop",
                     "returnType": "void"
                 }
@@ -144,6 +144,24 @@
                     "user": false,
                     "virtual": false,
                     "write": "setBaudRate"
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 3,
+                    "lineNumber": 17,
+                    "name": "lineEndingMode",
+                    "notify": "lineEndingModeChanged",
+                    "override": false,
+                    "read": "lineEndingMode",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "int",
+                    "user": false,
+                    "virtual": false,
+                    "write": "setLineEndingMode"
                 }
             ],
             "qualifiedClassName": "SerialManager",
@@ -151,22 +169,29 @@
                 {
                     "access": "public",
                     "index": 0,
-                    "lineNumber": 37,
+                    "lineNumber": 45,
                     "name": "isOpenChanged",
                     "returnType": "void"
                 },
                 {
                     "access": "public",
                     "index": 1,
-                    "lineNumber": 38,
+                    "lineNumber": 46,
                     "name": "currentPortChanged",
                     "returnType": "void"
                 },
                 {
                     "access": "public",
                     "index": 2,
-                    "lineNumber": 39,
+                    "lineNumber": 47,
                     "name": "baudRateChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 3,
+                    "lineNumber": 48,
+                    "name": "lineEndingModeChanged",
                     "returnType": "void"
                 },
                 {
@@ -185,8 +210,8 @@
                             "type": "bool"
                         }
                     ],
-                    "index": 3,
-                    "lineNumber": 40,
+                    "index": 4,
+                    "lineNumber": 49,
                     "name": "dataReceived",
                     "returnType": "void"
                 },
@@ -202,9 +227,9 @@
                             "type": "QString"
                         }
                     ],
-                    "index": 4,
+                    "index": 5,
                     "isCloned": true,
-                    "lineNumber": 40,
+                    "lineNumber": 49,
                     "name": "dataReceived",
                     "returnType": "void"
                 },
@@ -216,8 +241,8 @@
                             "type": "QString"
                         }
                     ],
-                    "index": 5,
-                    "lineNumber": 41,
+                    "index": 6,
+                    "lineNumber": 50,
                     "name": "errorOccurred",
                     "returnType": "void"
                 }
@@ -225,8 +250,8 @@
             "slots": [
                 {
                     "access": "private",
-                    "index": 6,
-                    "lineNumber": 44,
+                    "index": 7,
+                    "lineNumber": 53,
                     "name": "readData",
                     "returnType": "void"
                 }

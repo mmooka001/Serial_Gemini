@@ -768,4 +768,7 @@ CMakeFiles/MySerial_Gemini.dir/main.cpp.obj: \
  D:/Qt/6.11.0/mingw_64/include/QtCore/qdir.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/qdirlisting.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/qfileinfo.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/QFileInfo
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QFileInfo \
+ E:\Workspace_QT\MySerial_Gemini\SettingsStore.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QSettings \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qsettings.h
