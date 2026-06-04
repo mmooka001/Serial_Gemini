@@ -5,6 +5,8 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QVariantList>
+#include <QClipboard>
+#include <QGuiApplication>
 
 #include <QQuickWindow>
 
@@ -40,6 +42,7 @@ public:
     Q_INVOKABLE void sendData(const QString &data, bool isHex);
     Q_INVOKABLE void sendDataWithChecksum(const QString &data, bool isHex, int checksumType);
     Q_INVOKABLE void setStayOnTop(QQuickWindow *window, bool onTop);
+    Q_INVOKABLE void copyToClipboard(const QString &text);
 
 signals:
     void isOpenChanged();

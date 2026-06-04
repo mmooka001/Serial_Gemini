@@ -570,6 +570,7 @@ Window {
                                     delegate: Column {
                                         width: terminalView.width
                                          spacing: 6
+                                         property bool delegateHover: false
                                         RowLayout {
                                             width: parent.width
                                              layoutDirection: model.isSent ? Qt.RightToLeft : Qt.LeftToRight
@@ -578,7 +579,7 @@ Window {
                                              font.pixelSize: 9
                                              color: "#555"
                                              visible: globalTimestamp }
-                                            Rectangle { 
+                                            Rectangle {
                                                 width: 38
                                                  height: 16
                                                  radius: 4
@@ -592,9 +593,34 @@ Window {
                                                 MouseArea { anchors.fill: parent
                                                  onClicked: { model.isHexMode = !model.isHexMode } }
                                             }
+                                            // Copy button (appears on hover)
+                                            Rectangle {
+                                                width: 16; height: 16; radius: 3
+                                                color: copyMsgMouse.containsMouse ? (isDark ? "#555" : "#DDD") : "transparent"
+                                                visible: delegateHover
+                                                Text { text: "📋"; font.pixelSize: 9; anchors.centerIn: parent }
+                                                MouseArea {
+                                                    id: copyMsgMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    onClicked: {
+                                                        var txt = model.isHexMode ? model.contentHex : model.contentAscii
+                                                        serialManager.copyToClipboard(txt)
+                                                    }
+                                                }
+                                            }
                                             Item { Layout.fillWidth: true }
                                         }
+                                        // Mouse area for hover detection on the whole message
+                                        MouseArea {
+                                            width: parent.width
+                                            height: msgRow.height
+                                            hoverEnabled: true
+                                            acceptedButtons: Qt.NoButton
+                                            onContainsMouseChanged: delegateHover = containsMouse
+                                        }
                                         Row {
+                                            id: msgRow
                                             width: parent.width
                                              layoutDirection: model.isSent ? Qt.RightToLeft : Qt.LeftToRight
                                             Rectangle {

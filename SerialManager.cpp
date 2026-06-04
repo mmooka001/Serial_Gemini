@@ -152,3 +152,11 @@ void SerialManager::setStayOnTop(QQuickWindow *window, bool onTop)
     }
 #endif
 }
+
+void SerialManager::copyToClipboard(const QString &text)
+{
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    if (clipboard) {
+        clipboard->setText(text);
+    }
+}
