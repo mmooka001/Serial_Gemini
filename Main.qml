@@ -44,10 +44,74 @@ Window {
     property bool autoScroll: true
     property string checksumValue: ChecksumHelper.hexChecksumPreview(sendInput.text, globalTxHex, checksumCombo.currentIndex)
 
+    // Send history
+    property var sendHistory: []
+    property int historyIndex: -1  // -1 = current input, 0+ = history position
+
+    // Auto-send
+    property bool autoSending: false
+    property int autoSendInterval: 1000
+
+    Timer {
+        id: autoSendTimer
+        interval: autoSendInterval
+        repeat: true
+        onTriggered: {
+            if (sendInput.text.length > 0) {
+                if (checksumCombo.currentIndex > 0) {
+                    serialManager.sendDataWithChecksum(sendInput.text, globalTxHex, checksumCombo.currentIndex)
+                } else {
+                    serialManager.sendData(sendInput.text, globalTxHex)
+                }
+            }
+        }
+    }
+
     property string deleteType: ""
     property int targetGroupIdx: -1
     property int targetCmdIdx: -1
     property var checkedMap: ({})
+
+    function sendCommand(payload, isHex) {
+        if (!serialManager.isOpen) return
+        serialManager.sendData(payload, isHex)
+    }
+
+    function doSend() {
+        if (sendInput.text.length === 0) return
+        // Record to history
+        var h = sendHistory.slice()
+        h.unshift(sendInput.text)
+        if (h.length > 50) h.pop()
+        sendHistory = h
+        historyIndex = -1
+
+        if (checksumCombo.currentIndex > 0) {
+            serialManager.sendDataWithChecksum(sendInput.text, globalTxHex, checksumCombo.currentIndex)
+        } else {
+            serialManager.sendData(sendInput.text, globalTxHex)
+        }
+    }
+
+    function navigateHistory(direction) {
+        if (sendHistory.length === 0) return
+        if (direction === "up") {
+            if (historyIndex < sendHistory.length - 1) {
+                historyIndex++
+            }
+        } else {
+            if (historyIndex > 0) {
+                historyIndex--
+            } else if (historyIndex === 0) {
+                historyIndex = -1
+            }
+        }
+        if (historyIndex === -1) {
+            sendInput.text = ""
+        } else {
+            sendInput.text = sendHistory[historyIndex]
+        }
+    }
 
     Rectangle {
         id: rootRect
@@ -715,7 +779,31 @@ Window {
                                      placeholderText: "键入内容并发送..."
                                      placeholderTextColor: grayPlaceholder
                                      background: null
-                                     wrapMode: TextArea.Wrap }
+                                     wrapMode: TextArea.Wrap
+                                     Keys.onUpPressed: function(event) {
+                                         if (sendInput.cursorPosition === 0 || sendInput.text === "") {
+                                             navigateHistory("up")
+                                             event.accepted = true
+                                         } else {
+                                             event.accepted = false
+                                         }
+                                     }
+                                     Keys.onDownPressed: function(event) {
+                                         if (historyIndex >= 0) {
+                                             navigateHistory("down")
+                                             event.accepted = true
+                                         } else {
+                                             event.accepted = false
+                                         }
+                                     }
+                                     Keys.onReturnPressed: function(event) {
+                                         if (event.modifiers & Qt.ShiftModifier) {
+                                             doSend()
+                                             event.accepted = true
+                                         } else {
+                                             event.accepted = false
+                                         }
+                                     } }
                                     Rectangle { Layout.preferredWidth: window.width > 750 ? 80 : 50
                                      Layout.fillHeight: true
                                      color: isDark ? "#232428" : "#E8EAEF"
@@ -735,7 +823,7 @@ Window {
                                      Layout.preferredWidth: window.width > 750 ? 80 : 55
                                      Layout.fillHeight: true
                                      text: window.width > 750 ? "发送" : "➤"
-                                     onClicked: { if (checksumCombo.currentIndex > 0) { serialManager.sendDataWithChecksum(sendInput.text, globalTxHex, checksumCombo.currentIndex) } else { serialManager.sendData(sendInput.text, globalTxHex) } }
+                                     onClicked: doSend()
                                      background: Rectangle { color: clHighlight
                                      radius: 10 }
                                      contentItem: Text { text: parent.text
@@ -744,6 +832,35 @@ Window {
                                      font.pixelSize: window.width > 750 ? 13 : 18
                                      horizontalAlignment: Text.AlignHCenter
                                      verticalAlignment: Text.AlignVCenter } }
+
+                                    // Auto-send button
+                                    Button {
+                                        id: autoSendBtn
+                                        Layout.preferredWidth: window.width > 750 ? 60 : 40
+                                        Layout.fillHeight: true
+                                        text: autoSending ? "⏹" : (window.width > 750 ? "自动" : "⏱")
+                                        onClicked: {
+                                            if (autoSending) {
+                                                autoSendTimer.stop()
+                                                autoSending = false
+                                            } else {
+                                                autoSendTimer.start()
+                                                autoSending = true
+                                            }
+                                        }
+                                        background: Rectangle {
+                                            color: autoSending ? "#e53935" : (autoSendBtn.hovered ? (isDark ? "#3e4043" : "#E8EAED") : clInput)
+                                            radius: 10
+                                        }
+                                        contentItem: Text {
+                                            text: parent.text
+                                            color: autoSending ? "white" : clText
+                                            font.bold: true
+                                            font.pixelSize: window.width > 750 ? 12 : 16
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                    }
                                 }
                             }
                         }
