@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import MySerial_Gemini
 import com.gemini.serial
+import QtQuick.Dialogs
 
 Window {
     id: window
@@ -44,6 +45,7 @@ Window {
     property string deleteType: ""
     property int targetGroupIdx: -1
     property int targetCmdIdx: -1
+    property var checkedMap: ({})
 
     Rectangle {
         id: rootRect
@@ -779,12 +781,338 @@ Window {
                             currentIndex: activePanel >= 0 ? activePanel : 0
 
                             // Tab 0: 指令 (Command Presets)
-                            Item {
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "指令预设库 - 重构中..."
-                                    color: clText
-                                    font.pixelSize: 14
+                            ColumnLayout {
+                                spacing: 8
+
+                                // Header
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text {
+                                        text: "指令预设库"
+                                        color: clHighlight
+                                        font.bold: true
+                                        font.pixelSize: 15
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                    Button {
+                                        text: "＋分组"
+                                        flat: true
+                                        font.pixelSize: 12
+                                        contentItem: Text {
+                                            text: parent.text
+                                            color: clHighlight
+                                            font: parent.font
+                                        }
+                                        background: Rectangle { color: "transparent" }
+                                        onClicked: commandStore.addGroup("新分组")
+                                    }
+                                }
+
+                                // Search Box
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 36
+                                    radius: 8
+                                    color: clInput
+                                    border.color: clBorder
+                                    border.width: 1
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 10
+                                        anchors.rightMargin: 10
+                                        spacing: 0
+
+                                        Text {
+                                            text: "🔍"
+                                            font.pixelSize: 13
+                                            color: grayPlaceholder
+                                        }
+
+                                        TextField {
+                                            id: cmdSearchField
+                                            Layout.fillWidth: true
+                                            placeholderText: "搜索指令..."
+                                            placeholderTextColor: grayPlaceholder
+                                            background: Rectangle { color: "transparent" }
+                                            color: whiteText
+                                            font.pixelSize: 12
+                                            leftPadding: 8
+                                            selectByMouse: true
+                                        }
+                                    }
+                                }
+
+                                // Command List
+                                ListView {
+                                    id: cmdListView
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    spacing: 6
+                                    model: commandStore.groups
+
+                                    delegate: ColumnLayout {
+                                        width: cmdListView.width
+                                        spacing: 4
+
+                                        property var group: modelData
+                                        property bool groupExpanded: true
+
+                                        // Group Header
+                                        Rectangle {
+                                            Layout.fillWidth: true
+                                            height: 38
+                                            radius: 10
+                                            color: groupHeaderMouse.containsMouse
+                                                   ? (isDark ? "#45484b" : "#E8EAED")
+                                                   : (isDark ? "#3a3d40" : "#FFFFFF")
+                                            border.color: isDark ? "#3a3d40" : "#DEE2E6"
+                                            border.width: isDark ? 0 : 1
+
+                                            MouseArea {
+                                                id: groupHeaderMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                onClicked: groupExpanded = !groupExpanded
+                                            }
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 10
+                                                anchors.rightMargin: 6
+                                                spacing: 6
+
+                                                Text {
+                                                    text: groupExpanded ? "📂" : "📁"
+                                                    font.pixelSize: 14
+                                                }
+
+                                                TextField {
+                                                    id: groupNameField
+                                                    Layout.fillWidth: true
+                                                    text: group.name
+                                                    color: whiteText
+                                                    font.bold: true
+                                                    font.pixelSize: 12
+                                                    background: Rectangle { color: "transparent" }
+                                                    selectByMouse: true
+                                                    readOnly: true
+                                                    onEditingFinished: {
+                                                        commandStore.updateGroupName(index, text)
+                                                        readOnly = true
+                                                    }
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        enabled: groupNameField.readOnly
+                                                        onDoubleClicked: {
+                                                            groupNameField.readOnly = false
+                                                            groupNameField.forceActiveFocus()
+                                                            groupNameField.selectAll()
+                                                        }
+                                                    }
+                                                }
+
+                                                Button {
+                                                    text: "＋"
+                                                    flat: true
+                                                    font.pixelSize: 14
+                                                    contentItem: Text {
+                                                        text: parent.text
+                                                        color: clHighlight
+                                                        font: parent.font
+                                                    }
+                                                    background: Rectangle { color: "transparent" }
+                                                    onClicked: commandStore.addCommand(index, "新指令", "", false)
+                                                }
+
+                                                Button {
+                                                    text: "✕"
+                                                    flat: true
+                                                    font.pixelSize: 13
+                                                    contentItem: Text {
+                                                        text: parent.text
+                                                        color: clAccent
+                                                        font: parent.font
+                                                    }
+                                                    background: Rectangle { color: "transparent" }
+                                                    onClicked: {
+                                                        deleteType = "group"
+                                                        targetGroupIdx = index
+                                                        targetCmdIdx = -1
+                                                        deleteConfirmOverlay.visible = true
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Commands under this group
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            visible: groupExpanded
+                                            spacing: 4
+
+                                            Repeater {
+                                                model: group.commands
+
+                                                delegate: Rectangle {
+                                                    Layout.fillWidth: true
+                                                    height: 65
+                                                    radius: 12
+                                                    color: cmdMouse.containsMouse
+                                                           ? (isDark ? "#333537" : "#F5F6F8")
+                                                           : (isDark ? "#2b2d30" : "#FFFFFF")
+                                                    border.color: isDark ? "#333537" : "#DEE2E6"
+                                                    border.width: isDark ? 0 : 1
+
+                                                    property int cmdIdx: index
+                                                    property string mapKey: index + ":" + cmdIdx
+
+                                                    MouseArea {
+                                                        id: cmdMouse
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        acceptedButtons: Qt.NoButton
+                                                    }
+
+                                                    RowLayout {
+                                                        anchors.fill: parent
+                                                        anchors.leftMargin: 8
+                                                        anchors.rightMargin: 6
+                                                        anchors.topMargin: 4
+                                                        spacing: 4
+
+                                                        CheckBox {
+                                                            id: cmdCheck
+                                                            checked: checkedMap[mapKey] === true
+                                                            onToggled: {
+                                                                var m = Object.assign({}, checkedMap)
+                                                                if (checked) m[mapKey] = true
+                                                                else delete m[mapKey]
+                                                                checkedMap = m
+                                                            }
+                                                        }
+
+                                                        TextField {
+                                                            Layout.fillWidth: true
+                                                            Layout.preferredWidth: 80
+                                                            text: modelData.name
+                                                            color: whiteText
+                                                            font.bold: true
+                                                            font.pixelSize: 11
+                                                            background: Rectangle { color: "transparent" }
+                                                            selectByMouse: true
+                                                            onEditingFinished: commandStore.updateCommand(index, cmdIdx, text, modelData.payload)
+                                                        }
+
+                                                        Button {
+                                                            text: "🚀"
+                                                            flat: true
+                                                            font.pixelSize: 13
+                                                            contentItem: Text {
+                                                                text: parent.text
+                                                                font: parent.font
+                                                            }
+                                                            background: Rectangle { color: "transparent" }
+                                                            onClicked: window.sendCommand(modelData.payload, modelData.isHex || false)
+                                                        }
+
+                                                        Button {
+                                                            text: "✕"
+                                                            flat: true
+                                                            font.pixelSize: 12
+                                                            contentItem: Text {
+                                                                text: parent.text
+                                                                color: clAccent
+                                                                font: parent.font
+                                                            }
+                                                            background: Rectangle { color: "transparent" }
+                                                            onClicked: {
+                                                                deleteType = "command"
+                                                                targetGroupIdx = index
+                                                                targetCmdIdx = cmdIdx
+                                                                deleteConfirmOverlay.visible = true
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // Payload field (below)
+                                                    TextField {
+                                                        anchors.left: parent.left
+                                                        anchors.right: parent.right
+                                                        anchors.bottom: parent.bottom
+                                                        anchors.leftMargin: 44
+                                                        anchors.rightMargin: 8
+                                                        anchors.bottomMargin: 4
+                                                        height: 22
+                                                        text: modelData.payload
+                                                        color: clText
+                                                        font.family: "Consolas"
+                                                        font.pixelSize: 10
+                                                        background: Rectangle {
+                                                            radius: 4
+                                                            color: clInput
+                                                        }
+                                                        selectByMouse: true
+                                                        placeholderText: "payload..."
+                                                        placeholderTextColor: grayPlaceholder
+                                                        onEditingFinished: commandStore.updateCommand(index, cmdIdx, modelData.name, text)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Empty state
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: commandStore.groups.length === 0
+                                        text: "暂无指令分组\n点击「＋分组」添加"
+                                        color: grayPlaceholder
+                                        font.pixelSize: 12
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+                                }
+
+                                // Bottom Bar
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 6
+
+                                    Button {
+                                        Layout.fillWidth: true
+                                        text: "▶ 循环发送"
+                                        font.pixelSize: 11
+                                        onClicked: {
+                                            var cmds = []
+                                            for (var key in checkedMap) {
+                                                var parts = key.split(":")
+                                                var gIdx = parseInt(parts[0])
+                                                var cIdx = parseInt(parts[1])
+                                                if (commandStore.groups[gIdx] && commandStore.groups[gIdx].commands[cIdx]) {
+                                                    var cmd = commandStore.groups[gIdx].commands[cIdx]
+                                                    cmds.push({ payload: cmd.payload, isHex: cmd.isHex || false })
+                                                }
+                                            }
+                                            if (cmds.length > 0) {
+                                                for (var i = 0; i < cmds.length; i++) {
+                                                    window.sendCommand(cmds[i].payload, cmds[i].isHex)
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Button {
+                                        text: "导入"
+                                        font.pixelSize: 11
+                                        onClicked: importFileDialog.open()
+                                    }
+
+                                    Button {
+                                        text: "导出"
+                                        font.pixelSize: 11
+                                        onClicked: exportFileDialog.open()
+                                    }
                                 }
                             }
 
@@ -1061,6 +1389,22 @@ Window {
                     }
                 }
             }
+        }
+
+        // FileDialogs for import/export
+        FileDialog {
+            id: importFileDialog
+            title: "导入指令预设"
+            nameFilters: ["JSON files (*.json)", "All files (*)"]
+            fileMode: FileDialog.OpenFile
+            onAccepted: commandStore.importFromFile(selectedFile.toString().replace("file:///", ""))
+        }
+        FileDialog {
+            id: exportFileDialog
+            title: "导出指令预设"
+            nameFilters: ["JSON files (*.json)", "All files (*)"]
+            fileMode: FileDialog.SaveFile
+            onAccepted: commandStore.exportToFile(selectedFile.toString().replace("file:///", ""))
         }
 
         Rectangle {
