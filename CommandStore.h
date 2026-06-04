@@ -75,6 +75,21 @@ public:
         }
     }
 
+    Q_INVOKABLE void setCommandHex(int groupIndex, int cmdIndex, bool isHex) {
+        if (groupIndex < 0 || groupIndex >= m_groups.size()) return;
+        QVariantMap group = m_groups[groupIndex].toMap();
+        QVariantList commands = group["commands"].toList();
+        if (cmdIndex >= 0 && cmdIndex < commands.size()) {
+            QVariantMap cmd = commands[cmdIndex].toMap();
+            cmd["isHex"] = isHex;
+            commands[cmdIndex] = cmd;
+            group["commands"] = commands;
+            m_groups[groupIndex] = group;
+            emit groupsChanged();
+            save();
+        }
+    }
+
     Q_INVOKABLE void deleteGroup(int index) {
         if (index >= 0 && index < m_groups.size()) {
             m_groups.removeAt(index);

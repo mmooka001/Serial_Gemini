@@ -1321,20 +1321,20 @@ Window {
                                         ColumnLayout {
                                             Layout.fillWidth: true
                                             visible: groupExpanded
-                                            spacing: 4
+                                            spacing: 2
 
                                             Repeater {
                                                 model: group.commands
 
                                                 delegate: Rectangle {
                                                     Layout.fillWidth: true
-                                                    height: 65
-                                                    radius: 10
-                                                    color: isDark ? "#2b2d30" : "#FFFFFF"
-                                                    border.color: cmdMouse.containsMouse
-                                                                  ? clHighlight
-                                                                  : (isDark ? "#333537" : "#DEE2E6")
-                                                    border.width: cmdMouse.containsMouse ? 1 : (isDark ? 0 : 1)
+                                                    height: 38
+                                                    radius: 8
+                                                    color: cmdMouse.containsMouse
+                                                           ? (isDark ? "#333537" : "#F5F6F8")
+                                                           : "transparent"
+                                                    border.color: cmdMouse.containsMouse ? clHighlight : "transparent"
+                                                    border.width: cmdMouse.containsMouse ? 1 : 0
 
                                                     property int cmdIdx: index
                                                     property string mapKey: index + ":" + cmdIdx
@@ -1347,20 +1347,16 @@ Window {
                                                         acceptedButtons: Qt.NoButton
                                                     }
 
-                                                    // Top row: checkbox + name + send + delete
                                                     RowLayout {
-                                                        anchors.left: parent.left
-                                                        anchors.right: parent.right
-                                                        anchors.top: parent.top
+                                                        anchors.fill: parent
                                                         anchors.leftMargin: 6
-                                                        anchors.rightMargin: 6
-                                                        anchors.topMargin: 2
+                                                        anchors.rightMargin: 4
                                                         spacing: 4
 
                                                         CheckBox {
-                                                            id: cmdCheck
                                                             checked: checkedMap[mapKey] === true
-                                                            Layout.preferredWidth: 28
+                                                            Layout.preferredWidth: 24
+                                                            Layout.preferredHeight: 24
                                                             onToggled: {
                                                                 var m = Object.assign({}, checkedMap)
                                                                 if (checked) m[mapKey] = true
@@ -1369,125 +1365,93 @@ Window {
                                                             }
                                                         }
 
+                                                        // Name
                                                         TextField {
-                                                            id: cmdNameField
                                                             Layout.fillWidth: true
-                                                            Layout.preferredWidth: 80
+                                                            Layout.preferredWidth: 60
                                                             text: modelData.name
                                                             color: whiteText
-                                                            font.bold: true
                                                             font.pixelSize: 11
+                                                            font.bold: true
                                                             padding: 2
                                                             background: Rectangle {
                                                                 radius: 3
-                                                                color: cmdNameField.activeFocus ? clInput : "transparent"
-                                                                border.color: cmdNameField.activeFocus ? clHighlight : "transparent"
-                                                                border.width: cmdNameField.activeFocus ? 1 : 0
+                                                                color: parent.activeFocus ? clInput : "transparent"
+                                                                border.color: parent.activeFocus ? clHighlight : "transparent"
+                                                                border.width: parent.activeFocus ? 1 : 0
                                                             }
                                                             selectByMouse: true
                                                             onEditingFinished: commandStore.updateCommand(index, cmdIdx, text, modelData.payload)
                                                         }
 
+                                                        // Payload preview
+                                                        Text {
+                                                            Layout.preferredWidth: Math.min(implicitWidth, 80)
+                                                            text: modelData.payload || "..."
+                                                            color: clText
+                                                            font.family: "Consolas"
+                                                            font.pixelSize: 10
+                                                            elide: Text.ElideRight
+                                                        }
+
+                                                        // HEX/TXT badge
+                                                        Rectangle {
+                                                            Layout.preferredWidth: 28
+                                                            Layout.preferredHeight: 16
+                                                            radius: 3
+                                                            color: isHexMode ? (isDark ? "#2a3a5a" : "#E0ECFF") : "transparent"
+                                                            border.color: isHexMode ? clHighlight : clBorder
+                                                            border.width: 1
+                                                            Text {
+                                                                anchors.centerIn: parent
+                                                                text: isHexMode ? "HEX" : "TXT"
+                                                                font.pixelSize: 7
+                                                                font.bold: true
+                                                                color: isHexMode ? clHighlight : clText
+                                                            }
+                                                            MouseArea {
+                                                                anchors.fill: parent
+                                                                cursorShape: Qt.PointingHandCursor
+                                                                onClicked: commandStore.setCommandHex(index, cmdIdx, !isHexMode)
+                                                            }
+                                                        }
+
+                                                        // Send
                                                         Button {
                                                             text: "🚀"
                                                             flat: true
-                                                            font.pixelSize: 13
-                                                            Layout.preferredWidth: 28
-                                                            Layout.preferredHeight: 26
-                                                            contentItem: Text {
-                                                                text: parent.text
-                                                                font: parent.font
-                                                                horizontalAlignment: Text.AlignHCenter
-                                                                verticalAlignment: Text.AlignVCenter
-                                                            }
+                                                            font.pixelSize: 12
+                                                            Layout.preferredWidth: 24
+                                                            Layout.preferredHeight: 24
+                                                            padding: 0
                                                             background: Rectangle {
-                                                                radius: 5
+                                                                radius: 4
                                                                 color: parent.hovered ? (isDark ? "#45484b" : "#E8F0FE") : "transparent"
                                                             }
                                                             onClicked: window.sendCommand(modelData.payload, modelData.isHex || false)
                                                         }
 
+                                                        // Delete
                                                         Button {
                                                             text: "✕"
                                                             flat: true
-                                                            font.pixelSize: 12
-                                                            Layout.preferredWidth: 24
-                                                            Layout.preferredHeight: 26
+                                                            font.pixelSize: 10
+                                                            Layout.preferredWidth: 20
+                                                            Layout.preferredHeight: 24
+                                                            padding: 0
                                                             contentItem: Text {
                                                                 text: parent.text
-                                                                color: parent.hovered ? "#FF6B6B" : clAccent
+                                                                color: parent.hovered ? "#FF6B6B" : "#888"
                                                                 font: parent.font
                                                                 horizontalAlignment: Text.AlignHCenter
                                                                 verticalAlignment: Text.AlignVCenter
                                                             }
-                                                            background: Rectangle {
-                                                                radius: 5
-                                                                color: parent.hovered ? (isDark ? "#3a2020" : "#FFE8E8") : "transparent"
-                                                            }
+                                                            background: Rectangle { radius: 4; color: "transparent" }
                                                             onClicked: {
                                                                 deleteType = "command"
                                                                 targetGroupIdx = index
                                                                 targetCmdIdx = cmdIdx
                                                                 deleteConfirmOverlay.visible = true
-                                                            }
-                                                        }
-                                                    }
-
-                                                    // Bottom row: payload + hex/txt badge
-                                                    RowLayout {
-                                                        anchors.left: parent.left
-                                                        anchors.right: parent.right
-                                                        anchors.bottom: parent.bottom
-                                                        anchors.leftMargin: 36
-                                                        anchors.rightMargin: 8
-                                                        anchors.bottomMargin: 4
-                                                        spacing: 4
-
-                                                        TextField {
-                                                            Layout.fillWidth: true
-                                                            height: 22
-                                                            text: modelData.payload
-                                                            color: clText
-                                                            font.family: "Consolas"
-                                                            font.pixelSize: 10
-                                                            padding: 4
-                                                            background: Rectangle {
-                                                                radius: 4
-                                                                color: clInput
-                                                            }
-                                                            selectByMouse: true
-                                                            placeholderText: "payload..."
-                                                            placeholderTextColor: grayPlaceholder
-                                                            onEditingFinished: commandStore.updateCommand(index, cmdIdx, modelData.name, text)
-                                                        }
-
-                                                        // Hex/Txt indicator badge
-                                                        Rectangle {
-                                                            Layout.preferredWidth: 30
-                                                            Layout.preferredHeight: 18
-                                                            radius: 4
-                                                            color: isHexMode ? (isDark ? "#2a3a5a" : "#E0ECFF") : (isDark ? "#2a4a2a" : "#E0FFE0")
-                                                            border.color: isHexMode ? clHighlight : "#4CAF50"
-                                                            border.width: 1
-
-                                                            Text {
-                                                                anchors.centerIn: parent
-                                                                text: isHexMode ? "HEX" : "TXT"
-                                                                font.pixelSize: 8
-                                                                font.bold: true
-                                                                color: isHexMode ? clHighlight : "#4CAF50"
-                                                            }
-
-                                                            MouseArea {
-                                                                anchors.fill: parent
-                                                                cursorShape: Qt.PointingHandCursor
-                                                                onClicked: {
-                                                                    var newHex = !isHexMode
-                                                                    commandStore.updateCommand(index, cmdIdx, modelData.name, modelData.payload)
-                                                                    // Toggle isHex if supported
-                                                                    if (commandStore.setCommandHex)
-                                                                        commandStore.setCommandHex(index, cmdIdx, newHex)
-                                                                }
                                                             }
                                                         }
                                                     }
