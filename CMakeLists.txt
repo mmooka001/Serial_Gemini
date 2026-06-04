@@ -21,6 +21,8 @@ qt_add_executable(MySerial_Gemini
     ChecksumHelper.h
     CommandStore.h
     SettingsStore.h
+    DataEncoder.h
+    RecordStore.h
     app_icon.rc
 )
 

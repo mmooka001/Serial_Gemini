@@ -60,6 +60,11 @@ public:
         emit txCountChanged();
     }
 
+public slots:
+    void onDataReceived(const QString &ascii, const QString &hex, bool isSent) {
+        addRecord(isSent ? "write" : "read", ascii, hex, 0);
+    }
+
     Q_INVOKABLE void exportRecords(const QString &path) {
         QString localPath = QUrl(path).toLocalFile();
         QFile file(localPath);

@@ -15,6 +15,8 @@
 #include "ChecksumHelper.h"
 #include "CommandStore.h"
 #include "SettingsStore.h"
+#include "DataEncoder.h"
+#include "RecordStore.h"
 
 using namespace Qt::StringLiterals;
 
@@ -32,11 +34,19 @@ int main(int argc, char *argv[])
     CommandStore commandStore;
     ChecksumHelper checksumHelper;
     SettingsStore settingsStore;
+    DataEncoder dataEncoder;
+    RecordStore recordStore;
 
     engine.rootContext()->setContextProperty("serialManager", &serialManager);
     engine.rootContext()->setContextProperty("commandStore", &commandStore);
     engine.rootContext()->setContextProperty("ChecksumHelper", &checksumHelper);
     engine.rootContext()->setContextProperty("settingsStore", &settingsStore);
+    engine.rootContext()->setContextProperty("dataEncoder", &dataEncoder);
+    engine.rootContext()->setContextProperty("recordStore", &recordStore);
+
+    // Connect SerialManager data to RecordStore
+    QObject::connect(&serialManager, SIGNAL(dataReceived(QString,QString,bool)),
+                     &recordStore, SLOT(onDataReceived(QString,QString,bool)));
     
     // 注册 Checksum 类型
     qmlRegisterUncreatableType<ChecksumHelper>("com.gemini.serial", 1, 0, "Checksum", "Enum only");
