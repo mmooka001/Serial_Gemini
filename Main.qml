@@ -1790,7 +1790,71 @@ Window {
                     }
                 }
 
+                // RX/TX counters
+                RowLayout {
+                    spacing: 12
+                    visible: serialManager.isOpen
+                    Text {
+                        text: "▼ RX: " + recordStore.rxCount + " B"
+                        color: "#4CAF50"
+                        font.pixelSize: 10
+                        font.family: "Consolas"
+                    }
+                    Text {
+                        text: "▲ TX: " + recordStore.txCount + " B"
+                        color: clHighlight
+                        font.pixelSize: 10
+                        font.family: "Consolas"
+                    }
+                }
+
                 Item { Layout.fillWidth: true }
+
+                // Record count + Export
+                RowLayout {
+                    spacing: 8
+                    Text {
+                        text: "记录: " + recordStore.records.length
+                        color: clText
+                        font.pixelSize: 10
+                        opacity: 0.7
+                    }
+                    Rectangle {
+                        width: 42; height: 20; radius: 4
+                        color: exportMouse.containsMouse ? (isDark ? "#3e4043" : "#E8EAED") : "transparent"
+                        Text {
+                            text: "导出"
+                            anchors.centerIn: parent
+                            color: clHighlight
+                            font.pixelSize: 10
+                        }
+                        MouseArea {
+                            id: exportMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: exportRecordDialog.open()
+                        }
+                    }
+                    Rectangle {
+                        width: 42; height: 20; radius: 4
+                        color: clearRecMouse.containsMouse ? (isDark ? "#3e4043" : "#E8EAED") : "transparent"
+                        Text {
+                            text: "清空"
+                            anchors.centerIn: parent
+                            color: "#888"
+                            font.pixelSize: 10
+                        }
+                        MouseArea {
+                            id: clearRecMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onClicked: {
+                                recordStore.clearRecords()
+                                terminalModel.clear()
+                            }
+                        }
+                    }
+                }
 
                 Text {
                     text: "Support: mmooka001@gmail.com"
@@ -1799,6 +1863,15 @@ Window {
                     opacity: 0.8
                 }
             }
+        }
+
+        // Export record dialog
+        FileDialog {
+            id: exportRecordDialog
+            title: "导出通信记录"
+            nameFilters: ["JSON files (*.json)", "CSV files (*.csv)", "All files (*)"]
+            fileMode: FileDialog.SaveFile
+            onAccepted: recordStore.exportRecords(selectedFile.toString())
         }
 
         MouseArea { width: 6
