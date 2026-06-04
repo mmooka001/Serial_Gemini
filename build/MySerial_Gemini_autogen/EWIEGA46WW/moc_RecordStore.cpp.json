@@ -1,0 +1,163 @@
+{
+    "classes": [
+        {
+            "className": "RecordStore",
+            "lineNumber": 12,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "type",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "content",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "hexContent",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "displayMode",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 3,
+                    "lineNumber": 27,
+                    "name": "addRecord",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "type",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "content",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "hexContent",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 4,
+                    "isCloned": true,
+                    "lineNumber": 27,
+                    "name": "addRecord",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 5,
+                    "lineNumber": 54,
+                    "name": "clearRecords",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "path",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 6,
+                    "lineNumber": 63,
+                    "name": "exportRecords",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "lineNumber": 15,
+                    "name": "records",
+                    "notify": "recordsChanged",
+                    "override": false,
+                    "read": "records",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QVariantList",
+                    "user": false,
+                    "virtual": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "lineNumber": 16,
+                    "name": "rxCount",
+                    "notify": "rxCountChanged",
+                    "override": false,
+                    "read": "rxCount",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "quint64",
+                    "user": false,
+                    "virtual": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 2,
+                    "lineNumber": 17,
+                    "name": "txCount",
+                    "notify": "txCountChanged",
+                    "override": false,
+                    "read": "txCount",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "quint64",
+                    "user": false,
+                    "virtual": false
+                }
+            ],
+            "qualifiedClassName": "RecordStore",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "lineNumber": 82,
+                    "name": "recordsChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "lineNumber": 83,
+                    "name": "rxCountChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "lineNumber": 84,
+                    "name": "txCountChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "RecordStore.h",
+    "outputRevision": 69
+}

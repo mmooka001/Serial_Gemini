@@ -1,0 +1,380 @@
+{
+    "classes": [
+        {
+            "className": "QuickInputStore",
+            "lineNumber": 18,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "payload",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isHex",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "delay",
+                            "type": "int"
+                        },
+                        {
+                            "name": "enabled",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "remark",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 4,
+                    "lineNumber": 41,
+                    "name": "addItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "payload",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isHex",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "delay",
+                            "type": "int"
+                        },
+                        {
+                            "name": "enabled",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 5,
+                    "isCloned": true,
+                    "lineNumber": 41,
+                    "name": "addItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "payload",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isHex",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "delay",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 6,
+                    "isCloned": true,
+                    "lineNumber": 41,
+                    "name": "addItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "payload",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isHex",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 7,
+                    "isCloned": true,
+                    "lineNumber": 41,
+                    "name": "addItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "payload",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 8,
+                    "isCloned": true,
+                    "lineNumber": 41,
+                    "name": "addItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 9,
+                    "isCloned": true,
+                    "lineNumber": 41,
+                    "name": "addItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 10,
+                    "isCloned": true,
+                    "lineNumber": 41,
+                    "name": "addItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 11,
+                    "lineNumber": 55,
+                    "name": "removeItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "payload",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isHex",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "delay",
+                            "type": "int"
+                        },
+                        {
+                            "name": "enabled",
+                            "type": "bool"
+                        },
+                        {
+                            "name": "remark",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 12,
+                    "lineNumber": 63,
+                    "name": "updateItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "from",
+                            "type": "int"
+                        },
+                        {
+                            "name": "to",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 13,
+                    "lineNumber": 79,
+                    "name": "moveItem",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 14,
+                    "lineNumber": 89,
+                    "name": "clearAll",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 15,
+                    "lineNumber": 95,
+                    "name": "enableAll",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 16,
+                    "lineNumber": 105,
+                    "name": "disableAll",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 17,
+                    "lineNumber": 115,
+                    "name": "resetDefaults",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "path",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 18,
+                    "lineNumber": 122,
+                    "name": "exportToFile",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "path",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 19,
+                    "lineNumber": 126,
+                    "name": "importFromFile",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "intervalMs",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 20,
+                    "lineNumber": 130,
+                    "name": "startLoopSend",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 21,
+                    "lineNumber": 138,
+                    "name": "stopLoopSend",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "lineNumber": 21,
+                    "name": "items",
+                    "notify": "itemsChanged",
+                    "override": false,
+                    "read": "items",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QVariantList",
+                    "user": false,
+                    "virtual": false
+                },
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 1,
+                    "lineNumber": 22,
+                    "name": "isLoopSending",
+                    "notify": "isLoopSendingChanged",
+                    "override": false,
+                    "read": "isLoopSending",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "bool",
+                    "user": false,
+                    "virtual": false
+                }
+            ],
+            "qualifiedClassName": "QuickInputStore",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "lineNumber": 147,
+                    "name": "itemsChanged",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 1,
+                    "lineNumber": 148,
+                    "name": "isLoopSendingChanged",
+                    "returnType": "void"
+                }
+            ],
+            "slots": [
+                {
+                    "access": "private",
+                    "index": 2,
+                    "lineNumber": 151,
+                    "name": "onLoopTick",
+                    "returnType": "void"
+                },
+                {
+                    "access": "private",
+                    "index": 3,
+                    "lineNumber": 155,
+                    "name": "onDelayFinished",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "QuickInputStore.h",
+    "outputRevision": 69
+}

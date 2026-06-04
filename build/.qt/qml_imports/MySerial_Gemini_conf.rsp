@@ -1,0 +1,14 @@
+-rootPath
+E:/Workspace_QT/MySerial_Gemini
+-cmake-output
+-output-file
+E:/Workspace_QT/MySerial_Gemini/build/.qt/qml_imports/MySerial_Gemini_conf.cmake
+-importPath
+E:/Workspace_QT/MySerial_Gemini/build
+-importPath
+E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini
+-importPath
+D:/Qt/6.11.0/mingw_64/qml
+-qrcFiles
+E:/Workspace_QT/MySerial_Gemini/build/.qt/rcc/qmake_MySerial_Gemini.qrc
+E:/Workspace_QT/MySerial_Gemini/build/.qt/rcc/MySerial_Gemini_raw_qml_0.qrc

@@ -1,0 +1,246 @@
+{
+    "classes": [
+        {
+            "className": "CommandStore",
+            "lineNumber": 15,
+            "methods": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 1,
+                    "lineNumber": 28,
+                    "name": "addGroup",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "index": 2,
+                    "isCloned": true,
+                    "lineNumber": 28,
+                    "name": "addGroup",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "groupIndex",
+                            "type": "int"
+                        },
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "payload",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isHex",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 3,
+                    "lineNumber": 37,
+                    "name": "addCommand",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "groupIndex",
+                            "type": "int"
+                        },
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "payload",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 4,
+                    "isCloned": true,
+                    "lineNumber": 37,
+                    "name": "addCommand",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "groupIndex",
+                            "type": "int"
+                        },
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 5,
+                    "isCloned": true,
+                    "lineNumber": 37,
+                    "name": "addCommand",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "groupIndex",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 6,
+                    "isCloned": true,
+                    "lineNumber": 37,
+                    "name": "addCommand",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        },
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 7,
+                    "lineNumber": 52,
+                    "name": "updateGroupName",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "groupIndex",
+                            "type": "int"
+                        },
+                        {
+                            "name": "cmdIndex",
+                            "type": "int"
+                        },
+                        {
+                            "name": "name",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "payload",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 8,
+                    "lineNumber": 62,
+                    "name": "updateCommand",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 9,
+                    "lineNumber": 78,
+                    "name": "deleteGroup",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "groupIndex",
+                            "type": "int"
+                        },
+                        {
+                            "name": "cmdIndex",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 10,
+                    "lineNumber": 86,
+                    "name": "deleteCommand",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "path",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 11,
+                    "lineNumber": 99,
+                    "name": "exportToFile",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "path",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 12,
+                    "lineNumber": 103,
+                    "name": "importFromFile",
+                    "returnType": "void"
+                }
+            ],
+            "object": true,
+            "properties": [
+                {
+                    "constant": false,
+                    "designable": true,
+                    "final": false,
+                    "index": 0,
+                    "lineNumber": 18,
+                    "name": "groups",
+                    "notify": "groupsChanged",
+                    "override": false,
+                    "read": "groups",
+                    "required": false,
+                    "scriptable": true,
+                    "stored": true,
+                    "type": "QVariantList",
+                    "user": false,
+                    "virtual": false
+                }
+            ],
+            "qualifiedClassName": "CommandStore",
+            "signals": [
+                {
+                    "access": "public",
+                    "index": 0,
+                    "lineNumber": 108,
+                    "name": "groupsChanged",
+                    "returnType": "void"
+                }
+            ],
+            "superClasses": [
+                {
+                    "access": "public",
+                    "name": "QObject"
+                }
+            ]
+        }
+    ],
+    "inputFile": "CommandStore.h",
+    "outputRevision": 69
+}

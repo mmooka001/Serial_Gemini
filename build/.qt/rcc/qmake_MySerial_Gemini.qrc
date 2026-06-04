@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/MySerial_Gemini">
+    <file alias="qmldir">E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini/qmldir</file>
+  </qresource>
+</RCC>
+
