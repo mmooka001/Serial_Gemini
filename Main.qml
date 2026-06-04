@@ -751,12 +751,12 @@ Window {
                                      anchors.fill: parent
                                      anchors.margins: 15
                                      model: ListModel { id: terminalModel }
-                                     spacing: 15
+                                     spacing: 10
                                      clip: true
                                      boundsBehavior: Flickable.StopAtBounds
                                     delegate: Column {
                                         width: terminalView.width
-                                         spacing: 6
+                                         spacing: 2
                                          property bool delegateHover: false
                                         RowLayout {
                                             width: parent.width
@@ -1432,7 +1432,7 @@ Window {
                                                             text: "🚀"
                                                             flat: true
                                                             font.pixelSize: 12
-                                                            Layout.preferredWidth: 24
+                                                            Layout.preferredWidth: 28
                                                             Layout.preferredHeight: 24
                                                             padding: 0
                                                             background: Rectangle {
