@@ -1152,13 +1152,130 @@ Window {
                             }
 
                             // Tab 2: 设置 (Settings)
-                            Item {
+                            ColumnLayout {
+                                spacing: 10
+
                                 Text {
-                                    anchors.centerIn: parent
-                                    text: "设置面板 - 重构中..."
-                                    color: clText
-                                    font.pixelSize: 14
+                                    text: "设置"
+                                    color: clHighlight
+                                    font.bold: true
+                                    font.pixelSize: 15
                                 }
+
+                                // 行尾模式
+                                ColumnLayout {
+                                    spacing: 6
+                                    Layout.fillWidth: true
+                                    Text { text: "行尾模式"; color: clText; font.pixelSize: 11; font.bold: true }
+                                    RowLayout {
+                                        spacing: 4
+                                        Layout.fillWidth: true
+                                        Repeater {
+                                            model: ["无", "LF", "CR", "CRLF"]
+                                            Rectangle {
+                                                Layout.fillWidth: true
+                                                height: 32
+                                                radius: 8
+                                                color: settingsStore.lineEndingMode === index ? clHighlight : (leMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : clInput)
+                                                border.color: settingsStore.lineEndingMode === index ? clHighlight : clBorder
+                                                border.width: settingsStore.lineEndingMode === index ? 1 : 0
+                                                Text {
+                                                    text: modelData
+                                                    anchors.centerIn: parent
+                                                    color: settingsStore.lineEndingMode === index ? "white" : clText
+                                                    font.pixelSize: 11
+                                                    font.bold: settingsStore.lineEndingMode === index
+                                                }
+                                                MouseArea {
+                                                    id: leMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    onClicked: settingsStore.lineEndingMode = index
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
+
+                                // 数据编码
+                                ColumnLayout {
+                                    spacing: 6
+                                    Layout.fillWidth: true
+                                    Text { text: "数据编码"; color: clText; font.pixelSize: 11; font.bold: true }
+                                    ComboBox {
+                                        id: encodingCombo
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 36
+                                        model: ["UTF-8", "GBK", "GB2312", "ASCII", "ISO-8859-1"]
+                                        currentIndex: {
+                                            var idx = model.indexOf(settingsStore.dataEncoding)
+                                            return idx >= 0 ? idx : 0
+                                        }
+                                        onCurrentTextChanged: settingsStore.dataEncoding = currentText
+                                        background: Rectangle { color: clInput; radius: 8; border.color: encodingCombo.activeFocus ? clHighlight : clBorder }
+                                        contentItem: Text { text: encodingCombo.currentText; color: whiteText; font.pixelSize: 12; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
+                                        popup: Popup {
+                                            y: encodingCombo.height + 3; width: encodingCombo.width; implicitHeight: contentItem.implicitHeight; padding: 5
+                                            contentItem: ListView { clip: true; implicitHeight: contentHeight; model: encodingCombo.popup.visible ? encodingCombo.delegateModel : null }
+                                            background: Rectangle { color: clCard; radius: 10; border.color: clBorder; border.width: 1 }
+                                        }
+                                        delegate: ItemDelegate {
+                                            width: encodingCombo.width; height: 32
+                                            contentItem: Text { text: modelData; color: highlighted ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
+                                            background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
+                                        }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
+
+                                // 串口参数 (只读显示)
+                                ColumnLayout {
+                                    spacing: 6
+                                    Layout.fillWidth: true
+                                    Text { text: "串口参数"; color: clText; font.pixelSize: 11; font.bold: true }
+                                    GridLayout {
+                                        columns: 2
+                                        columnSpacing: 12
+                                        rowSpacing: 6
+                                        Layout.fillWidth: true
+                                        Text { text: "数据位"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "8"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                        Text { text: "停止位"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "1"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                        Text { text: "校验位"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                        Text { text: "流控"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
+
+                                // 十进制模式
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text { text: "启用十进制显示模式"; color: clText; font.pixelSize: 12; Layout.fillWidth: true }
+                                    Rectangle {
+                                        width: 44; height: 24; radius: 12
+                                        color: settingsStore.hasDecimalMode ? clHighlight : (isDark ? "#555" : "#CCC")
+                                        Rectangle {
+                                            width: 20; height: 20; radius: 10
+                                            color: "white"
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            x: settingsStore.hasDecimalMode ? parent.width - 22 : 2
+                                            Behavior on x { NumberAnimation { duration: 150 } }
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: settingsStore.hasDecimalMode = !settingsStore.hasDecimalMode
+                                        }
+                                    }
+                                }
+
+                                Item { Layout.fillHeight: true }
                             }
                         }
                     }
