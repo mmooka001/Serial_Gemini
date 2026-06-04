@@ -1141,13 +1141,101 @@ Window {
                                 }
                             }
 
-                            // Tab 1: 码表 (Code Table)
-                            Item {
+                            // Tab 1: 码表 (Code Table + Converter)
+                            ColumnLayout {
+                                spacing: 8
+
                                 Text {
-                                    anchors.centerIn: parent
-                                    text: "码表工具 - 重构中..."
-                                    color: clText
-                                    font.pixelSize: 14
+                                    text: "码表工具"
+                                    color: clHighlight
+                                    font.bold: true
+                                    font.pixelSize: 15
+                                }
+
+                                // 进制转换器
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 180
+                                    radius: 10
+                                    color: clInput
+                                    border.color: clBorder
+                                    border.width: 1
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 6
+                                        Text { text: "进制转换"; color: clText; font.pixelSize: 11; font.bold: true }
+                                        TextField {
+                                            id: converterInput
+                                            Layout.fillWidth: true
+                                            placeholderText: "输入数值..."
+                                            placeholderTextColor: grayPlaceholder
+                                            color: whiteText
+                                            font.family: "Consolas"
+                                            font.pixelSize: 13
+                                            background: Rectangle { color: isDark ? "#2b2d30" : "#FFFFFF"; radius: 6; border.color: converterInput.activeFocus ? clHighlight : clBorder }
+                                            selectByMouse: true
+                                            onTextChanged: {
+                                                var val = parseInt(text)
+                                                if (!isNaN(val)) {
+                                                    hexOut.text = "0x" + val.toString(16).toUpperCase()
+                                                    decOut.text = val.toString()
+                                                    octOut.text = "0o" + val.toString(8)
+                                                    binOut.text = "0b" + val.toString(2)
+                                                } else {
+                                                    hexOut.text = "-"; decOut.text = "-"; octOut.text = "-"; binOut.text = "-"
+                                                }
+                                            }
+                                        }
+                                        GridLayout {
+                                            columns: 2; columnSpacing: 8; rowSpacing: 4
+                                            Layout.fillWidth: true
+                                            Text { text: "HEX"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { id: hexOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
+                                            Text { text: "DEC"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { id: decOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
+                                            Text { text: "OCT"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { id: octOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
+                                            Text { text: "BIN"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { id: binOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                                        }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
+
+                                // ASCII码表
+                                Text { text: "ASCII 码表"; color: clText; font.pixelSize: 11; font.bold: true }
+                                ListView {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    spacing: 1
+                                    model: 128
+                                    delegate: Rectangle {
+                                        width: parent ? parent.width : 0
+                                        height: 22
+                                        color: index % 2 === 0 ? (isDark ? "#2b2d30" : "#F8F9FA") : (isDark ? "#323335" : "#FFFFFF")
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 8
+                                            anchors.rightMargin: 8
+                                            spacing: 10
+                                            Text { text: index; color: clHighlight; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 30 }
+                                            Text { text: "0x" + index.toString(16).toUpperCase().padStart(2, '0'); color: "#888"; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 35 }
+                                            Text {
+                                                text: {
+                                                    if (index < 32) return ["NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","HT","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"][index]
+                                                    if (index === 32) return "SPACE"
+                                                    if (index === 127) return "DEL"
+                                                    return String.fromCharCode(index)
+                                                }
+                                                color: whiteText; font.pixelSize: 10; font.family: "Consolas"
+                                            }
+                                            Item { Layout.fillWidth: true }
+                                            Text { text: index >= 32 && index < 127 ? String.fromCharCode(index) : ""; color: clText; font.pixelSize: 10 }
+                                        }
+                                    }
                                 }
                             }
 
