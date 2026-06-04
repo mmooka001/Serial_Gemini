@@ -37,7 +37,7 @@ public:
     }
 
     Q_INVOKABLE QVariantList availablePorts();
-    Q_INVOKABLE bool openPort(const QString &portName, int baudRate);
+    Q_INVOKABLE bool openPort(const QString &portName, int baudRate, int dataBits = 8, int stopBits = 1, int parity = 0, int flowControl = 0);
     Q_INVOKABLE void closePort();
     Q_INVOKABLE void sendData(const QString &data, bool isHex);
     Q_INVOKABLE void sendDataWithChecksum(const QString &data, bool isHex, int checksumType);
