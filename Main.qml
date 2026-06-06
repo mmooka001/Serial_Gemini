@@ -833,7 +833,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                              layoutDirection: model.isSent ? Qt.RightToLeft : Qt.LeftToRight
                                             Rectangle {
                                                 width: msgText.implicitWidth + 30
-                                                 height: Math.max(msgText.implicitHeight + 8, 28)
+                                                 height: Math.max(msgText.implicitHeight + 4, 24)
                                                  radius: 16
                                                  color: model.isSent ? clHighlight : (isDark ? "#323336" : "#E8EAEF")
                                                 MouseArea {
@@ -843,7 +843,12 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                                     onContainsMouseChanged: delegateHover = containsMouse
                                                 }
                                                 TextEdit { id: msgText
-                                                 text: model.isHexMode ? model.contentHex : model.contentAscii
+                                                 text: {
+                                                     var raw = model.isHexMode ? model.contentHex : model.contentAscii
+                                                     while (raw.length > 0 && (raw.charAt(raw.length-1) === '\r' || raw.charAt(raw.length-1) === '\n' || raw.charAt(raw.length-1) === ' '))
+                                                         raw = raw.slice(0, -1)
+                                                     return raw
+                                                 }
                                                  width: Math.min(implicitWidth, terminalView.width * 0.75)
                                                  anchors.centerIn: parent
                                                  topPadding: 2; bottomPadding: 2
