@@ -983,7 +983,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                 Item { Layout.fillWidth: true }
                                 ComboBox { 
                                     id: checksumCombo
-                                    Layout.preferredWidth: window.width > 850 ? 120 : 80
+                                    Layout.preferredWidth: 90
                                     Layout.preferredHeight: 30
                                     model: ["无校验", "BCC", "Sum8", "CRC16"]
                                     background: Rectangle { 
@@ -1075,7 +1075,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                              event.accepted = false
                                          }
                                      } }
-                                    Rectangle { Layout.preferredWidth: window.width > 750 ? 80 : 50
+                                    Rectangle { Layout.preferredWidth: 50
                                      Layout.fillHeight: true
                                      color: isDark ? "#232428" : "#E8EAEF"
                                      radius: 8
@@ -1091,16 +1091,16 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                      font.bold: true
                                      font.pixelSize: 13 } } }
                                     Button { id: sendBtn
-                                     Layout.preferredWidth: window.width > 750 ? 80 : 55
+                                     Layout.preferredWidth: 55
                                      Layout.fillHeight: true
-                                     text: window.width > 750 ? "发送" : "➤"
+                                     text: "➤"
                                      onClicked: doSend()
                                      background: Rectangle { color: clHighlight
                                      radius: 10 }
                                      contentItem: Text { text: parent.text
                                      color: "white"
                                      font.bold: true
-                                     font.pixelSize: window.width > 750 ? 13 : 18
+                                     font.pixelSize: 18
                                      horizontalAlignment: Text.AlignHCenter
                                      verticalAlignment: Text.AlignVCenter } }
                                 }
