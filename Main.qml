@@ -756,16 +756,23 @@ Window {
                                      boundsBehavior: Flickable.StopAtBounds
                                     delegate: Column {
                                         width: terminalView.width
-                                         spacing: 2
+                                         spacing: 0
                                          property bool delegateHover: false
                                         RowLayout {
                                             width: parent.width
                                              layoutDirection: model.isSent ? Qt.RightToLeft : Qt.LeftToRight
-                                             spacing: 8
+                                             spacing: 6
                                             Text { text: model.timestamp
                                              font.pixelSize: 9
                                              color: "#555"
-                                             visible: globalTimestamp }
+                                             visible: globalTimestamp
+                                             MouseArea {
+                                                 anchors.fill: parent
+                                                 onDoubleClicked: {
+                                                     var txt = model.isHexMode ? model.contentHex : model.contentAscii
+                                                     serialManager.copyToClipboard(txt)
+                                                 }
+                                             } }
                                             Rectangle {
                                                 width: 38
                                                  height: 16
@@ -779,22 +786,6 @@ Window {
                                                  color: model.isHexMode ? clHighlight : "#666" }
                                                 MouseArea { anchors.fill: parent
                                                  onClicked: { model.isHexMode = !model.isHexMode } }
-                                            }
-                                            // Copy button (appears on hover)
-                                            Rectangle {
-                                                width: 16; height: 16; radius: 3
-                                                color: copyMsgMouse.containsMouse ? (isDark ? "#555" : "#DDD") : "transparent"
-                                                visible: delegateHover
-                                                Text { text: "📋"; font.pixelSize: 9; anchors.centerIn: parent }
-                                                MouseArea {
-                                                    id: copyMsgMouse
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    onClicked: {
-                                                        var txt = model.isHexMode ? model.contentHex : model.contentAscii
-                                                        serialManager.copyToClipboard(txt)
-                                                    }
-                                                }
                                             }
                                             Item { Layout.fillWidth: true }
                                         }
