@@ -51,6 +51,7 @@ template <> constexpr inline auto CommandStore::qt_create_metaobjectdata<qt_meta
         "index",
         "updateCommand",
         "cmdIndex",
+        "setCommandHex",
         "deleteGroup",
         "deleteCommand",
         "exportToFile",
@@ -93,26 +94,30 @@ template <> constexpr inline auto CommandStore::qt_create_metaobjectdata<qt_meta
         QtMocHelpers::MethodData<void(int, int, const QString &, const QString &)>(11, 2, QMC::AccessPublic, QMetaType::Void, {{
             { QMetaType::Int, 6 }, { QMetaType::Int, 12 }, { QMetaType::QString, 4 }, { QMetaType::QString, 7 },
         }}),
+        // Method 'setCommandHex'
+        QtMocHelpers::MethodData<void(int, int, bool)>(13, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::Int, 6 }, { QMetaType::Int, 12 }, { QMetaType::Bool, 8 },
+        }}),
         // Method 'deleteGroup'
-        QtMocHelpers::MethodData<void(int)>(13, 2, QMC::AccessPublic, QMetaType::Void, {{
+        QtMocHelpers::MethodData<void(int)>(14, 2, QMC::AccessPublic, QMetaType::Void, {{
             { QMetaType::Int, 10 },
         }}),
         // Method 'deleteCommand'
-        QtMocHelpers::MethodData<void(int, int)>(14, 2, QMC::AccessPublic, QMetaType::Void, {{
+        QtMocHelpers::MethodData<void(int, int)>(15, 2, QMC::AccessPublic, QMetaType::Void, {{
             { QMetaType::Int, 6 }, { QMetaType::Int, 12 },
         }}),
         // Method 'exportToFile'
-        QtMocHelpers::MethodData<void(const QString &)>(15, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 16 },
+        QtMocHelpers::MethodData<void(const QString &)>(16, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 17 },
         }}),
         // Method 'importFromFile'
-        QtMocHelpers::MethodData<void(const QString &)>(17, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 16 },
+        QtMocHelpers::MethodData<void(const QString &)>(18, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 17 },
         }}),
     };
     QtMocHelpers::UintData qt_properties {
         // property 'groups'
-        QtMocHelpers::PropertyData<QVariantList>(18, 0x80000000 | 19, QMC::DefaultPropertyFlags | QMC::EnumOrFlag, 0),
+        QtMocHelpers::PropertyData<QVariantList>(19, 0x80000000 | 20, QMC::DefaultPropertyFlags | QMC::EnumOrFlag, 0),
     };
     QtMocHelpers::UintData qt_enums {
     };
@@ -143,10 +148,11 @@ void CommandStore::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id
         case 6: _t->addCommand((*reinterpret_cast<std::add_pointer_t<int>>(_a[1]))); break;
         case 7: _t->updateGroupName((*reinterpret_cast<std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2]))); break;
         case 8: _t->updateCommand((*reinterpret_cast<std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[4]))); break;
-        case 9: _t->deleteGroup((*reinterpret_cast<std::add_pointer_t<int>>(_a[1]))); break;
-        case 10: _t->deleteCommand((*reinterpret_cast<std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2]))); break;
-        case 11: _t->exportToFile((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
-        case 12: _t->importFromFile((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
+        case 9: _t->setCommandHex((*reinterpret_cast<std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[3]))); break;
+        case 10: _t->deleteGroup((*reinterpret_cast<std::add_pointer_t<int>>(_a[1]))); break;
+        case 11: _t->deleteCommand((*reinterpret_cast<std::add_pointer_t<int>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2]))); break;
+        case 12: _t->exportToFile((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
+        case 13: _t->importFromFile((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
         default: ;
         }
     }
@@ -182,14 +188,14 @@ int CommandStore::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 13)
+        if (_id < 14)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 13;
+        _id -= 14;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 13)
+        if (_id < 14)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 13;
+        _id -= 14;
     }
     if (_c == QMetaObject::ReadProperty || _c == QMetaObject::WriteProperty
             || _c == QMetaObject::ResetProperty || _c == QMetaObject::BindableProperty

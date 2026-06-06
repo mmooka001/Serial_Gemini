@@ -16,6 +16,7 @@ CMakeFiles/MySerial_Gemini.dir/MySerial_Gemini_autogen/mocs_compilation.cpp.obj
  D:/Qt/6.11.0/mingw_64/include/QtCore/QObject
  D:/Qt/6.11.0/mingw_64/include/QtCore/QRect
  D:/Qt/6.11.0/mingw_64/include/QtCore/QRectF
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QSettings
  D:/Qt/6.11.0/mingw_64/include/QtCore/QSize
  D:/Qt/6.11.0/mingw_64/include/QtCore/QSizeF
  D:/Qt/6.11.0/mingw_64/include/QtCore/QStandardPaths
@@ -134,6 +135,7 @@ CMakeFiles/MySerial_Gemini.dir/MySerial_Gemini_autogen/mocs_compilation.cpp.obj
  D:/Qt/6.11.0/mingw_64/include/QtCore/qscopedpointer.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qscopeguard.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qset.h
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qsettings.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qshareddata.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qshareddata_impl.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qsharedpointer.h
@@ -522,9 +524,11 @@ CMakeFiles/MySerial_Gemini.dir/MySerial_Gemini_autogen/mocs_compilation.cpp.obj
  E:/Workspace_QT/MySerial_Gemini/ChecksumHelper.h
  E:/Workspace_QT/MySerial_Gemini/CommandStore.h
  E:/Workspace_QT/MySerial_Gemini/SerialManager.h
+ E:/Workspace_QT/MySerial_Gemini/SettingsStore.h
  E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/EWIEGA46WW/moc_ChecksumHelper.cpp
  E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/EWIEGA46WW/moc_CommandStore.cpp
  E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/EWIEGA46WW/moc_SerialManager.cpp
+ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/EWIEGA46WW/moc_SettingsStore.cpp
 
 CMakeFiles/MySerial_Gemini.dir/SerialManager.cpp.obj
  E:/Workspace_QT/MySerial_Gemini/SerialManager.cpp
@@ -3167,6 +3171,7 @@ CMakeFiles/MySerial_Gemini.dir/myserial_gemini_qmltyperegistrations.cpp.obj
 
 E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/6.11.0/mingw_64/include/QtCore/QByteArray
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QDateTime
  D:/Qt/6.11.0/mingw_64/include/QtCore/QDir
  D:/Qt/6.11.0/mingw_64/include/QtCore/QEvent
  D:/Qt/6.11.0/mingw_64/include/QtCore/QFile
@@ -3175,6 +3180,7 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/6.11.0/mingw_64/include/QtCore/QJsonDocument
  D:/Qt/6.11.0/mingw_64/include/QtCore/QJsonObject
  D:/Qt/6.11.0/mingw_64/include/QtCore/QList
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QMap
  D:/Qt/6.11.0/mingw_64/include/QtCore/QMargins
  D:/Qt/6.11.0/mingw_64/include/QtCore/QObject
  D:/Qt/6.11.0/mingw_64/include/QtCore/QRect
@@ -3183,9 +3189,12 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/6.11.0/mingw_64/include/QtCore/QSize
  D:/Qt/6.11.0/mingw_64/include/QtCore/QSizeF
  D:/Qt/6.11.0/mingw_64/include/QtCore/QStandardPaths
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QString
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QTextStream
  D:/Qt/6.11.0/mingw_64/include/QtCore/QUrl
  D:/Qt/6.11.0/mingw_64/include/QtCore/QVariant
  D:/Qt/6.11.0/mingw_64/include/QtCore/QVariantList
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QVariantMap
  D:/Qt/6.11.0/mingw_64/include/QtCore/q17memory.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/q20bit.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/q20functional.h
@@ -3348,14 +3357,18 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  D:/Qt/6.11.0/mingw_64/include/QtCore/quuid.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qvariant.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qvariantlist.h
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qvariantmap.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qvarlengtharray.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qversionnumber.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qversiontagging.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qxptype_traits.h
  D:/Qt/6.11.0/mingw_64/include/QtCore/qyieldcpu.h
+ D:/Qt/6.11.0/mingw_64/include/QtGui/QClipboard
+ D:/Qt/6.11.0/mingw_64/include/QtGui/QGuiApplication
  D:/Qt/6.11.0/mingw_64/include/QtGui/QMatrix4x4
  D:/Qt/6.11.0/mingw_64/include/QtGui/QTransform
  D:/Qt/6.11.0/mingw_64/include/QtGui/qbitmap.h
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qclipboard.h
  D:/Qt/6.11.0/mingw_64/include/QtGui/qcolor.h
  D:/Qt/6.11.0/mingw_64/include/QtGui/qcursor.h
  D:/Qt/6.11.0/mingw_64/include/QtGui/qevent.h
@@ -4438,6 +4451,8 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/timestamp
  E:/Workspace_QT/MySerial_Gemini/CMakeLists.txt
  E:/Workspace_QT/MySerial_Gemini/ChecksumHelper.h
  E:/Workspace_QT/MySerial_Gemini/CommandStore.h
+ E:/Workspace_QT/MySerial_Gemini/DataEncoder.h
+ E:/Workspace_QT/MySerial_Gemini/RecordStore.h
  E:/Workspace_QT/MySerial_Gemini/SerialManager.cpp
  E:/Workspace_QT/MySerial_Gemini/SerialManager.h
  E:/Workspace_QT/MySerial_Gemini/SettingsStore.h

@@ -150,12 +150,33 @@
                     "access": "public",
                     "arguments": [
                         {
-                            "name": "index",
+                            "name": "groupIndex",
                             "type": "int"
+                        },
+                        {
+                            "name": "cmdIndex",
+                            "type": "int"
+                        },
+                        {
+                            "name": "isHex",
+                            "type": "bool"
                         }
                     ],
                     "index": 9,
                     "lineNumber": 78,
+                    "name": "setCommandHex",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "index",
+                            "type": "int"
+                        }
+                    ],
+                    "index": 10,
+                    "lineNumber": 93,
                     "name": "deleteGroup",
                     "returnType": "void"
                 },
@@ -171,8 +192,8 @@
                             "type": "int"
                         }
                     ],
-                    "index": 10,
-                    "lineNumber": 86,
+                    "index": 11,
+                    "lineNumber": 101,
                     "name": "deleteCommand",
                     "returnType": "void"
                 },
@@ -184,8 +205,8 @@
                             "type": "QString"
                         }
                     ],
-                    "index": 11,
-                    "lineNumber": 99,
+                    "index": 12,
+                    "lineNumber": 114,
                     "name": "exportToFile",
                     "returnType": "void"
                 },
@@ -197,8 +218,8 @@
                             "type": "QString"
                         }
                     ],
-                    "index": 12,
-                    "lineNumber": 103,
+                    "index": 13,
+                    "lineNumber": 118,
                     "name": "importFromFile",
                     "returnType": "void"
                 }
@@ -228,7 +249,7 @@
                 {
                     "access": "public",
                     "index": 0,
-                    "lineNumber": 108,
+                    "lineNumber": 123,
                     "name": "groupsChanged",
                     "returnType": "void"
                 }

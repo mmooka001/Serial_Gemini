@@ -56,6 +56,10 @@ template <> constexpr inline auto SerialManager::qt_create_metaobjectdata<qt_met
         "openPort",
         "portName",
         "baudRate",
+        "dataBits",
+        "stopBits",
+        "parity",
+        "flowControl",
         "closePort",
         "sendData",
         "data",
@@ -66,6 +70,8 @@ template <> constexpr inline auto SerialManager::qt_create_metaobjectdata<qt_met
         "QQuickWindow*",
         "window",
         "onTop",
+        "copyToClipboard",
+        "text",
         "isOpen",
         "currentPort",
         "lineEndingMode"
@@ -97,33 +103,55 @@ template <> constexpr inline auto SerialManager::qt_create_metaobjectdata<qt_met
         // Method 'availablePorts'
         QtMocHelpers::MethodData<QVariantList()>(13, 2, QMC::AccessPublic, 0x80000000 | 14),
         // Method 'openPort'
-        QtMocHelpers::MethodData<bool(const QString &, int)>(15, 2, QMC::AccessPublic, QMetaType::Bool, {{
+        QtMocHelpers::MethodData<bool(const QString &, int, int, int, int, int)>(15, 2, QMC::AccessPublic, QMetaType::Bool, {{
+            { QMetaType::QString, 16 }, { QMetaType::Int, 17 }, { QMetaType::Int, 18 }, { QMetaType::Int, 19 },
+            { QMetaType::Int, 20 }, { QMetaType::Int, 21 },
+        }}),
+        // Method 'openPort'
+        QtMocHelpers::MethodData<bool(const QString &, int, int, int, int)>(15, 2, QMC::AccessPublic | QMC::MethodCloned, QMetaType::Bool, {{
+            { QMetaType::QString, 16 }, { QMetaType::Int, 17 }, { QMetaType::Int, 18 }, { QMetaType::Int, 19 },
+            { QMetaType::Int, 20 },
+        }}),
+        // Method 'openPort'
+        QtMocHelpers::MethodData<bool(const QString &, int, int, int)>(15, 2, QMC::AccessPublic | QMC::MethodCloned, QMetaType::Bool, {{
+            { QMetaType::QString, 16 }, { QMetaType::Int, 17 }, { QMetaType::Int, 18 }, { QMetaType::Int, 19 },
+        }}),
+        // Method 'openPort'
+        QtMocHelpers::MethodData<bool(const QString &, int, int)>(15, 2, QMC::AccessPublic | QMC::MethodCloned, QMetaType::Bool, {{
+            { QMetaType::QString, 16 }, { QMetaType::Int, 17 }, { QMetaType::Int, 18 },
+        }}),
+        // Method 'openPort'
+        QtMocHelpers::MethodData<bool(const QString &, int)>(15, 2, QMC::AccessPublic | QMC::MethodCloned, QMetaType::Bool, {{
             { QMetaType::QString, 16 }, { QMetaType::Int, 17 },
         }}),
         // Method 'closePort'
-        QtMocHelpers::MethodData<void()>(18, 2, QMC::AccessPublic, QMetaType::Void),
+        QtMocHelpers::MethodData<void()>(22, 2, QMC::AccessPublic, QMetaType::Void),
         // Method 'sendData'
-        QtMocHelpers::MethodData<void(const QString &, bool)>(19, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 20 }, { QMetaType::Bool, 21 },
+        QtMocHelpers::MethodData<void(const QString &, bool)>(23, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 24 }, { QMetaType::Bool, 25 },
         }}),
         // Method 'sendDataWithChecksum'
-        QtMocHelpers::MethodData<void(const QString &, bool, int)>(22, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 20 }, { QMetaType::Bool, 21 }, { QMetaType::Int, 23 },
+        QtMocHelpers::MethodData<void(const QString &, bool, int)>(26, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 24 }, { QMetaType::Bool, 25 }, { QMetaType::Int, 27 },
         }}),
         // Method 'setStayOnTop'
-        QtMocHelpers::MethodData<void(QQuickWindow *, bool)>(24, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { 0x80000000 | 25, 26 }, { QMetaType::Bool, 27 },
+        QtMocHelpers::MethodData<void(QQuickWindow *, bool)>(28, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { 0x80000000 | 29, 30 }, { QMetaType::Bool, 31 },
+        }}),
+        // Method 'copyToClipboard'
+        QtMocHelpers::MethodData<void(const QString &)>(32, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 33 },
         }}),
     };
     QtMocHelpers::UintData qt_properties {
         // property 'isOpen'
-        QtMocHelpers::PropertyData<bool>(28, QMetaType::Bool, QMC::DefaultPropertyFlags, 0),
+        QtMocHelpers::PropertyData<bool>(34, QMetaType::Bool, QMC::DefaultPropertyFlags, 0),
         // property 'currentPort'
-        QtMocHelpers::PropertyData<QString>(29, QMetaType::QString, QMC::DefaultPropertyFlags, 1),
+        QtMocHelpers::PropertyData<QString>(35, QMetaType::QString, QMC::DefaultPropertyFlags, 1),
         // property 'baudRate'
         QtMocHelpers::PropertyData<int>(17, QMetaType::Int, QMC::DefaultPropertyFlags | QMC::Writable | QMC::StdCppSet, 2),
         // property 'lineEndingMode'
-        QtMocHelpers::PropertyData<int>(30, QMetaType::Int, QMC::DefaultPropertyFlags | QMC::Writable | QMC::StdCppSet, 3),
+        QtMocHelpers::PropertyData<int>(36, QMetaType::Int, QMC::DefaultPropertyFlags | QMC::Writable | QMC::StdCppSet, 3),
     };
     QtMocHelpers::UintData qt_enums {
     };
@@ -155,19 +183,28 @@ void SerialManager::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _i
         case 7: _t->readData(); break;
         case 8: { QVariantList _r = _t->availablePorts();
             if (_a[0]) *reinterpret_cast<QVariantList*>(_a[0]) = std::move(_r); }  break;
-        case 9: { bool _r = _t->openPort((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])));
+        case 9: { bool _r = _t->openPort((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[6])));
             if (_a[0]) *reinterpret_cast<bool*>(_a[0]) = std::move(_r); }  break;
-        case 10: _t->closePort(); break;
-        case 11: _t->sendData((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2]))); break;
-        case 12: _t->sendDataWithChecksum((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[3]))); break;
-        case 13: _t->setStayOnTop((*reinterpret_cast<std::add_pointer_t<QQuickWindow*>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2]))); break;
+        case 10: { bool _r = _t->openPort((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[4])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[5])));
+            if (_a[0]) *reinterpret_cast<bool*>(_a[0]) = std::move(_r); }  break;
+        case 11: { bool _r = _t->openPort((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[4])));
+            if (_a[0]) *reinterpret_cast<bool*>(_a[0]) = std::move(_r); }  break;
+        case 12: { bool _r = _t->openPort((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[3])));
+            if (_a[0]) *reinterpret_cast<bool*>(_a[0]) = std::move(_r); }  break;
+        case 13: { bool _r = _t->openPort((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[2])));
+            if (_a[0]) *reinterpret_cast<bool*>(_a[0]) = std::move(_r); }  break;
+        case 14: _t->closePort(); break;
+        case 15: _t->sendData((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2]))); break;
+        case 16: _t->sendDataWithChecksum((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[3]))); break;
+        case 17: _t->setStayOnTop((*reinterpret_cast<std::add_pointer_t<QQuickWindow*>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[2]))); break;
+        case 18: _t->copyToClipboard((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
         default: ;
         }
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
         switch (_id) {
         default: *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType(); break;
-        case 13:
+        case 17:
             switch (*reinterpret_cast<int*>(_a[1])) {
             default: *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType(); break;
             case 0:
@@ -229,14 +266,14 @@ int SerialManager::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 14)
+        if (_id < 19)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 14;
+        _id -= 19;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 14)
+        if (_id < 19)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 14;
+        _id -= 19;
     }
     if (_c == QMetaObject::ReadProperty || _c == QMetaObject::WriteProperty
             || _c == QMetaObject::ResetProperty || _c == QMetaObject::BindableProperty

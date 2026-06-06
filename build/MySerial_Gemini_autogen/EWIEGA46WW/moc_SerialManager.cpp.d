@@ -159,9 +159,12 @@ E:/Workspace_QT/MySerial_Gemini/build/MySerial_Gemini_autogen/EWIEGA46WW/moc_Ser
   D:/Qt/6.11.0/mingw_64/include/QtCore/qversiontagging.h \
   D:/Qt/6.11.0/mingw_64/include/QtCore/qxptype_traits.h \
   D:/Qt/6.11.0/mingw_64/include/QtCore/qyieldcpu.h \
+  D:/Qt/6.11.0/mingw_64/include/QtGui/QClipboard \
+  D:/Qt/6.11.0/mingw_64/include/QtGui/QGuiApplication \
   D:/Qt/6.11.0/mingw_64/include/QtGui/QMatrix4x4 \
   D:/Qt/6.11.0/mingw_64/include/QtGui/QTransform \
   D:/Qt/6.11.0/mingw_64/include/QtGui/qbitmap.h \
+  D:/Qt/6.11.0/mingw_64/include/QtGui/qclipboard.h \
   D:/Qt/6.11.0/mingw_64/include/QtGui/qcolor.h \
   D:/Qt/6.11.0/mingw_64/include/QtGui/qcursor.h \
   D:/Qt/6.11.0/mingw_64/include/QtGui/qevent.h \

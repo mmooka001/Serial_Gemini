@@ -367,6 +367,16 @@ CMakeFiles/MySerial_Gemini.dir/build/.rcc/qmlcache/MySerial_Gemini_Main_qml.cpp.
  D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/cassert \
  D:/Qt/6.11.0/mingw_64/include/QtCore/q20iterator.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/qtyperevision.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qrandom.h \
+ D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/random \
+ D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/bits/random.h \
+ D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/x86_64-w64-mingw32/bits/opt_random.h \
+ D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/pmmintrin.h \
+ D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/emmintrin.h \
+ D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/xmmintrin.h \
+ D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/mmintrin.h \
+ D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/mwaitintrin.h \
+ D:/Qt/Tools/mingw1310_64/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/bits/random.tcc \
  D:/Qt/6.11.0/mingw_64/include/QtCore/qtimezone.h \
  D:/Qt/6.11.0/mingw_64/include/QtQml/qjsengine.h \
  D:/Qt/6.11.0/mingw_64/include/QtQml/qjsmanagedvalue.h \

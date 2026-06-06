@@ -43,14 +43,18 @@ template <> constexpr inline auto RecordStore::qt_create_metaobjectdata<qt_meta_
         "",
         "rxCountChanged",
         "txCountChanged",
+        "onDataReceived",
+        "ascii",
+        "hex",
+        "isSent",
+        "exportRecords",
+        "path",
         "addRecord",
         "type",
         "content",
         "hexContent",
         "displayMode",
         "clearRecords",
-        "exportRecords",
-        "path",
         "records",
         "QVariantList",
         "rxCount",
@@ -64,28 +68,32 @@ template <> constexpr inline auto RecordStore::qt_create_metaobjectdata<qt_meta_
         QtMocHelpers::SignalData<void()>(3, 2, QMC::AccessPublic, QMetaType::Void),
         // Signal 'txCountChanged'
         QtMocHelpers::SignalData<void()>(4, 2, QMC::AccessPublic, QMetaType::Void),
-        // Method 'addRecord'
-        QtMocHelpers::MethodData<void(const QString &, const QString &, const QString &, int)>(5, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 6 }, { QMetaType::QString, 7 }, { QMetaType::QString, 8 }, { QMetaType::Int, 9 },
+        // Slot 'onDataReceived'
+        QtMocHelpers::SlotData<void(const QString &, const QString &, bool)>(5, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 6 }, { QMetaType::QString, 7 }, { QMetaType::Bool, 8 },
+        }}),
+        // Slot 'exportRecords'
+        QtMocHelpers::SlotData<void(const QString &)>(9, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 10 },
         }}),
         // Method 'addRecord'
-        QtMocHelpers::MethodData<void(const QString &, const QString &, const QString &)>(5, 2, QMC::AccessPublic | QMC::MethodCloned, QMetaType::Void, {{
-            { QMetaType::QString, 6 }, { QMetaType::QString, 7 }, { QMetaType::QString, 8 },
+        QtMocHelpers::MethodData<void(const QString &, const QString &, const QString &, int)>(11, 2, QMC::AccessPublic, QMetaType::Void, {{
+            { QMetaType::QString, 12 }, { QMetaType::QString, 13 }, { QMetaType::QString, 14 }, { QMetaType::Int, 15 },
+        }}),
+        // Method 'addRecord'
+        QtMocHelpers::MethodData<void(const QString &, const QString &, const QString &)>(11, 2, QMC::AccessPublic | QMC::MethodCloned, QMetaType::Void, {{
+            { QMetaType::QString, 12 }, { QMetaType::QString, 13 }, { QMetaType::QString, 14 },
         }}),
         // Method 'clearRecords'
-        QtMocHelpers::MethodData<void()>(10, 2, QMC::AccessPublic, QMetaType::Void),
-        // Method 'exportRecords'
-        QtMocHelpers::MethodData<void(const QString &)>(11, 2, QMC::AccessPublic, QMetaType::Void, {{
-            { QMetaType::QString, 12 },
-        }}),
+        QtMocHelpers::MethodData<void()>(16, 2, QMC::AccessPublic, QMetaType::Void),
     };
     QtMocHelpers::UintData qt_properties {
         // property 'records'
-        QtMocHelpers::PropertyData<QVariantList>(13, 0x80000000 | 14, QMC::DefaultPropertyFlags | QMC::EnumOrFlag, 0),
+        QtMocHelpers::PropertyData<QVariantList>(17, 0x80000000 | 18, QMC::DefaultPropertyFlags | QMC::EnumOrFlag, 0),
         // property 'rxCount'
-        QtMocHelpers::PropertyData<quint64>(15, QMetaType::ULongLong, QMC::DefaultPropertyFlags, 1),
+        QtMocHelpers::PropertyData<quint64>(19, QMetaType::ULongLong, QMC::DefaultPropertyFlags, 1),
         // property 'txCount'
-        QtMocHelpers::PropertyData<quint64>(16, QMetaType::ULongLong, QMC::DefaultPropertyFlags, 2),
+        QtMocHelpers::PropertyData<quint64>(20, QMetaType::ULongLong, QMC::DefaultPropertyFlags, 2),
     };
     QtMocHelpers::UintData qt_enums {
     };
@@ -110,10 +118,11 @@ void RecordStore::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id,
         case 0: _t->recordsChanged(); break;
         case 1: _t->rxCountChanged(); break;
         case 2: _t->txCountChanged(); break;
-        case 3: _t->addRecord((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[4]))); break;
-        case 4: _t->addRecord((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[3]))); break;
-        case 5: _t->clearRecords(); break;
-        case 6: _t->exportRecords((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
+        case 3: _t->onDataReceived((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<bool>>(_a[3]))); break;
+        case 4: _t->exportRecords((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1]))); break;
+        case 5: _t->addRecord((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[3])),(*reinterpret_cast<std::add_pointer_t<int>>(_a[4]))); break;
+        case 6: _t->addRecord((*reinterpret_cast<std::add_pointer_t<QString>>(_a[1])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[2])),(*reinterpret_cast<std::add_pointer_t<QString>>(_a[3]))); break;
+        case 7: _t->clearRecords(); break;
         default: ;
         }
     }
@@ -155,14 +164,14 @@ int RecordStore::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 7)
+        if (_id < 8)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 7;
+        _id -= 8;
     }
     if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 7)
+        if (_id < 8)
             *reinterpret_cast<QMetaType *>(_a[0]) = QMetaType();
-        _id -= 7;
+        _id -= 8;
     }
     if (_c == QMetaObject::ReadProperty || _c == QMetaObject::WriteProperty
             || _c == QMetaObject::ResetProperty || _c == QMetaObject::BindableProperty

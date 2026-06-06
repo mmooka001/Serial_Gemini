@@ -713,6 +713,8 @@ CMakeFiles/MySerial_Gemini.dir/main.cpp.obj: \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QVariantList \
  D:/Qt/6.11.0/mingw_64/include/QtCore/qvariantlist.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QVariant \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/QClipboard \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qclipboard.h \
  E:\Workspace_QT\MySerial_Gemini\ChecksumHelper.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QByteArray \
  E:\Workspace_QT\MySerial_Gemini\CommandStore.h \
@@ -771,4 +773,13 @@ CMakeFiles/MySerial_Gemini.dir/main.cpp.obj: \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QFileInfo \
  E:\Workspace_QT\MySerial_Gemini\SettingsStore.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QSettings \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qsettings.h
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qsettings.h \
+ E:\Workspace_QT\MySerial_Gemini\DataEncoder.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QString \
+ E:\Workspace_QT\MySerial_Gemini\RecordStore.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QVariantMap \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qvariantmap.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QMap \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QString \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QDateTime \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/QTextStream

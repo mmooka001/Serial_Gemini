@@ -1132,6 +1132,18 @@
 			null
 		],
 		[
+			"E:/Workspace_QT/MySerial_Gemini/DataEncoder.h",
+			"MU",
+			"EWIEGA46WW/moc_DataEncoder.cpp",
+			null
+		],
+		[
+			"E:/Workspace_QT/MySerial_Gemini/RecordStore.h",
+			"MU",
+			"EWIEGA46WW/moc_RecordStore.cpp",
+			null
+		],
+		[
 			"E:/Workspace_QT/MySerial_Gemini/SerialManager.h",
 			"MU",
 			"EWIEGA46WW/moc_SerialManager.cpp",

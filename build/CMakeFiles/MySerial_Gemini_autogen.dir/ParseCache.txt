@@ -2435,9 +2435,12 @@ E:/Workspace_QT/MySerial_Gemini/SerialManager.h
  mdp:D:/Qt/6.11.0/mingw_64/include/QtCore/qversiontagging.h
  mdp:D:/Qt/6.11.0/mingw_64/include/QtCore/qxptype_traits.h
  mdp:D:/Qt/6.11.0/mingw_64/include/QtCore/qyieldcpu.h
+ mdp:D:/Qt/6.11.0/mingw_64/include/QtGui/QClipboard
+ mdp:D:/Qt/6.11.0/mingw_64/include/QtGui/QGuiApplication
  mdp:D:/Qt/6.11.0/mingw_64/include/QtGui/QMatrix4x4
  mdp:D:/Qt/6.11.0/mingw_64/include/QtGui/QTransform
  mdp:D:/Qt/6.11.0/mingw_64/include/QtGui/qbitmap.h
+ mdp:D:/Qt/6.11.0/mingw_64/include/QtGui/qclipboard.h
  mdp:D:/Qt/6.11.0/mingw_64/include/QtGui/qcolor.h
  mdp:D:/Qt/6.11.0/mingw_64/include/QtGui/qcursor.h
  mdp:D:/Qt/6.11.0/mingw_64/include/QtGui/qevent.h

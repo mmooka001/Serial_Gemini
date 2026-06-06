@@ -24,7 +24,7 @@
                             "type": "int"
                         }
                     ],
-                    "index": 3,
+                    "index": 5,
                     "lineNumber": 27,
                     "name": "addRecord",
                     "returnType": "void"
@@ -45,7 +45,7 @@
                             "type": "QString"
                         }
                     ],
-                    "index": 4,
+                    "index": 6,
                     "isCloned": true,
                     "lineNumber": 27,
                     "name": "addRecord",
@@ -53,22 +53,9 @@
                 },
                 {
                     "access": "public",
-                    "index": 5,
+                    "index": 7,
                     "lineNumber": 54,
                     "name": "clearRecords",
-                    "returnType": "void"
-                },
-                {
-                    "access": "public",
-                    "arguments": [
-                        {
-                            "name": "path",
-                            "type": "QString"
-                        }
-                    ],
-                    "index": 6,
-                    "lineNumber": 63,
-                    "name": "exportRecords",
                     "returnType": "void"
                 }
             ],
@@ -131,22 +118,58 @@
                 {
                     "access": "public",
                     "index": 0,
-                    "lineNumber": 82,
+                    "lineNumber": 87,
                     "name": "recordsChanged",
                     "returnType": "void"
                 },
                 {
                     "access": "public",
                     "index": 1,
-                    "lineNumber": 83,
+                    "lineNumber": 88,
                     "name": "rxCountChanged",
                     "returnType": "void"
                 },
                 {
                     "access": "public",
                     "index": 2,
-                    "lineNumber": 84,
+                    "lineNumber": 89,
                     "name": "txCountChanged",
+                    "returnType": "void"
+                }
+            ],
+            "slots": [
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "ascii",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "hex",
+                            "type": "QString"
+                        },
+                        {
+                            "name": "isSent",
+                            "type": "bool"
+                        }
+                    ],
+                    "index": 3,
+                    "lineNumber": 64,
+                    "name": "onDataReceived",
+                    "returnType": "void"
+                },
+                {
+                    "access": "public",
+                    "arguments": [
+                        {
+                            "name": "path",
+                            "type": "QString"
+                        }
+                    ],
+                    "index": 4,
+                    "lineNumber": 68,
+                    "name": "exportRecords",
                     "returnType": "void"
                 }
             ],

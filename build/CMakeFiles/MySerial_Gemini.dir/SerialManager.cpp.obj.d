@@ -360,6 +360,30 @@ CMakeFiles/MySerial_Gemini.dir/SerialManager.cpp.obj: \
  D:/Qt/6.11.0/mingw_64/include/QtCore/qalloc.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/q23utility.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/q20utility.h \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/QClipboard \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qclipboard.h \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qtguiglobal.h \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qtgui-config.h \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qtguiexports.h \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/QGuiApplication \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qguiapplication.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qcoreapplication.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qcoreevent.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qbasictimer.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qabstracteventdispatcher.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qeventloop.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qdeadlinetimer.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qnativeinterface.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qcoreapplication_platform.h \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qwindowdefs.h \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qwindowdefs_win.h \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qinputmethod.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qlocale.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qpoint.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qcheckedint_impl.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qsize.h \
+ D:/Qt/6.11.0/mingw_64/include/QtCore/qmargins.h \
+ D:/Qt/6.11.0/mingw_64/include/QtGui/qguiapplication_platform.h \
  D:/Qt/6.11.0/mingw_64/include/QtQuick/QQuickWindow \
  D:/Qt/6.11.0/mingw_64/include/QtQuick/qquickwindow.h \
  D:/Qt/6.11.0/mingw_64/include/QtQuick/qtquickglobal.h \
@@ -369,9 +393,6 @@ CMakeFiles/MySerial_Gemini.dir/SerialManager.cpp.obj: \
  D:/Qt/6.11.0/mingw_64/include/QtNetwork/qtnetwork-config.h \
  D:/Qt/6.11.0/mingw_64/include/QtNetwork/qtnetworkexports.h \
  D:/Qt/6.11.0/mingw_64/include/QtQml/qtqmlexports.h \
- D:/Qt/6.11.0/mingw_64/include/QtGui/qtguiglobal.h \
- D:/Qt/6.11.0/mingw_64/include/QtGui/qtgui-config.h \
- D:/Qt/6.11.0/mingw_64/include/QtGui/qtguiexports.h \
  D:/Qt/6.11.0/mingw_64/include/QtQuick/qtquick-config.h \
  D:/Qt/6.11.0/mingw_64/include/QtQuick/qtquickexports.h \
  D:/Qt/6.11.0/mingw_64/include/QtQuick/qsgrendererinterface.h \
@@ -379,10 +400,6 @@ CMakeFiles/MySerial_Gemini.dir/SerialManager.cpp.obj: \
  D:/Qt/6.11.0/mingw_64/include/QtQuick/qsggeometry.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QRectF \
  D:/Qt/6.11.0/mingw_64/include/QtCore/qrect.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qcheckedint_impl.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qmargins.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qsize.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qpoint.h \
  D:/Qt/6.11.0/mingw_64/include/QtGui/QMatrix4x4 \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qmatrix4x4.h \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qvector3d.h \
@@ -394,18 +411,10 @@ CMakeFiles/MySerial_Gemini.dir/SerialManager.cpp.obj: \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qwindow.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QObject \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QEvent \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qcoreevent.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qbasictimer.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qabstracteventdispatcher.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qeventloop.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qdeadlinetimer.h \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QMargins \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QRect \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qnativeinterface.h \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qsurface.h \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qsurfaceformat.h \
- D:/Qt/6.11.0/mingw_64/include/QtGui/qwindowdefs.h \
- D:/Qt/6.11.0/mingw_64/include/QtGui/qwindowdefs_win.h \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qicon.h \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qpixmap.h \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qpaintdevice.h \
@@ -431,12 +440,6 @@ CMakeFiles/MySerial_Gemini.dir/SerialManager.cpp.obj: \
  D:/Qt/6.11.0/mingw_64/include/QtCore/QSizeF \
  D:/Qt/6.11.0/mingw_64/include/QtGui/QTransform \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qscreen_platform.h \
- D:/Qt/6.11.0/mingw_64/include/QtGui/qguiapplication.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qcoreapplication.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qcoreapplication_platform.h \
- D:/Qt/6.11.0/mingw_64/include/QtGui/qinputmethod.h \
- D:/Qt/6.11.0/mingw_64/include/QtCore/qlocale.h \
- D:/Qt/6.11.0/mingw_64/include/QtGui/qguiapplication_platform.h \
  D:/Qt/6.11.0/mingw_64/include/QtGui/qkeysequence.h \
  D:/Qt/6.11.0/mingw_64/include/QtQml/qqml.h \
  D:/Qt/6.11.0/mingw_64/include/QtQml/qqmlprivate.h \

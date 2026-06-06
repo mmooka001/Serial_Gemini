@@ -223,12 +223,33 @@
                         "access": "public",
                         "arguments": [
                             {
-                                "name": "index",
+                                "name": "groupIndex",
                                 "type": "int"
+                            },
+                            {
+                                "name": "cmdIndex",
+                                "type": "int"
+                            },
+                            {
+                                "name": "isHex",
+                                "type": "bool"
                             }
                         ],
                         "index": 9,
                         "lineNumber": 78,
+                        "name": "setCommandHex",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "index",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 10,
+                        "lineNumber": 93,
                         "name": "deleteGroup",
                         "returnType": "void"
                     },
@@ -244,8 +265,8 @@
                                 "type": "int"
                             }
                         ],
-                        "index": 10,
-                        "lineNumber": 86,
+                        "index": 11,
+                        "lineNumber": 101,
                         "name": "deleteCommand",
                         "returnType": "void"
                     },
@@ -257,8 +278,8 @@
                                 "type": "QString"
                             }
                         ],
-                        "index": 11,
-                        "lineNumber": 99,
+                        "index": 12,
+                        "lineNumber": 114,
                         "name": "exportToFile",
                         "returnType": "void"
                     },
@@ -270,8 +291,8 @@
                                 "type": "QString"
                             }
                         ],
-                        "index": 12,
-                        "lineNumber": 103,
+                        "index": 13,
+                        "lineNumber": 118,
                         "name": "importFromFile",
                         "returnType": "void"
                     }
@@ -301,7 +322,7 @@
                     {
                         "access": "public",
                         "index": 0,
-                        "lineNumber": 108,
+                        "lineNumber": 123,
                         "name": "groupsChanged",
                         "returnType": "void"
                     }
@@ -320,13 +341,331 @@
     {
         "classes": [
             {
+                "className": "DataEncoder",
+                "lineNumber": 12,
+                "methods": [
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "hex",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 0,
+                        "lineNumber": 20,
+                        "name": "hexToString",
+                        "returnType": "QString"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "str",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 1,
+                        "lineNumber": 29,
+                        "name": "stringToHex",
+                        "returnType": "QString"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "hex",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 2,
+                        "lineNumber": 35,
+                        "name": "formatHex",
+                        "returnType": "QString"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "hex",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 3,
+                        "lineNumber": 44,
+                        "name": "formatDec",
+                        "returnType": "QString"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "hex",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 4,
+                        "lineNumber": 57,
+                        "name": "validateHex",
+                        "returnType": "QString"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "hex",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 5,
+                        "lineNumber": 71,
+                        "name": "reformatHex",
+                        "returnType": "QString"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "data",
+                                "type": "QByteArray"
+                            },
+                            {
+                                "name": "encoding",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 6,
+                        "lineNumber": 82,
+                        "name": "decodeBytes",
+                        "returnType": "QString"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "str",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "encoding",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 7,
+                        "lineNumber": 95,
+                        "name": "encodeString",
+                        "returnType": "QByteArray"
+                    }
+                ],
+                "object": true,
+                "qualifiedClassName": "DataEncoder",
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QObject"
+                    }
+                ]
+            }
+        ],
+        "inputFile": "DataEncoder.h",
+        "outputRevision": 69
+    },
+    {
+        "classes": [
+            {
+                "className": "RecordStore",
+                "lineNumber": 12,
+                "methods": [
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "type",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "content",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "hexContent",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "displayMode",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 5,
+                        "lineNumber": 27,
+                        "name": "addRecord",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "type",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "content",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "hexContent",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 6,
+                        "isCloned": true,
+                        "lineNumber": 27,
+                        "name": "addRecord",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 7,
+                        "lineNumber": 54,
+                        "name": "clearRecords",
+                        "returnType": "void"
+                    }
+                ],
+                "object": true,
+                "properties": [
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 0,
+                        "lineNumber": 15,
+                        "name": "records",
+                        "notify": "recordsChanged",
+                        "override": false,
+                        "read": "records",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "QVariantList",
+                        "user": false,
+                        "virtual": false
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 1,
+                        "lineNumber": 16,
+                        "name": "rxCount",
+                        "notify": "rxCountChanged",
+                        "override": false,
+                        "read": "rxCount",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "quint64",
+                        "user": false,
+                        "virtual": false
+                    },
+                    {
+                        "constant": false,
+                        "designable": true,
+                        "final": false,
+                        "index": 2,
+                        "lineNumber": 17,
+                        "name": "txCount",
+                        "notify": "txCountChanged",
+                        "override": false,
+                        "read": "txCount",
+                        "required": false,
+                        "scriptable": true,
+                        "stored": true,
+                        "type": "quint64",
+                        "user": false,
+                        "virtual": false
+                    }
+                ],
+                "qualifiedClassName": "RecordStore",
+                "signals": [
+                    {
+                        "access": "public",
+                        "index": 0,
+                        "lineNumber": 87,
+                        "name": "recordsChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 1,
+                        "lineNumber": 88,
+                        "name": "rxCountChanged",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "index": 2,
+                        "lineNumber": 89,
+                        "name": "txCountChanged",
+                        "returnType": "void"
+                    }
+                ],
+                "slots": [
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "ascii",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "hex",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "isSent",
+                                "type": "bool"
+                            }
+                        ],
+                        "index": 3,
+                        "lineNumber": 64,
+                        "name": "onDataReceived",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "path",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 4,
+                        "lineNumber": 68,
+                        "name": "exportRecords",
+                        "returnType": "void"
+                    }
+                ],
+                "superClasses": [
+                    {
+                        "access": "public",
+                        "name": "QObject"
+                    }
+                ]
+            }
+        ],
+        "inputFile": "RecordStore.h",
+        "outputRevision": 69
+    },
+    {
+        "classes": [
+            {
                 "className": "SerialManager",
-                "lineNumber": 11,
+                "lineNumber": 13,
                 "methods": [
                     {
                         "access": "public",
                         "index": 8,
-                        "lineNumber": 37,
+                        "lineNumber": 39,
                         "name": "availablePorts",
                         "returnType": "QVariantList"
                     },
@@ -340,17 +679,129 @@
                             {
                                 "name": "baudRate",
                                 "type": "int"
+                            },
+                            {
+                                "name": "dataBits",
+                                "type": "int"
+                            },
+                            {
+                                "name": "stopBits",
+                                "type": "int"
+                            },
+                            {
+                                "name": "parity",
+                                "type": "int"
+                            },
+                            {
+                                "name": "flowControl",
+                                "type": "int"
                             }
                         ],
                         "index": 9,
-                        "lineNumber": 38,
+                        "lineNumber": 40,
                         "name": "openPort",
                         "returnType": "bool"
                     },
                     {
                         "access": "public",
+                        "arguments": [
+                            {
+                                "name": "portName",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "baudRate",
+                                "type": "int"
+                            },
+                            {
+                                "name": "dataBits",
+                                "type": "int"
+                            },
+                            {
+                                "name": "stopBits",
+                                "type": "int"
+                            },
+                            {
+                                "name": "parity",
+                                "type": "int"
+                            }
+                        ],
                         "index": 10,
-                        "lineNumber": 39,
+                        "isCloned": true,
+                        "lineNumber": 40,
+                        "name": "openPort",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "portName",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "baudRate",
+                                "type": "int"
+                            },
+                            {
+                                "name": "dataBits",
+                                "type": "int"
+                            },
+                            {
+                                "name": "stopBits",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 11,
+                        "isCloned": true,
+                        "lineNumber": 40,
+                        "name": "openPort",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "portName",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "baudRate",
+                                "type": "int"
+                            },
+                            {
+                                "name": "dataBits",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 12,
+                        "isCloned": true,
+                        "lineNumber": 40,
+                        "name": "openPort",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "portName",
+                                "type": "QString"
+                            },
+                            {
+                                "name": "baudRate",
+                                "type": "int"
+                            }
+                        ],
+                        "index": 13,
+                        "isCloned": true,
+                        "lineNumber": 40,
+                        "name": "openPort",
+                        "returnType": "bool"
+                    },
+                    {
+                        "access": "public",
+                        "index": 14,
+                        "lineNumber": 41,
                         "name": "closePort",
                         "returnType": "void"
                     },
@@ -366,8 +817,8 @@
                                 "type": "bool"
                             }
                         ],
-                        "index": 11,
-                        "lineNumber": 40,
+                        "index": 15,
+                        "lineNumber": 42,
                         "name": "sendData",
                         "returnType": "void"
                     },
@@ -387,8 +838,8 @@
                                 "type": "int"
                             }
                         ],
-                        "index": 12,
-                        "lineNumber": 41,
+                        "index": 16,
+                        "lineNumber": 43,
                         "name": "sendDataWithChecksum",
                         "returnType": "void"
                     },
@@ -404,9 +855,22 @@
                                 "type": "bool"
                             }
                         ],
-                        "index": 13,
-                        "lineNumber": 42,
+                        "index": 17,
+                        "lineNumber": 44,
                         "name": "setStayOnTop",
+                        "returnType": "void"
+                    },
+                    {
+                        "access": "public",
+                        "arguments": [
+                            {
+                                "name": "text",
+                                "type": "QString"
+                            }
+                        ],
+                        "index": 18,
+                        "lineNumber": 45,
+                        "name": "copyToClipboard",
                         "returnType": "void"
                     }
                 ],
@@ -417,7 +881,7 @@
                         "designable": true,
                         "final": false,
                         "index": 0,
-                        "lineNumber": 14,
+                        "lineNumber": 16,
                         "name": "isOpen",
                         "notify": "isOpenChanged",
                         "override": false,
@@ -434,7 +898,7 @@
                         "designable": true,
                         "final": false,
                         "index": 1,
-                        "lineNumber": 15,
+                        "lineNumber": 17,
                         "name": "currentPort",
                         "notify": "currentPortChanged",
                         "override": false,
@@ -451,7 +915,7 @@
                         "designable": true,
                         "final": false,
                         "index": 2,
-                        "lineNumber": 16,
+                        "lineNumber": 18,
                         "name": "baudRate",
                         "notify": "baudRateChanged",
                         "override": false,
@@ -469,7 +933,7 @@
                         "designable": true,
                         "final": false,
                         "index": 3,
-                        "lineNumber": 17,
+                        "lineNumber": 19,
                         "name": "lineEndingMode",
                         "notify": "lineEndingModeChanged",
                         "override": false,
@@ -488,28 +952,28 @@
                     {
                         "access": "public",
                         "index": 0,
-                        "lineNumber": 45,
+                        "lineNumber": 48,
                         "name": "isOpenChanged",
                         "returnType": "void"
                     },
                     {
                         "access": "public",
                         "index": 1,
-                        "lineNumber": 46,
+                        "lineNumber": 49,
                         "name": "currentPortChanged",
                         "returnType": "void"
                     },
                     {
                         "access": "public",
                         "index": 2,
-                        "lineNumber": 47,
+                        "lineNumber": 50,
                         "name": "baudRateChanged",
                         "returnType": "void"
                     },
                     {
                         "access": "public",
                         "index": 3,
-                        "lineNumber": 48,
+                        "lineNumber": 51,
                         "name": "lineEndingModeChanged",
                         "returnType": "void"
                     },
@@ -530,7 +994,7 @@
                             }
                         ],
                         "index": 4,
-                        "lineNumber": 49,
+                        "lineNumber": 52,
                         "name": "dataReceived",
                         "returnType": "void"
                     },
@@ -548,7 +1012,7 @@
                         ],
                         "index": 5,
                         "isCloned": true,
-                        "lineNumber": 49,
+                        "lineNumber": 52,
                         "name": "dataReceived",
                         "returnType": "void"
                     },
@@ -561,7 +1025,7 @@
                             }
                         ],
                         "index": 6,
-                        "lineNumber": 50,
+                        "lineNumber": 53,
                         "name": "errorOccurred",
                         "returnType": "void"
                     }
@@ -570,7 +1034,7 @@
                     {
                         "access": "private",
                         "index": 7,
-                        "lineNumber": 53,
+                        "lineNumber": 56,
                         "name": "readData",
                         "returnType": "void"
                     }
