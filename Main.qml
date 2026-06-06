@@ -426,7 +426,8 @@ Window {
                         Text { text: "连接配置"
                          color: whiteText
                          font.bold: true
-                         font.pixelSize: 14 }
+                         font.pixelSize: 14
+                         Layout.topMargin: 4 }
 
                         ColumnLayout {
                             spacing: 8
@@ -479,19 +480,35 @@ Window {
                                 }
                                 delegate: ItemDelegate {
                                     width: portCombo.width
-                                    height: 36
-                                    contentItem: Text { text: modelData.name
-                                     color: highlighted ? "white" : whiteText
-                                     font.pixelSize: 12
-                                     verticalAlignment: Text.AlignVCenter
-                                     leftPadding: 12 }
-                                    background: Rectangle { color: highlighted ? clHighlight : "transparent"
-                                     radius: 8 }
-                                    
-                                    // 悬停提示：显示串口描述
-                                    ToolTip.visible: hovered
-                                    ToolTip.delay: 300
-                                    ToolTip.text: modelData.description + (modelData.manufacturer ? "\n(" + modelData.manufacturer + ")" : "")
+                                    height: 44
+                                    contentItem: Column {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        anchors.left: parent.left
+                                        anchors.leftMargin: 12
+                                        anchors.right: parent.right
+                                        anchors.rightMargin: 8
+                                        spacing: 1
+                                        Text { text: modelData.name
+                                            color: highlighted ? "white" : whiteText
+                                            font.pixelSize: 12
+                                            font.bold: true }
+                                        Text { text: (modelData.description || "") + (modelData.manufacturer ? " (" + modelData.manufacturer + ")" : "")
+                                            color: highlighted ? "#ccc" : "#888"
+                                            font.pixelSize: 9
+                                            elide: Text.ElideRight
+                                            width: parent.width }
+                                    }
+                                    background: Rectangle {
+                                        color: highlighted ? clHighlight : (portDelegateHover.containsMouse ? (isDark ? "#333537" : "#F0F1F3") : "transparent")
+                                        radius: 6
+                                        MouseArea {
+                                            id: portDelegateHover
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            acceptedButtons: Qt.NoButton
+                                        }
+                                    }
+                                    highlighted: portCombo.highlightedIndex === index
                                 }
                             }
                         }
@@ -534,12 +551,23 @@ Window {
                                     width: baudCombo.width
                                     height: 36
                                     contentItem: Text { text: modelData
-                                     color: highlighted ? "white" : whiteText
-                                     font.pixelSize: 12
-                                     verticalAlignment: Text.AlignVCenter
-                                     leftPadding: 12 }
-                                    background: Rectangle { color: highlighted ? clHighlight : "transparent"
-                                     radius: 8 }
+                                        color: (highlighted || baudDelegateHover.containsMouse) ? "white" : whiteText
+                                        font.pixelSize: 12
+                                        verticalAlignment: Text.AlignVCenter
+                                        leftPadding: 12 }
+                                    background: Rectangle {
+                                        color: (highlighted || baudDelegateHover.containsMouse) ? clHighlight : "transparent"
+                                        radius: 6
+                                        border.color: (index > 0 && !highlighted && !baudDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
+                                        border.width: (index > 0 && !highlighted && !baudDelegateHover.containsMouse) ? 1 : 0
+                                        MouseArea {
+                                            id: baudDelegateHover
+                                            anchors.fill: parent
+                                            hoverEnabled: true
+                                            acceptedButtons: Qt.NoButton
+                                        }
+                                    }
+                                    highlighted: baudCombo.highlightedIndex === index
                                 }
                             }
                         }
@@ -576,8 +604,13 @@ Window {
                                 }
                                 delegate: ItemDelegate {
                                     width: dataBitsCombo.width; height: 32
-                                    contentItem: Text { text: modelData; color: highlighted ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
-                                    background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
+                                    contentItem: Text { text: modelData; color: (highlighted || dataBitsDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
+                                    background: Rectangle {
+                                        color: (highlighted || dataBitsDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 6
+                                        border.color: (index > 0 && !highlighted && !dataBitsDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
+                                        border.width: (index > 0 && !highlighted && !dataBitsDelegateHover.containsMouse) ? 1 : 0
+                                        MouseArea { id: dataBitsDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                                    }
                                 }
                             }
                         }
@@ -604,8 +637,13 @@ Window {
                                     }
                                     delegate: ItemDelegate {
                                         width: stopBitsCombo.width; height: 30
-                                        contentItem: Text { text: modelData; color: highlighted ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
-                                        background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
+                                        contentItem: Text { text: modelData; color: (highlighted || stopBitsDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
+                                        background: Rectangle {
+                                            color: (highlighted || stopBitsDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 6
+                                            border.color: (index > 0 && !highlighted && !stopBitsDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
+                                            border.width: (index > 0 && !highlighted && !stopBitsDelegateHover.containsMouse) ? 1 : 0
+                                            MouseArea { id: stopBitsDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                                        }
                                     }
                                 }
                             }
@@ -628,8 +666,13 @@ Window {
                                     }
                                     delegate: ItemDelegate {
                                         width: parityCombo.width; height: 30
-                                        contentItem: Text { text: modelData; color: highlighted ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
-                                        background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
+                                        contentItem: Text { text: modelData; color: (highlighted || parityDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
+                                        background: Rectangle {
+                                            color: (highlighted || parityDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 6
+                                            border.color: (index > 0 && !highlighted && !parityDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
+                                            border.width: (index > 0 && !highlighted && !parityDelegateHover.containsMouse) ? 1 : 0
+                                            MouseArea { id: parityDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                                        }
                                     }
                                 }
                             }
@@ -656,8 +699,13 @@ Window {
                                 }
                                 delegate: ItemDelegate {
                                     width: flowCombo.width; height: 32
-                                    contentItem: Text { text: modelData; color: highlighted ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
-                                    background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
+                                    contentItem: Text { text: modelData; color: (highlighted || flowDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
+                                    background: Rectangle {
+                                        color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 6
+                                        border.color: (index > 0 && !highlighted && !flowDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
+                                        border.width: (index > 0 && !highlighted && !flowDelegateHover.containsMouse) ? 1 : 0
+                                        MouseArea { id: flowDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                                    }
                                 }
                             }
                         }
