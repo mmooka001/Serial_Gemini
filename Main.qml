@@ -756,7 +756,7 @@ Window {
                                      boundsBehavior: Flickable.StopAtBounds
                                     delegate: Column {
                                         width: terminalView.width
-                                         spacing: 0
+                                         spacing: 3
                                          property bool delegateHover: false
                                         RowLayout {
                                             width: parent.width
