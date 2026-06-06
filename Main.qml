@@ -77,6 +77,7 @@ Window {
     property var loopCmds: []
     property int loopIndex: -1
     property bool loopSending: false
+    property int loopInterval: 500
 
     Timer {
         id: autoSendTimer
@@ -95,7 +96,7 @@ Window {
 
     Timer {
         id: loopTimer
-        interval: 500
+        interval: loopInterval
         repeat: false
         onTriggered: {
             if (!loopSending || loopIndex >= loopCmds.length) {
@@ -1700,9 +1701,39 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     Layout.fillWidth: true
                                     spacing: 6
 
+                                    Rectangle {
+                                        Layout.preferredWidth: 80
+                                        Layout.preferredHeight: 30
+                                        radius: 6
+                                        color: clInput
+                                        border.color: clBorder
+                                        border.width: 1
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 6
+                                            anchors.rightMargin: 6
+                                            spacing: 2
+                                            Text { text: "ms"; color: "#777"; font.pixelSize: 9 }
+                                            TextInput {
+                                                Layout.fillWidth: true
+                                                color: whiteText
+                                                font.pixelSize: 11
+                                                font.family: "Consolas"
+                                                text: loopInterval.toString()
+                                                validator: IntValidator { bottom: 50; top: 10000 }
+                                                horizontalAlignment: TextInput.AlignHCenter
+                                                onEditingFinished: {
+                                                    var v = parseInt(text)
+                                                    if (!isNaN(v) && v >= 50 && v <= 10000) loopInterval = v
+                                                    else text = loopInterval.toString()
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     Button {
                                         Layout.fillWidth: true
-                                        text: "▶ 循环发送"
+                                        text: loopSending ? "⏹ 停止" : "▶ 循环发送"
                                         font.pixelSize: 11
                                         contentItem: Text {
                                             text: parent.text
@@ -1718,7 +1749,15 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                             border.width: 1
                                             MouseArea { id: loopBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                                         }
-                                        onClicked: startLoopSend()
+                                        onClicked: {
+                                            if (loopSending) {
+                                                loopSending = false
+                                                loopIndex = -1
+                                                loopTimer.stop()
+                                            } else {
+                                                startLoopSend()
+                                            }
+                                        }
                                     }
 
                                     Button {
