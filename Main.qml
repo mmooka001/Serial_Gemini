@@ -1698,12 +1698,11 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     spacing: 6
 
                                     Rectangle {
-                                        Layout.preferredWidth: 70
+                                        Layout.preferredWidth: 60
                                         radius: 6
                                         color: clInput
                                         border.color: clBorder
                                         border.width: 1
-                                        implicitHeight: 28
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.leftMargin: 6
@@ -1728,7 +1727,8 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     }
 
                                     Button {
-                                        text: loopSending ? "⏹ 停止" : "▶ 循环"
+                                        Layout.fillWidth: true
+                                        text: loopSending ? "⏹ 停止" : "▶ 循环发送"
                                         flat: true
                                         font.pixelSize: 11
                                         contentItem: Text {
