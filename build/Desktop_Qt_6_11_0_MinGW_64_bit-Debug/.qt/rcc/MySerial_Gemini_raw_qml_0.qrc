@@ -1,6 +1,0 @@
-<RCC>
-  <qresource prefix="/MySerial_Gemini/">
-    <file alias="Main.qml">E:/Workspace_QT/MySerial_Gemini/Main.qml</file>
-  </qresource>
-</RCC>
-

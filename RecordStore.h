@@ -24,8 +24,8 @@ public:
     quint64 rxCount() const { return m_rxCount; }
     quint64 txCount() const { return m_txCount; }
 
-    Q_INVOKABLE void addRecord(const QString &type, const QString &content,
-                               const QString &hexContent, int displayMode = 0) {
+    void addRecord(const QString &type, const QString &content,
+                   const QString &hexContent, int displayMode = 0) {
         QVariantMap rec;
         rec["type"] = type;
         rec["content"] = content;

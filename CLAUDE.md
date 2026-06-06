@@ -41,11 +41,9 @@ The application follows a **Qt Model-View pattern with C++ backend and QML front
 C++ Backend (Business Logic)     QML Frontend (UI)
 ├── SerialManager.h/cpp         ├── Main.qml (Main window)
 ├── CommandStore.h              ├── TitleBar & Navigation
-├── QuickInputStore.h           ├── ConfigPanel (left sidebar)
 ├── SettingsStore.h             ├── TerminalPanel (message display)
-├── DataEncoder.h               ├── SendPanel (input & controls)
 ├── ChecksumHelper.h            ├── CommandPanel (command groups)
-├── RecordStore.h               └── QuickInputPanel (quick commands)
+├── RecordStore.h               └── SendPanel (input & controls)
 ```
 
 ### Core Components
@@ -64,22 +62,10 @@ C++ Backend (Business Logic)     QML Frontend (UI)
 - Each command has: name, payload, isHex flag
 - Supports import/export to JSON files
 
-**QuickInputStore** (`QuickInputStore.h`)
-- Manages quick command list with loop sending functionality
-- Persists to `quickinputs.json` in AppData location
-- Each item: name, payload, isHex, delay, enabled, remark
-- Supports loop sending with configurable intervals and delays between items
-- Uses two QTimer instances: `m_loopTimer` (interval) and `m_delayTimer` (per-item delay)
-
 **SettingsStore** (`SettingsStore.h`)
 - Manages application settings using QSettings
 - Persists to QSettings standard location
-- Settings: lineEndingMode, customLineEnding, dataEncoding, hasDecimalMode, autoScrollEnabled
-
-**DataEncoder** (`DataEncoder.h`)
-- Static utility class for data encoding/decoding
-- Methods: `hexToString()`, `stringToHex()`, `formatHex()`, `formatDec()`, `validateHex()`, `reformatHex()`
-- Supports multiple encodings: UTF-8, GBK, etc. (via QT_HAS_CORE5COMPAT)
+- Settings: lineEndingMode, dataEncoding, hasDecimalMode, configPanelWidth, featurePanelWidth
 
 **ChecksumHelper** (`ChecksumHelper.h`)
 - Static utility class for checksum calculation
@@ -140,12 +126,7 @@ Main UI sections:
    - Send button per command
    - Loop send for selected commands
 
-6. **QuickInputPanel** (300px width, shown when activePanel=1)
-   - Quick command list with delay and enabled flags
-   - Loop send with interval
-   - Import/export support
-
-7. **StatusBar** (bottom)
+6. **StatusBar** (bottom)
    - Connection status
    - RX/TX byte counters
    - Current port info
@@ -246,10 +227,6 @@ All data persists to `QStandardPaths::AppDataLocation`:
 Update color properties in `Main.qml`:
 - Dark theme: lines 24-34
 - Light theme: same properties with different values
-
-### Adding New Encoding Support
-
-Extend `DataEncoder.h` with new Q_INVOKABLE methods. For legacy encodings (GBK, etc.), use `#ifdef QT_HAS_CORE5COMPAT`.
 
 ## Git Workflow
 

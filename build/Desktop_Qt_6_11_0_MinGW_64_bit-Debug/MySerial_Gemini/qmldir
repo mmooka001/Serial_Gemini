@@ -1,6 +1,0 @@
-module MySerial_Gemini
-typeinfo MySerial_Gemini.qmltypes
-prefer :/MySerial_Gemini/
-Main 1.0 Main.qml
-depends QtQuick
-

@@ -1,7 +1,0 @@
-packages:
-  - 'packages/*'
-onlyBuiltDependencies:
-  - '@tailwindcss/oxide'
-  - esbuild
-  - simple-git-hooks
-  - vue-demi
