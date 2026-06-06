@@ -34,10 +34,30 @@ Window {
     readonly property color clTitleBg: isDark ? "#323335" : "#F1F3F4"
 
     property int activePanel: -1          // -1=none, 0=指令, 1=码表, 2=设置
-    property int featurePanelWidth: 300
-    property int configPanelWidth: 260
+    property int featurePanelWidth: settingsStore.featurePanelWidth
+    property int configPanelWidth: settingsStore.configPanelWidth
     property int clickOffset: 0           // Click animation offset
-    readonly property int centerWidth: width - configPanelWidth - (activePanel >= 0 ? featurePanelWidth + 50 + 8 : 50) - 46
+
+    // Layout constants
+    readonly property int panelGap: 12
+    readonly property int activityBarWidth: 50
+    readonly property int minimumCenterWidth: 200
+    readonly property int dragHandleWidth: 6
+
+    // Clamp panels so center never collapses
+    readonly property int maxConfigWidth: Math.max(180, width - activityBarWidth - (activePanel >= 0 ? 200 : 0) - panelGap * 2 - minimumCenterWidth)
+    readonly property int clampedConfigWidth: Math.max(180, Math.min(420, Math.min(configPanelWidth, maxConfigWidth)))
+    readonly property int maxFeatureWidth: Math.max(200, width - clampedConfigWidth - activityBarWidth - panelGap * 2 - minimumCenterWidth)
+    readonly property int effectiveFeaturePanelWidth: Math.max(200, Math.min(500, Math.min(featurePanelWidth, maxFeatureWidth)))
+    readonly property int rightPanelTotal: activePanel >= 0 ? (effectiveFeaturePanelWidth + activityBarWidth) : activityBarWidth
+    readonly property int centerWidth: width - clampedConfigWidth - rightPanelTotal - panelGap * 2
+
+    // Toolbar fade-out thresholds (reverse order: checksum fades first, RX last)
+    readonly property bool showChecksumControl: sendCard.width >= 520
+    readonly property bool showAutoControl: sendCard.width >= 445
+    readonly property bool showTimeControl: sendCard.width >= 385
+    readonly property bool showTxModeControl: sendCard.width >= 285
+    readonly property bool showRxModeControl: sendCard.width >= 180
     property bool globalRxHex: true 
     property bool globalTxHex: true 
     property bool globalTimestamp: true
@@ -402,9 +422,9 @@ Window {
                 
                 Rectangle {
                     id: configCard
-                    Layout.preferredWidth: configPanelWidth
+                    Layout.preferredWidth: clampedConfigWidth
                     Layout.fillHeight: true
-                    Layout.rightMargin: 15
+                    Layout.rightMargin: panelGap
                     color: clCard
                     radius: 12
                     border.color: clBorder
@@ -412,11 +432,12 @@ Window {
 
                     // Right edge drag handle for resizing
                     MouseArea {
-                        width: 6
+                        width: dragHandleWidth
                         anchors.right: parent.right
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         cursorShape: Qt.SizeHorCursor
+                        hoverEnabled: true
                         property real dragStartX: 0
                         property int startWidth: 0
                         onPressed: (mouse) => { dragStartX = mapToItem(null, mouse.x, mouse.y).x; startWidth = configPanelWidth }
@@ -424,8 +445,18 @@ Window {
                             if (pressed) {
                                 var globalX = mapToItem(null, mouse.x, mouse.y).x
                                 var delta = globalX - dragStartX
-                                configPanelWidth = Math.max(60, startWidth + delta)
+                                configPanelWidth = Math.max(180, Math.min(420, startWidth + delta))
+                                settingsStore.configPanelWidth = configPanelWidth
                             }
+                        }
+                        // Highlight line on hover
+                        Rectangle {
+                            width: 2
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            color: parent.containsMouse || parent.pressed ? clHighlight : "transparent"
+                            Behavior on color { ColorAnimation { duration: 120 } }
                         }
                     }
 
@@ -755,9 +786,12 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                 }
 
                 ColumnLayout {
+                    id: centerColumn
                     Layout.fillWidth: true
-                     Layout.fillHeight: true
-                     spacing: 15
+                    Layout.fillHeight: true
+                    Layout.minimumWidth: 0
+                    spacing: 15
+                    clip: true
                     
                     Rectangle {
                         id: terminalCard
@@ -888,146 +922,218 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                     Rectangle {
                         id: sendCard
-                         Layout.fillWidth: true
-                         Layout.preferredHeight: 180
-                         color: clCard
-                         radius: 15
-                         border.color: clBorder
+                        Layout.fillWidth: true
+                        Layout.minimumWidth: 0
+                        Layout.preferredHeight: 180
+                        color: clCard
+                        radius: 15
+                        border.color: clBorder
+                        clip: true
                         ColumnLayout {
                             anchors.fill: parent
-                             anchors.margins: 15
-                             spacing: 12
+                            anchors.margins: 15
+                            spacing: 12
                             RowLayout {
-                                spacing: 12
-                                 Layout.fillWidth: true
-                                RowLayout {
-                                    spacing: 6
-                                     Text { text: "接收:"
-                                     color: "#777"
-                                     font.pixelSize: 10
-                                     visible: centerWidth > 350 }
-                                    Row { Repeater { model: ["TXT", "HEX"]
-                                     Button { width: window.width > 800 ? 45 : 35
-                                     height: 26
-                                     property bool active: (index === 1) === globalRxHex
-                                     contentItem: Text { text: modelData
-                                     color: active ? "white" : "#777"
-                                     font.pixelSize: 9
-                                     horizontalAlignment: Text.AlignHCenter
-                                     verticalAlignment: Text.AlignVCenter }
-                                     background: Rectangle { color: active ? clHighlight : clInput
-                                     radius: 6
-                                     Rectangle { width: 10
-                                     height: 26
-                                     color: parent.color
-                                     anchors.right: parent.right
-                                     visible: index === 0 }
-                                     Rectangle { width: 10
-                                     height: 26
-                                     color: parent.color
-                                     anchors.left: parent.left
-                                     visible: index === 1 } }
-                                     onClicked: { globalRxHex = (index === 1) } } } }
-                                }
-                                RowLayout {
-                                    spacing: 6
-                                     Text { text: "发送:"
-                                     color: "#777"
-                                     font.pixelSize: 10
-                                     visible: centerWidth > 350 }
-                                    Row { Repeater { model: ["TXT", "HEX"]
-                                     Button { width: window.width > 800 ? 50 : 38
-                                     height: 26
-                                     property bool active: (index === 1) === globalTxHex
-                                     contentItem: Text { text: modelData
-                                     color: active ? "white" : "#777"
-                                     font.pixelSize: 9
-                                     horizontalAlignment: Text.AlignHCenter
-                                     verticalAlignment: Text.AlignVCenter }
-                                     background: Rectangle { color: active ? clHighlight : clInput
-                                     radius: 6
-                                     Rectangle { width: 10
-                                     height: 26
-                                     color: parent.color
-                                     anchors.right: parent.right
-                                     visible: index === 0 }
-                                     Rectangle { width: 10
-                                     height: 26
-                                     color: parent.color
-                                     anchors.left: parent.left
-                                     visible: index === 1 } }
-                                     onClicked: { globalTxHex = (index === 1) } } } }
-                                }
-                                RowLayout {
-                                    spacing: 4
-                                    Rectangle { width: 45; height: 26; radius: 6
-                                     color: globalTimestamp ? clHighlight : clInput
-                                     Text { text: "TIME"; anchors.centerIn: parent
-                                     color: globalTimestamp ? "white" : "#777"
-                                     font.pixelSize: 9 }
-                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                     onClicked: globalTimestamp = !globalTimestamp } }
-                                    Rectangle { width: 45; height: 26; radius: 6
-                                     color: autoSending ? "#e53935" : clInput
-                                     Behavior on color { ColorAnimation { duration: 200 } }
-                                     Text { text: autoSending ? "⏹" : "自动"; anchors.centerIn: parent
-                                     color: autoSending ? "white" : "#777"
-                                     font.pixelSize: 9; font.bold: true
-                                     Behavior on color { ColorAnimation { duration: 200 } } }
-                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                     onClicked: {
-                                         if (autoSending) { autoSendTimer.stop(); autoSending = false }
-                                         else { autoSendTimer.start(); autoSending = true }
-                                     } } }
-                                }
-                                Item { Layout.fillWidth: true }
-                                ComboBox { 
-                                    id: checksumCombo
-                                    Layout.preferredWidth: 90
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                spacing: 8
+                                clip: true
+
+                                Item {
+                                    id: rxModeControl
+                                    Layout.preferredWidth: showRxModeControl ? 112 : 0
+                                    Layout.minimumWidth: 0
                                     Layout.preferredHeight: 30
-                                    model: ["无校验", "BCC", "Sum8", "CRC16"]
-                                    background: Rectangle { 
-                                        color: clInput
-                                        radius: 8
-                                        border.color: checksumCombo.activeFocus ? clHighlight : clBorder 
-                                    }
-                                    contentItem: Text { 
-                                        text: window.width > 850 ? checksumCombo.currentText : "∑ " + checksumCombo.currentText
-                                        color: clText
-                                        font.pixelSize: 11
-                                        verticalAlignment: Text.AlignVCenter
-                                        leftPadding: 10 
-                                    }
-                                    popup: Popup {
-                                        y: checksumCombo.height + 3
-                                        width: checksumCombo.width
-                                        implicitHeight: contentItem.implicitHeight
-                                        padding: 5
-                                        contentItem: ListView {
-                                            clip: true
-                                            implicitHeight: contentHeight
-                                            model: checksumCombo.popup.visible ? checksumCombo.delegateModel : null
+                                    opacity: showRxModeControl ? 1 : 0
+                                    enabled: showRxModeControl
+                                    clip: true
+                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        spacing: 6
+                                        Text { text: "接收:"; color: "#777"; font.pixelSize: 10 }
+                                        Row {
+                                            Repeater {
+                                                model: ["TXT", "HEX"]
+                                                Button {
+                                                    width: 35
+                                                    height: 26
+                                                    property bool active: (index === 1) === globalRxHex
+                                                    contentItem: Text {
+                                                        text: modelData
+                                                        color: active ? "white" : "#777"
+                                                        font.pixelSize: 9
+                                                        horizontalAlignment: Text.AlignHCenter
+                                                        verticalAlignment: Text.AlignVCenter
+                                                    }
+                                                    background: Rectangle {
+                                                        color: active ? clHighlight : clInput
+                                                        radius: 6
+                                                        Rectangle { width: 10; height: 26; color: parent.color; anchors.right: parent.right; visible: index === 0 }
+                                                        Rectangle { width: 10; height: 26; color: parent.color; anchors.left: parent.left; visible: index === 1 }
+                                                    }
+                                                    onClicked: globalRxHex = (index === 1)
+                                                }
+                                            }
                                         }
-                                        background: Rectangle { 
-                                            color: clCard
-                                            radius: 10
-                                            border.color: clBorder
-                                            border.width: 1 
+                                    }
+                                }
+
+                                Item {
+                                    id: txModeControl
+                                    Layout.preferredWidth: showTxModeControl ? 112 : 0
+                                    Layout.minimumWidth: 0
+                                    Layout.preferredHeight: 30
+                                    opacity: showTxModeControl ? 1 : 0
+                                    enabled: showTxModeControl
+                                    clip: true
+                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        spacing: 6
+                                        Text { text: "发送:"; color: "#777"; font.pixelSize: 10 }
+                                        Row {
+                                            Repeater {
+                                                model: ["TXT", "HEX"]
+                                                Button {
+                                                    width: 38
+                                                    height: 26
+                                                    property bool active: (index === 1) === globalTxHex
+                                                    contentItem: Text {
+                                                        text: modelData
+                                                        color: active ? "white" : "#777"
+                                                        font.pixelSize: 9
+                                                        horizontalAlignment: Text.AlignHCenter
+                                                        verticalAlignment: Text.AlignVCenter
+                                                    }
+                                                    background: Rectangle {
+                                                        color: active ? clHighlight : clInput
+                                                        radius: 6
+                                                        Rectangle { width: 10; height: 26; color: parent.color; anchors.right: parent.right; visible: index === 0 }
+                                                        Rectangle { width: 10; height: 26; color: parent.color; anchors.left: parent.left; visible: index === 1 }
+                                                    }
+                                                    onClicked: globalTxHex = (index === 1)
+                                                }
+                                            }
                                         }
                                     }
-                                    delegate: ItemDelegate {
-                                        width: checksumCombo.width
-                                        height: 32
-                                        contentItem: Text { 
-                                            text: modelData
-                                            color: highlighted ? "white" : whiteText
+                                }
+
+                                Item {
+                                    id: timeControl
+                                    Layout.preferredWidth: showTimeControl ? 45 : 0
+                                    Layout.minimumWidth: 0
+                                    Layout.preferredHeight: 30
+                                    opacity: showTimeControl ? 1 : 0
+                                    enabled: showTimeControl
+                                    clip: true
+                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        width: 45
+                                        height: 26
+                                        radius: 6
+                                        color: globalTimestamp ? clHighlight : clInput
+                                        Text { text: "TIME"; anchors.centerIn: parent; color: globalTimestamp ? "white" : "#777"; font.pixelSize: 9 }
+                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: globalTimestamp = !globalTimestamp }
+                                    }
+                                }
+
+                                Item {
+                                    id: autoControl
+                                    Layout.preferredWidth: showAutoControl ? 45 : 0
+                                    Layout.minimumWidth: 0
+                                    Layout.preferredHeight: 30
+                                    opacity: showAutoControl ? 1 : 0
+                                    enabled: showAutoControl
+                                    clip: true
+                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                                    Rectangle {
+                                        anchors.centerIn: parent
+                                        width: 45
+                                        height: 26
+                                        radius: 6
+                                        color: autoSending ? "#e53935" : clInput
+                                        Behavior on color { ColorAnimation { duration: 200 } }
+                                        Text {
+                                            text: autoSending ? "⏹" : "自动"
+                                            anchors.centerIn: parent
+                                            color: autoSending ? "white" : "#777"
+                                            font.pixelSize: 9
+                                            font.bold: true
+                                            Behavior on color { ColorAnimation { duration: 200 } }
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            onClicked: {
+                                                if (autoSending) { autoSendTimer.stop(); autoSending = false }
+                                                else { autoSendTimer.start(); autoSending = true }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Item { Layout.fillWidth: true }
+
+                                Item {
+                                    id: checksumControl
+                                    Layout.preferredWidth: showChecksumControl ? 90 : 0
+                                    Layout.minimumWidth: 0
+                                    Layout.preferredHeight: 30
+                                    opacity: showChecksumControl ? 1 : 0
+                                    enabled: showChecksumControl
+                                    clip: true
+                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                                    ComboBox {
+                                        id: checksumCombo
+                                        anchors.fill: parent
+                                        model: ["无校验", "BCC", "Sum8", "CRC16"]
+                                        background: Rectangle {
+                                            color: clInput
+                                            radius: 8
+                                            border.color: checksumCombo.activeFocus ? clHighlight : clBorder
+                                        }
+                                        contentItem: Text {
+                                            text: checksumCombo.currentText
+                                            color: clText
                                             font.pixelSize: 11
                                             verticalAlignment: Text.AlignVCenter
-                                            leftPadding: 10 
+                                            leftPadding: 10
                                         }
-                                        background: Rectangle { 
-                                            color: highlighted ? clHighlight : "transparent"
-                                            radius: 6 
+                                        popup: Popup {
+                                            y: checksumCombo.height + 3
+                                            width: checksumCombo.width
+                                            implicitHeight: contentItem.implicitHeight
+                                            padding: 5
+                                            contentItem: ListView {
+                                                clip: true
+                                                implicitHeight: contentHeight
+                                                model: checksumCombo.popup.visible ? checksumCombo.delegateModel : null
+                                            }
+                                            background: Rectangle {
+                                                color: clCard
+                                                radius: 10
+                                                border.color: clBorder
+                                                border.width: 1
+                                            }
+                                        }
+                                        delegate: ItemDelegate {
+                                            width: checksumCombo.width
+                                            height: 32
+                                            contentItem: Text {
+                                                text: modelData
+                                                color: highlighted ? "white" : whiteText
+                                                font.pixelSize: 11
+                                                verticalAlignment: Text.AlignVCenter
+                                                leftPadding: 10
+                                            }
+                                            background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
                                         }
                                     }
                                 }
@@ -1040,9 +1146,12 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                  border.color: sendInput.activeFocus ? clHighlight : "transparent"
                                 RowLayout {
                                     anchors.fill: parent
-                                     anchors.margins: 8
+                                    anchors.margins: 8
+                                    spacing: 8
+                                    clip: true
                                     TextArea { id: sendInput
                                      Layout.fillWidth: true
+                                     Layout.minimumWidth: 0
                                      Layout.fillHeight: true
                                      color: whiteText
                                      font.family: "Consolas"
@@ -1075,11 +1184,15 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                              event.accepted = false
                                          }
                                      } }
-                                    Rectangle { Layout.preferredWidth: 50
+                                    Rectangle { Layout.preferredWidth: (checksumCombo.currentIndex > 0 && sendCard.width >= 165) ? 50 : 0
+                                     Layout.minimumWidth: 0
                                      Layout.fillHeight: true
                                      color: isDark ? "#232428" : "#E8EAEF"
                                      radius: 8
-                                     visible: checksumCombo.currentIndex > 0
+                                     opacity: (checksumCombo.currentIndex > 0 && sendCard.width >= 165) ? 1 : 0
+                                     visible: opacity > 0
+                                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                      Column { anchors.centerIn: parent
                                      spacing: 2
                                      Text { text: "校验"
@@ -1092,6 +1205,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                      font.pixelSize: 13 } } }
                                     Button { id: sendBtn
                                      Layout.preferredWidth: 55
+                                     Layout.minimumWidth: 55
                                      Layout.fillHeight: true
                                      text: "➤"
                                      onClicked: doSend()
@@ -1111,9 +1225,10 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                 // ── Right Column: Feature Panel + Activity Bar ──
                 Item {
-                    Layout.preferredWidth: activePanel >= 0 ? (featurePanelWidth + 50) : 50
+                    z: 2
+                    Layout.preferredWidth: rightPanelTotal
                     Layout.fillHeight: true
-                    Layout.leftMargin: 8 + clickOffset
+                    Layout.leftMargin: panelGap
                     clip: true
 
                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
@@ -1121,7 +1236,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                     // Feature Panel (slides out from left of activity bar)
                     Rectangle {
                         id: featurePanel
-                        width: activePanel >= 0 ? featurePanelWidth : 0
+                        width: activePanel >= 0 ? effectiveFeaturePanelWidth : 0
                         anchors.left: parent.left
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
@@ -1138,11 +1253,12 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                         // Drag handle on left edge for resizing
                         MouseArea {
                             id: panelDragHandle
-                            width: 6
+                            width: dragHandleWidth
                             anchors.left: parent.left
                             anchors.top: parent.top
                             anchors.bottom: parent.bottom
                             cursorShape: Qt.SizeHorCursor
+                            hoverEnabled: true
                             property real dragStartX: 0
                             property int dragStartWidth: 0
                             onPressed: function(mouse) {
@@ -1154,7 +1270,17 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     var delta = dragStartX - mouse.x
                                     var newWidth = Math.max(200, Math.min(500, dragStartWidth + delta))
                                     featurePanelWidth = newWidth
+                                    settingsStore.featurePanelWidth = featurePanelWidth
                                 }
+                            }
+                            // Highlight line on hover
+                            Rectangle {
+                                width: 2
+                                anchors.left: parent.left
+                                anchors.top: parent.top
+                                anchors.bottom: parent.bottom
+                                color: parent.containsMouse || parent.pressed ? clHighlight : "transparent"
+                                Behavior on color { ColorAnimation { duration: 120 } }
                             }
                         }
 
