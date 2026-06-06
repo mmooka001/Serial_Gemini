@@ -1330,7 +1330,15 @@ Window {
                                                     property int groupIdx: parent.parent.groupIndex
                                                     property int cmdIdx: index
                                                     property string mapKey: groupIdx + ":" + cmdIdx
-                                                    property bool isHexMode: modelData.isHex || false
+                                                    property bool isHexMode: {
+                                                        var g = commandStore.groups
+                                                        if (groupIdx >= 0 && groupIdx < g.length) {
+                                                            var cmds = g[groupIdx].commands || []
+                                                            if (cmdIdx >= 0 && cmdIdx < cmds.length)
+                                                                return cmds[cmdIdx].isHex || false
+                                                        }
+                                                        return false
+                                                    }
 
                                                     MouseArea {
                                                         id: cmdMouse

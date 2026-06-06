@@ -1,22 +1,29 @@
 #include "SerialManager.h"
-#include "ChecksumHelper.h"
 #include <QDebug>
+#include <QClipboard>
+#include <QGuiApplication>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
+#include <dwmapi.h>
 #endif
 
 SerialManager::SerialManager(QObject *parent)
-    : QObject(parent), m_serialPort(new QSerialPort(this))
+    : QObject(parent), m_serialPort(new QSerialPort(this)), m_isOpen(false), m_lineEndingMode(0)
 {
     connect(m_serialPort, &QSerialPort::readyRead, this, &SerialManager::readData);
+    connect(m_serialPort, &QSerialPort::errorOccurred, this, [this](QSerialPort::SerialPortError error) {
+        if (error != QSerialPort::NoError) {
+            emit errorOccurred(m_serialPort->errorString());
+        }
+    });
 }
-
 
 SerialManager::~SerialManager()
 {
-    if (m_serialPort->isOpen())
+    if (m_serialPort->isOpen()) {
         m_serialPort->close();
+    }
 }
 
 QVariantList SerialManager::availablePorts()
@@ -26,8 +33,10 @@ QVariantList SerialManager::availablePorts()
     for (const QSerialPortInfo &info : infos) {
         QVariantMap port;
         port["name"] = info.portName();
-        port["description"] = info.description().isEmpty() ? "无描述信息" : info.description();
+        port["description"] = info.description();
         port["manufacturer"] = info.manufacturer();
+        port["serialNumber"] = info.serialNumber();
+        port["systemLocation"] = info.systemLocation();
         ports.append(port);
     }
     return ports;
@@ -35,44 +44,19 @@ QVariantList SerialManager::availablePorts()
 
 bool SerialManager::openPort(const QString &portName, int baudRate, int dataBits, int stopBits, int parity, int flowControl)
 {
-    if (m_serialPort->isOpen())
+    if (m_serialPort->isOpen()) {
         m_serialPort->close();
+    }
 
     m_serialPort->setPortName(portName);
-    m_serialPort->setBaudRate(baudRate);
-
-    // Data bits
-    switch (dataBits) {
-        case 5: m_serialPort->setDataBits(QSerialPort::Data5); break;
-        case 6: m_serialPort->setDataBits(QSerialPort::Data6); break;
-        case 7: m_serialPort->setDataBits(QSerialPort::Data7); break;
-        default: m_serialPort->setDataBits(QSerialPort::Data8); break;
-    }
-
-    // Parity: 0=None, 1=Odd, 2=Even, 3=Mark, 4=Space
-    switch (parity) {
-        case 1: m_serialPort->setParity(QSerialPort::OddParity); break;
-        case 2: m_serialPort->setParity(QSerialPort::EvenParity); break;
-        case 3: m_serialPort->setParity(QSerialPort::MarkParity); break;
-        case 4: m_serialPort->setParity(QSerialPort::SpaceParity); break;
-        default: m_serialPort->setParity(QSerialPort::NoParity); break;
-    }
-
-    // Stop bits: 1=OneStop, 2=TwoStop, 3=OneAndHalfStop
-    switch (stopBits) {
-        case 2: m_serialPort->setStopBits(QSerialPort::TwoStop); break;
-        case 3: m_serialPort->setStopBits(QSerialPort::OneAndHalfStop); break;
-        default: m_serialPort->setStopBits(QSerialPort::OneStop); break;
-    }
-
-    // Flow control: 0=None, 1=Hardware, 2=Software
-    switch (flowControl) {
-        case 1: m_serialPort->setFlowControl(QSerialPort::HardwareControl); break;
-        case 2: m_serialPort->setFlowControl(QSerialPort::SoftwareControl); break;
-        default: m_serialPort->setFlowControl(QSerialPort::NoFlowControl); break;
-    }
+    m_serialPort->setBaudRate(static_cast<QSerialPort::BaudRate>(baudRate));
+    m_serialPort->setDataBits(static_cast<QSerialPort::DataBits>(dataBits));
+    m_serialPort->setStopBits(static_cast<QSerialPort::StopBits>(stopBits));
+    m_serialPort->setParity(static_cast<QSerialPort::Parity>(parity));
+    m_serialPort->setFlowControl(static_cast<QSerialPort::FlowControl>(flowControl));
 
     if (m_serialPort->open(QIODevice::ReadWrite)) {
+        m_isOpen = true;
         emit isOpenChanged();
         emit currentPortChanged();
         return true;
@@ -86,7 +70,9 @@ void SerialManager::closePort()
 {
     if (m_serialPort->isOpen()) {
         m_serialPort->close();
+        m_isOpen = false;
         emit isOpenChanged();
+        emit currentPortChanged();
     }
 }
 
@@ -107,10 +93,12 @@ void SerialManager::sendData(const QString &data, bool isHex)
         bytes = data.toUtf8();
     }
 
-    // Append line ending based on mode
-    if (m_lineEndingMode == 1) bytes.append("\r\n");      // CRLF
-    else if (m_lineEndingMode == 2) bytes.append("\n");   // LF
-    else if (m_lineEndingMode == 3) bytes.append("\r");   // CR
+    // Append line ending based on mode (only for TXT, not HEX)
+    if (!isHex) {
+        if (m_lineEndingMode == 1) bytes.append("\r\n");      // CRLF
+        else if (m_lineEndingMode == 2) bytes.append("\n");   // LF
+        else if (m_lineEndingMode == 3) bytes.append("\r");   // CR
+    }
 
     m_serialPort->write(bytes);
     m_serialPort->flush();
@@ -136,15 +124,18 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
         bytes = data.toUtf8();
     }
 
+    // Append checksum
     if (checksumType > 0) {
         QByteArray checksum = ChecksumHelper::calculate(bytes, (ChecksumHelper::ChecksumType)checksumType);
         bytes.append(checksum);
     }
 
-    // Append line ending based on mode
-    if (m_lineEndingMode == 1) bytes.append("\r\n");      // CRLF
-    else if (m_lineEndingMode == 2) bytes.append("\n");   // LF
-    else if (m_lineEndingMode == 3) bytes.append("\r");   // CR
+    // Append line ending based on mode (only for TXT, not HEX)
+    if (!isHex) {
+        if (m_lineEndingMode == 1) bytes.append("\r\n");      // CRLF
+        else if (m_lineEndingMode == 2) bytes.append("\n");   // LF
+        else if (m_lineEndingMode == 3) bytes.append("\r");   // CR
+    }
 
     m_serialPort->write(bytes);
     m_serialPort->flush();
@@ -171,19 +162,22 @@ void SerialManager::setStayOnTop(QQuickWindow *window, bool onTop)
     } else {
         SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
     }
-#else
-    if (onTop) {
-        window->setFlags(window->flags() | Qt::WindowStaysOnTopHint);
-    } else {
-        window->setFlags(window->flags() & ~Qt::WindowStaysOnTopHint);
-    }
+#endif
+}
+
+void SerialManager::enableDwmShadow(QQuickWindow *window)
+{
+    if (!window) return;
+
+#ifdef Q_OS_WIN
+    HWND hwnd = (HWND)window->winId();
+    MARGINS margins = {1, 1, 1, 1};
+    DwmExtendFrameIntoClientArea(hwnd, &margins);
 #endif
 }
 
 void SerialManager::copyToClipboard(const QString &text)
 {
     QClipboard *clipboard = QGuiApplication::clipboard();
-    if (clipboard) {
-        clipboard->setText(text);
-    }
+    clipboard->setText(text);
 }
