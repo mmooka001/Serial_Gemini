@@ -71,9 +71,8 @@ Window {
 
     // Auto-send
     property bool autoSending: false
-    property int autoSendInterval: 1000
 
-    // Loop send
+    // Loop send / shared interval for command loop and auto-send
     property var loopCmds: []
     property int loopIndex: -1
     property bool loopSending: false
@@ -81,7 +80,7 @@ Window {
 
     Timer {
         id: autoSendTimer
-        interval: autoSendInterval
+        interval: loopInterval
         repeat: true
         onTriggered: {
             if (sendInput.text.length > 0) {
@@ -1042,7 +1041,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                                 Item {
                                     id: autoControl
-                                    Layout.preferredWidth: showAutoControl ? 45 : 0
+                                    Layout.preferredWidth: showAutoControl ? 54 : 0
                                     Layout.minimumWidth: 0
                                     Layout.preferredHeight: 30
                                     opacity: showAutoControl ? 1 : 0
@@ -1052,21 +1051,27 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                     Rectangle {
                                         anchors.centerIn: parent
-                                        width: 45
+                                        width: 54
                                         height: 26
                                         radius: 6
-                                        color: autoSending ? "#e53935" : clInput
+                                        color: autoSending ? (isDark ? "#3a2020" : "#FFEBEE") : (autoBtnMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent")
+                                        border.color: autoSending ? "#e53935" : clBorder
+                                        border.width: 1
                                         Behavior on color { ColorAnimation { duration: 200 } }
                                         Text {
-                                            text: autoSending ? "⏹" : "自动"
+                                            text: autoSending ? "停止" : "自动"
                                             anchors.centerIn: parent
-                                            color: autoSending ? "white" : "#777"
-                                            font.pixelSize: 9
+                                            color: autoSending ? "#e53935" : clText
+                                            font.pixelSize: 10
                                             font.bold: true
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
                                             Behavior on color { ColorAnimation { duration: 200 } }
                                         }
                                         MouseArea {
+                                            id: autoBtnMouse
                                             anchors.fill: parent
+                                            hoverEnabled: true
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 if (autoSending) { autoSendTimer.stop(); autoSending = false }
@@ -1202,17 +1207,17 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                      font.bold: true
                                      font.pixelSize: 13 } } }
                                     Button { id: sendBtn
-                                     Layout.preferredWidth: 55
-                                     Layout.minimumWidth: 55
+                                     Layout.preferredWidth: 60
+                                     Layout.minimumWidth: 60
                                      Layout.fillHeight: true
-                                     text: "➤"
+                                     text: "发送"
                                      onClicked: doSend()
                                      background: Rectangle { color: clHighlight
                                      radius: 10 }
                                      contentItem: Text { text: parent.text
                                      color: "white"
                                      font.bold: true
-                                     font.pixelSize: 18
+                                     font.pixelSize: 14
                                      horizontalAlignment: Text.AlignHCenter
                                      verticalAlignment: Text.AlignVCenter } }
                                 }
@@ -1694,11 +1699,16 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                                 // Bottom Bar
                                 RowLayout {
+                                    id: commandBottomBar
                                     Layout.fillWidth: true
-                                    spacing: 6
+                                    spacing: 3
+                                    clip: true
+                                    // 宽度足够时：循环按钮动态填充空白，把导入/导出顶到右边；不足171px时隐藏导入/导出
+                                    property bool showImportExport: width >= 171
+                                    property int importExportButtonWidth: showImportExport ? 30 : 0
 
                                     Rectangle {
-                                        Layout.preferredWidth: 60
+                                        Layout.preferredWidth: 48
                                         Layout.preferredHeight: 24
                                         radius: 6
                                         color: clInput
@@ -1706,8 +1716,8 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                         border.width: 1
                                         RowLayout {
                                             anchors.fill: parent
-                                            anchors.leftMargin: 6
-                                            anchors.rightMargin: 6
+                                            anchors.leftMargin: 4
+                                            anchors.rightMargin: 4
                                             spacing: 2
                                             Text { text: "ms"; color: "#777"; font.pixelSize: 9 }
                                             TextInput {
@@ -1729,14 +1739,20 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                                     Button {
                                         Layout.fillWidth: true
+                                        Layout.minimumWidth: 54
+                                        Layout.preferredWidth: 80
                                         Layout.preferredHeight: 24
-                                        text: loopSending ? "⏹ 停止" : "▶ 循环发送"
+                                        clip: true
+                                        text: loopSending ? "停止" : "循环"
                                         flat: true
-                                        font.pixelSize: 11
+                                        font.pixelSize: 10
                                         contentItem: Text {
                                             text: parent.text
                                             color: loopSending ? "#e53935" : clText
-                                            font.pixelSize: 11
+                                            font.pixelSize: 10
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            elide: Text.ElideRight
                                             Behavior on color { ColorAnimation { duration: 200 } }
                                         }
                                         background: Rectangle {
@@ -1759,14 +1775,23 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     }
 
                                     Button {
+                                        Layout.preferredWidth: commandBottomBar.importExportButtonWidth
+                                        Layout.minimumWidth: 0
+                                        Layout.maximumWidth: 30
                                         Layout.preferredHeight: 24
                                         text: "导入"
                                         flat: true
+                                        clip: true
+                                        visible: commandBottomBar.showImportExport
+                                        enabled: commandBottomBar.showImportExport
                                         font.pixelSize: 11
                                         contentItem: Text {
                                             text: parent.text
                                             color: clText
-                                            font.pixelSize: 11
+                                            font.pixelSize: 10
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            clip: true
                                         }
                                         background: Rectangle {
                                             color: importBtnMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
@@ -1779,14 +1804,23 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     }
 
                                     Button {
+                                        Layout.preferredWidth: commandBottomBar.importExportButtonWidth
+                                        Layout.minimumWidth: 0
+                                        Layout.maximumWidth: 30
                                         Layout.preferredHeight: 24
                                         text: "导出"
                                         flat: true
+                                        clip: true
+                                        visible: commandBottomBar.showImportExport
+                                        enabled: commandBottomBar.showImportExport
                                         font.pixelSize: 11
                                         contentItem: Text {
                                             text: parent.text
                                             color: clText
-                                            font.pixelSize: 11
+                                            font.pixelSize: 10
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            clip: true
                                         }
                                         background: Rectangle {
                                             color: exportBtnMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
