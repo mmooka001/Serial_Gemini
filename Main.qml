@@ -1228,17 +1228,18 @@ Window {
                                                    : (isDark ? "#3a3d40" : "#FFFFFF")
                                             border.color: isDark ? "#3a3d40" : "#DEE2E6"
                                             border.width: isDark ? 0 : 1
+                                            clip: true
 
                                             // Left accent bar
                                             Rectangle {
                                                 width: 3
-                                                height: parent.height - 4
+                                                height: parent.height - 8
                                                 anchors.left: parent.left
                                                 anchors.leftMargin: 1
                                                 anchors.verticalCenter: parent.verticalCenter
-                                                radius: 2
+                                                radius: 1.5
                                                 color: clHighlight
-                                                opacity: 0.7
+                                                opacity: 0.9
                                             }
 
                                             MouseArea {
@@ -1328,7 +1329,7 @@ Window {
 
                                                 delegate: Rectangle {
                                                     Layout.fillWidth: true
-                                                    height: 38
+                                                    height: 48
                                                     radius: 8
                                                     color: cmdMouse.containsMouse
                                                            ? (isDark ? "#333537" : "#F5F6F8")
@@ -1336,8 +1337,9 @@ Window {
                                                     border.color: cmdMouse.containsMouse ? clHighlight : (isDark ? "#3a3d40" : "#DEE2E6")
                                                     border.width: 1
 
+                                                    property int groupIdx: ListView.view.index
                                                     property int cmdIdx: index
-                                                    property string mapKey: index + ":" + cmdIdx
+                                                    property string mapKey: groupIdx + ":" + cmdIdx
                                                     property bool isHexMode: modelData.isHex || false
 
                                                     MouseArea {
@@ -1347,122 +1349,152 @@ Window {
                                                         acceptedButtons: Qt.NoButton
                                                     }
 
-                                                    RowLayout {
+                                                    ColumnLayout {
                                                         anchors.fill: parent
                                                         anchors.leftMargin: 6
                                                         anchors.rightMargin: 4
-                                                        spacing: 4
+                                                        anchors.topMargin: 4
+                                                        anchors.bottomMargin: 4
+                                                        spacing: 2
 
-                                                        CheckBox {
-                                                            checked: checkedMap[mapKey] === true
-                                                            Layout.preferredWidth: 24
-                                                            Layout.preferredHeight: 24
-                                                            onToggled: {
-                                                                var m = Object.assign({}, checkedMap)
-                                                                if (checked) m[mapKey] = true
-                                                                else delete m[mapKey]
-                                                                checkedMap = m
-                                                            }
-                                                        }
-
-                                                        // Name
-                                                        TextField {
+                                                        // Name row
+                                                        RowLayout {
                                                             Layout.fillWidth: true
-                                                            Layout.preferredWidth: 60
-                                                            text: modelData.name
-                                                            color: whiteText
-                                                            font.pixelSize: 11
-                                                            font.bold: true
-                                                            padding: 2
-                                                            background: Rectangle {
-                                                                radius: 3
-                                                                color: parent.activeFocus ? clInput : "transparent"
-                                                                border.color: parent.activeFocus ? clHighlight : "transparent"
-                                                                border.width: parent.activeFocus ? 1 : 0
-                                                            }
-                                                            selectByMouse: true
-                                                            onEditingFinished: commandStore.updateCommand(index, cmdIdx, text, modelData.payload)
-                                                        }
+                                                            spacing: 4
 
-                                                        // Payload
-                                                        TextField {
-                                                            Layout.fillWidth: true
-                                                            Layout.preferredWidth: 80
-                                                            text: modelData.payload || ""
-                                                            color: clText
-                                                            font.family: "Consolas"
-                                                            font.pixelSize: 10
-                                                            padding: 2
-                                                            placeholderText: "payload"
-                                                            placeholderTextColor: grayPlaceholder
-                                                            background: Rectangle {
-                                                                radius: 3
-                                                                color: parent.activeFocus ? clInput : "transparent"
-                                                                border.color: parent.activeFocus ? clHighlight : "transparent"
-                                                                border.width: parent.activeFocus ? 1 : 0
+                                                            CheckBox {
+                                                                checked: checkedMap[mapKey] === true
+                                                                Layout.preferredWidth: 18
+                                                                Layout.preferredHeight: 18
+                                                                indicator: Rectangle {
+                                                                    width: 18
+                                                                    height: 18
+                                                                    radius: 4
+                                                                    color: checked ? clHighlight : (isDark ? "#3a3d40" : "#E8EAED")
+                                                                    border.color: checked ? clHighlight : clBorder
+                                                                    border.width: 1
+                                                                    Text {
+                                                                        visible: checked
+                                                                        anchors.centerIn: parent
+                                                                        text: "✓"
+                                                                        color: "white"
+                                                                        font.pixelSize: 12
+                                                                        font.bold: true
+                                                                    }
+                                                                }
+                                                                onToggled: {
+                                                                    var m = Object.assign({}, checkedMap)
+                                                                    if (checked) m[mapKey] = true
+                                                                    else delete m[mapKey]
+                                                                    checkedMap = m
+                                                                }
                                                             }
-                                                            selectByMouse: true
-                                                            onEditingFinished: commandStore.updateCommand(index, cmdIdx, modelData.name, text)
-                                                        }
 
-                                                        // HEX/TXT badge
-                                                        Rectangle {
-                                                            Layout.preferredWidth: 28
-                                                            Layout.preferredHeight: 16
-                                                            radius: 3
-                                                            color: isHexMode ? (isDark ? "#2a3a5a" : "#E0ECFF") : "transparent"
-                                                            border.color: isHexMode ? clHighlight : clBorder
-                                                            border.width: 1
-                                                            Text {
-                                                                anchors.centerIn: parent
-                                                                text: isHexMode ? "HEX" : "TXT"
-                                                                font.pixelSize: 7
+                                                            TextField {
+                                                                Layout.fillWidth: true
+                                                                text: modelData.name
+                                                                color: whiteText
+                                                                font.pixelSize: 11
                                                                 font.bold: true
-                                                                color: isHexMode ? clHighlight : clText
-                                                            }
-                                                            MouseArea {
-                                                                anchors.fill: parent
-                                                                cursorShape: Qt.PointingHandCursor
-                                                                onClicked: commandStore.setCommandHex(index, cmdIdx, !isHexMode)
+                                                                padding: 2
+                                                                background: Rectangle {
+                                                                    radius: 3
+                                                                    color: parent.activeFocus ? clInput : "transparent"
+                                                                    border.color: parent.activeFocus ? clHighlight : "transparent"
+                                                                    border.width: parent.activeFocus ? 1 : 0
+                                                                }
+                                                                selectByMouse: true
+                                                                onEditingFinished: commandStore.updateCommand(groupIdx, cmdIdx, text, modelData.payload)
                                                             }
                                                         }
 
-                                                        // Send
-                                                        Button {
-                                                            text: "🚀"
-                                                            flat: true
-                                                            font.pixelSize: 12
-                                                            Layout.preferredWidth: 28
-                                                            Layout.preferredHeight: 24
-                                                            padding: 0
-                                                            background: Rectangle {
-                                                                radius: 4
-                                                                color: parent.hovered ? (isDark ? "#45484b" : "#E8F0FE") : "transparent"
-                                                            }
-                                                            onClicked: window.sendCommand(modelData.payload, modelData.isHex || false)
-                                                        }
+                                                        // Payload row
+                                                        RowLayout {
+                                                            Layout.fillWidth: true
+                                                            spacing: 4
+                                                            anchors.left: parent.left
+                                                            anchors.right: parent.right
+                                                            anchors.leftMargin: 24
 
-                                                        // Delete
-                                                        Button {
-                                                            text: "✕"
-                                                            flat: true
-                                                            font.pixelSize: 10
-                                                            Layout.preferredWidth: 20
-                                                            Layout.preferredHeight: 24
-                                                            padding: 0
-                                                            contentItem: Text {
-                                                                text: parent.text
-                                                                color: parent.hovered ? "#FF6B6B" : "#888"
-                                                                font: parent.font
-                                                                horizontalAlignment: Text.AlignHCenter
-                                                                verticalAlignment: Text.AlignVCenter
+                                                            TextField {
+                                                                Layout.fillWidth: true
+                                                                Layout.preferredWidth: 80
+                                                                text: modelData.payload || ""
+                                                                color: clText
+                                                                font.family: "Consolas"
+                                                                font.pixelSize: 10
+                                                                padding: 2
+                                                                placeholderText: "payload"
+                                                                placeholderTextColor: grayPlaceholder
+                                                                background: Rectangle {
+                                                                    radius: 3
+                                                                    color: parent.activeFocus ? clInput : "transparent"
+                                                                    border.color: parent.activeFocus ? clHighlight : "transparent"
+                                                                    border.width: parent.activeFocus ? 1 : 0
+                                                                }
+                                                                selectByMouse: true
+                                                                onEditingFinished: commandStore.updateCommand(groupIdx, cmdIdx, modelData.name, text)
                                                             }
-                                                            background: Rectangle { radius: 4; color: "transparent" }
-                                                            onClicked: {
-                                                                deleteType = "command"
-                                                                targetGroupIdx = index
-                                                                targetCmdIdx = cmdIdx
-                                                                deleteConfirmOverlay.visible = true
+
+                                                            // HEX/TXT badge
+                                                            Rectangle {
+                                                                Layout.preferredWidth: 28
+                                                                Layout.preferredHeight: 16
+                                                                radius: 3
+                                                                color: isHexMode ? (isDark ? "#2a3a5a" : "#E0ECFF") : "transparent"
+                                                                border.color: isHexMode ? clHighlight : clBorder
+                                                                border.width: 1
+                                                                Text {
+                                                                    anchors.centerIn: parent
+                                                                    text: isHexMode ? "HEX" : "TXT"
+                                                                    font.pixelSize: 7
+                                                                    font.bold: true
+                                                                    color: isHexMode ? clHighlight : clText
+                                                                }
+                                                                MouseArea {
+                                                                    anchors.fill: parent
+                                                                    cursorShape: Qt.PointingHandCursor
+                                                                    onClicked: commandStore.setCommandHex(groupIdx, cmdIdx, !isHexMode)
+                                                                }
+                                                            }
+
+                                                            // Send
+                                                            Button {
+                                                                text: "🚀"
+                                                                flat: true
+                                                                font.pixelSize: 12
+                                                                Layout.preferredWidth: 28
+                                                                Layout.preferredHeight: 20
+                                                                padding: 0
+                                                                background: Rectangle {
+                                                                    radius: 4
+                                                                    color: parent.hovered ? (isDark ? "#45484b" : "#E8F0FE") : "transparent"
+                                                                }
+                                                                onClicked: window.sendCommand(modelData.payload, modelData.isHex || false)
+                                                            }
+
+                                                            // Delete
+                                                            Button {
+                                                                text: "✕"
+                                                                flat: true
+                                                                font.pixelSize: 10
+                                                                Layout.preferredWidth: 20
+                                                                Layout.preferredHeight: 20
+                                                                padding: 0
+                                                                contentItem: Text {
+                                                                    text: parent.text
+                                                                    color: parent.hovered ? "#FF6B6B" : "#888"
+                                                                    font: parent.font
+                                                                    horizontalAlignment: Text.AlignHCenter
+                                                                    verticalAlignment: Text.AlignVCenter
+                                                                }
+                                                                background: Rectangle { radius: 4; color: "transparent" }
+                                                                onClicked: {
+                                                                    deleteType = "command"
+                                                                    targetGroupIdx = groupIdx
+                                                                    targetCmdIdx = cmdIdx
+                                                                    deleteConfirmOverlay.visible = true
+                                                                }
                                                             }
                                                         }
                                                     }
