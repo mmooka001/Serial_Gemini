@@ -115,8 +115,8 @@ void SerialManager::sendData(const QString &data, bool isHex)
     m_serialPort->write(bytes);
     m_serialPort->flush();
 
-    // 同时发送两种格式
-    emit dataReceived(QString::fromUtf8(bytes), bytes.toHex(' ').toUpper(), true);
+    // 同时发送两种格式（显示用原始数据，不含行尾符）
+    emit dataReceived(data, bytes.toHex(' ').toUpper(), true);
 }
 
 void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int checksumType)
@@ -149,7 +149,7 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
     m_serialPort->write(bytes);
     m_serialPort->flush();
 
-    emit dataReceived(QString::fromUtf8(bytes), bytes.toHex(' ').toUpper(), true);
+    emit dataReceived(data, bytes.toHex(' ').toUpper(), true);
 }
 
 void SerialManager::readData()
