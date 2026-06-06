@@ -789,14 +789,6 @@ Window {
                                             }
                                             Item { Layout.fillWidth: true }
                                         }
-                                        // Mouse area for hover detection on the whole message
-                                        MouseArea {
-                                            width: parent.width
-                                            height: msgRow.height
-                                            hoverEnabled: true
-                                            acceptedButtons: Qt.NoButton
-                                            onContainsMouseChanged: delegateHover = containsMouse
-                                        }
                                         Row {
                                             id: msgRow
                                             width: parent.width
@@ -806,6 +798,12 @@ Window {
                                                  height: Math.max(msgText.implicitHeight + 8, 28)
                                                  radius: 16
                                                  color: model.isSent ? clHighlight : (isDark ? "#323336" : "#E8EAEF")
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    acceptedButtons: Qt.NoButton
+                                                    onContainsMouseChanged: delegateHover = containsMouse
+                                                }
                                                 TextEdit { id: msgText
                                                  text: model.isHexMode ? model.contentHex : model.contentAscii
                                                  width: Math.min(implicitWidth, terminalView.width * 0.75)
