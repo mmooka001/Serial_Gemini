@@ -1730,7 +1730,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     Button {
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 24
-                                        text: loopSending
+                                        text: loopSending ? "⏹ 停止" : "▶ 循环发送"
                                         flat: true
                                         font.pixelSize: 11
                                         contentItem: Text {
