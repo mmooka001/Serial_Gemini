@@ -99,7 +99,7 @@ Window {
         interval: loopInterval
         repeat: false
         onTriggered: {
-            if (!loopSending || loopIndex >= loopCmds.length) {
+            if (!loopSending || loopCmds.length === 0) {
                 loopSending = false
                 loopIndex = -1
                 return
@@ -107,12 +107,8 @@ Window {
             var cmd = loopCmds[loopIndex]
             window.sendCommand(cmd.payload, cmd.isHex)
             loopIndex++
-            if (loopIndex < loopCmds.length) {
-                loopTimer.start()
-            } else {
-                loopSending = false
-                loopIndex = -1
-            }
+            if (loopIndex >= loopCmds.length) loopIndex = 0  // loop forever
+            if (loopSending) loopTimer.start()
         }
     }
 
@@ -1630,7 +1626,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                                                     anchors.fill: parent
                                                                     cursorShape: Qt.PointingHandCursor
                                                                     hoverEnabled: true
-                                                                    onClicked: window.sendCommand(modelData.payload, modelData.isHex || false)
+                                                                    onClicked: window.sendCommand(modelData.payload, isHexMode)
                                                                 }
                                                             }
 
@@ -1733,6 +1729,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                                     Button {
                                         Layout.fillWidth: true
+                                        Layout.preferredHeight: 30
                                         text: loopSending ? "⏹ 停止" : "▶ 循环发送"
                                         font.pixelSize: 11
                                         contentItem: Text {
