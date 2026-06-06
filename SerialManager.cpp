@@ -107,10 +107,12 @@ void SerialManager::sendData(const QString &data, bool isHex)
         bytes = data.toUtf8();
     }
 
-    // Append line ending based on mode (0=None, 1=LF, 2=CR, 3=CRLF)
-    if (m_lineEndingMode == 1) bytes.append("\n");        // LF
-    else if (m_lineEndingMode == 2) bytes.append("\r");   // CR
-    else if (m_lineEndingMode == 3) bytes.append("\r\n"); // CRLF
+    // Append line ending based on mode (only for TXT)
+    if (!isHex) {
+        if (m_lineEndingMode == 1) bytes.append("\n");        // LF
+        else if (m_lineEndingMode == 2) bytes.append("\r");   // CR
+        else if (m_lineEndingMode == 3) bytes.append("\r\n"); // CRLF
+    }
 
     m_serialPort->write(bytes);
     m_serialPort->flush();
@@ -141,10 +143,12 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
         bytes.append(checksum);
     }
 
-    // Append line ending based on mode (0=None, 1=LF, 2=CR, 3=CRLF)
-    if (m_lineEndingMode == 1) bytes.append("\n");        // LF
-    else if (m_lineEndingMode == 2) bytes.append("\r");   // CR
-    else if (m_lineEndingMode == 3) bytes.append("\r\n"); // CRLF
+    // Append line ending based on mode (only for TXT)
+    if (!isHex) {
+        if (m_lineEndingMode == 1) bytes.append("\n");        // LF
+        else if (m_lineEndingMode == 2) bytes.append("\r");   // CR
+        else if (m_lineEndingMode == 3) bytes.append("\r\n"); // CRLF
+    }
 
     m_serialPort->write(bytes);
     m_serialPort->flush();
