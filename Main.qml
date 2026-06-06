@@ -432,6 +432,7 @@ Window {
 
                     // Right edge drag handle for resizing
                     MouseArea {
+                        z: 1
                         width: dragHandleWidth
                         anchors.right: parent.right
                         anchors.top: parent.top
