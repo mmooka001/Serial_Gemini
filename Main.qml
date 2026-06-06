@@ -2494,8 +2494,8 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
     Connections {
         target: serialManager
-        function onDataReceived(ascii, hex, isSent) {
-            terminalModel.append({ "contentAscii": ascii, "contentHex": hex, "isHexMode": isSent ? globalTxHex : globalRxHex, "isSent": isSent, "timestamp": Qt.formatDateTime(new Date(), "hh:mm:ss.zzz") })
+        function onDataReceived(ascii, hex, isSent, isHex) {
+            terminalModel.append({ "contentAscii": ascii, "contentHex": hex, "isHexMode": isSent ? isHex : globalRxHex, "isSent": isSent, "timestamp": Qt.formatDateTime(new Date(), "hh:mm:ss.zzz") })
             if (autoScroll) {
                 terminalView.positionViewAtEnd()
             }

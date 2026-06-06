@@ -49,7 +49,7 @@ signals:
     void currentPortChanged();
     void baudRateChanged();
     void lineEndingModeChanged();
-    void dataReceived(const QString &ascii, const QString &hex, bool isSent = false);
+    void dataReceived(const QString &ascii, const QString &hex, bool isSent = false, bool isHex = false);
     void errorOccurred(const QString &error);
 
 private slots:
