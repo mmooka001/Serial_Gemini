@@ -557,9 +557,7 @@ Window {
                                         leftPadding: 12 }
                                     background: Rectangle {
                                         color: (highlighted || baudDelegateHover.containsMouse) ? clHighlight : "transparent"
-                                        radius: 6
-                                        border.color: (index > 0 && !highlighted && !baudDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
-                                        border.width: (index > 0 && !highlighted && !baudDelegateHover.containsMouse) ? 1 : 0
+                                        radius: 4
                                         MouseArea {
                                             id: baudDelegateHover
                                             anchors.fill: parent
@@ -606,9 +604,7 @@ Window {
                                     width: dataBitsCombo.width; height: 32
                                     contentItem: Text { text: modelData; color: (highlighted || dataBitsDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
                                     background: Rectangle {
-                                        color: (highlighted || dataBitsDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 6
-                                        border.color: (index > 0 && !highlighted && !dataBitsDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
-                                        border.width: (index > 0 && !highlighted && !dataBitsDelegateHover.containsMouse) ? 1 : 0
+color: (highlighted || dataBitsDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 4
                                         MouseArea { id: dataBitsDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                                     }
                                 }
@@ -639,9 +635,7 @@ Window {
                                         width: stopBitsCombo.width; height: 30
                                         contentItem: Text { text: modelData; color: (highlighted || stopBitsDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
                                         background: Rectangle {
-                                            color: (highlighted || stopBitsDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 6
-                                            border.color: (index > 0 && !highlighted && !stopBitsDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
-                                            border.width: (index > 0 && !highlighted && !stopBitsDelegateHover.containsMouse) ? 1 : 0
+color: (highlighted || stopBitsDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 4
                                             MouseArea { id: stopBitsDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                                         }
                                     }
@@ -668,9 +662,7 @@ Window {
                                         width: parityCombo.width; height: 30
                                         contentItem: Text { text: modelData; color: (highlighted || parityDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
                                         background: Rectangle {
-                                            color: (highlighted || parityDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 6
-                                            border.color: (index > 0 && !highlighted && !parityDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
-                                            border.width: (index > 0 && !highlighted && !parityDelegateHover.containsMouse) ? 1 : 0
+color: (highlighted || parityDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 4
                                             MouseArea { id: parityDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                                         }
                                     }
@@ -701,9 +693,7 @@ Window {
                                     width: flowCombo.width; height: 32
                                     contentItem: Text { text: modelData; color: (highlighted || flowDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
                                     background: Rectangle {
-                                        color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 6
-                                        border.color: (index > 0 && !highlighted && !flowDelegateHover.containsMouse) ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
-                                        border.width: (index > 0 && !highlighted && !flowDelegateHover.containsMouse) ? 1 : 0
+color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 4
                                         MouseArea { id: flowDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                                     }
                                 }
@@ -2285,55 +2275,57 @@ Window {
             onAccepted: recordStore.exportRecords(selectedFile.toString())
         }
 
-        MouseArea { width: 6
-         anchors.left: parent.left
-         anchors.top: parent.top
-         anchors.bottom: parent.bottom
-         cursorShape: Qt.SizeHorCursor
-         onPressed: { window.startSystemResize(Qt.LeftEdge) } }
-        MouseArea { width: 6
-         anchors.right: parent.right
-         anchors.top: parent.top
-         anchors.bottom: parent.bottom
-         cursorShape: Qt.SizeHorCursor
-         onPressed: { window.startSystemResize(Qt.RightEdge) } }
-        MouseArea { height: 6
-         anchors.top: parent.top
-         anchors.left: parent.left
-         anchors.right: parent.right
-         cursorShape: Qt.SizeVerCursor
-         onPressed: { window.startSystemResize(Qt.TopEdge) } }
-        MouseArea { height: 6
-         anchors.bottom: parent.bottom
-         anchors.left: parent.left
-         anchors.right: parent.right
-         cursorShape: Qt.SizeVerCursor
-         onPressed: { window.startSystemResize(Qt.BottomEdge) } }
-        MouseArea { width: 12
-         height: 12
-         anchors.left: parent.left
-         anchors.top: parent.top
-         cursorShape: Qt.SizeFDiagCursor
-         onPressed: { window.startSystemResize(Qt.TopEdge | Qt.LeftEdge) } }
-        MouseArea { width: 12
-         height: 12
-         anchors.right: parent.right
-         anchors.top: parent.top
-         cursorShape: Qt.SizeBDiagCursor
-         onPressed: { window.startSystemResize(Qt.TopEdge | Qt.RightEdge) } }
-        MouseArea { width: 12
-         height: 12
-         anchors.left: parent.left
-         anchors.bottom: parent.bottom
-         cursorShape: Qt.SizeBDiagCursor
-         onPressed: { window.startSystemResize(Qt.BottomEdge | Qt.LeftEdge) } }
-        MouseArea { width: 12
-         height: 12
-         anchors.right: parent.right
-         anchors.bottom: parent.bottom
-         cursorShape: Qt.SizeFDiagCursor
-         onPressed: { window.startSystemResize(Qt.BottomEdge | Qt.RightEdge) } }
     }
+
+    // Resize handles (outside rootRect so clip doesn't cut them)
+    MouseArea { z: 1000; width: 8
+     anchors.left: parent.left
+     anchors.top: parent.top
+     anchors.bottom: parent.bottom
+     cursorShape: Qt.SizeHorCursor
+     onPressed: { window.startSystemResize(Qt.LeftEdge) } }
+    MouseArea { z: 1000; width: 8
+     anchors.right: parent.right
+     anchors.top: parent.top
+     anchors.bottom: parent.bottom
+     cursorShape: Qt.SizeHorCursor
+     onPressed: { window.startSystemResize(Qt.RightEdge) } }
+    MouseArea { z: 1000; height: 8
+     anchors.top: parent.top
+     anchors.left: parent.left
+     anchors.right: parent.right
+     cursorShape: Qt.SizeVerCursor
+     onPressed: { window.startSystemResize(Qt.TopEdge) } }
+    MouseArea { z: 1000; height: 8
+     anchors.bottom: parent.bottom
+     anchors.left: parent.left
+     anchors.right: parent.right
+     cursorShape: Qt.SizeVerCursor
+     onPressed: { window.startSystemResize(Qt.BottomEdge) } }
+    MouseArea { z: 1000; width: 16
+     height: 16
+     anchors.left: parent.left
+     anchors.top: parent.top
+     cursorShape: Qt.SizeFDiagCursor
+     onPressed: { window.startSystemResize(Qt.TopEdge | Qt.LeftEdge) } }
+    MouseArea { z: 1000; width: 16
+     height: 16
+     anchors.right: parent.right
+     anchors.top: parent.top
+     cursorShape: Qt.SizeBDiagCursor
+     onPressed: { window.startSystemResize(Qt.TopEdge | Qt.RightEdge) } }
+    MouseArea { z: 1000; width: 16
+     height: 16
+     anchors.left: parent.left
+     anchors.bottom: parent.bottom
+     cursorShape: Qt.SizeBDiagCursor
+     onPressed: { window.startSystemResize(Qt.BottomEdge | Qt.LeftEdge) } }
+    MouseArea { z: 1000; width: 16
+     height: 16
+     anchors.right: parent.right
+     anchors.bottom: parent.bottom
+     cursorShape: Qt.SizeFDiagCursor
+     onPressed: { window.startSystemResize(Qt.BottomEdge | Qt.RightEdge) } }
 
     Connections {
         target: serialManager
