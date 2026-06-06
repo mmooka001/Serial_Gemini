@@ -41,6 +41,10 @@ Gemini Serial 是一款使用 **Qt 6、QML 和 C++17** 开发的现代化串口�
 
 ## 快速开始
 
+### 下载发布版
+
+不需要本地安装 Qt。前往 [GitHub Releases](https://github.com/mmooka001/Serial_Gemini/releases) 下载 Windows x64 ZIP，解压后运行 `GeminiSerial.exe`。
+
 ### 环境要求
 
 1. 安装 Qt 6，并选择对应编译器套件，例如 MinGW 64-bit。
