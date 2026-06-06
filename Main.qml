@@ -1698,12 +1698,12 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     spacing: 6
 
                                     Rectangle {
-                                        Layout.preferredWidth: 80
-                                        Layout.preferredHeight: 30
+                                        Layout.preferredWidth: 70
                                         radius: 6
                                         color: clInput
                                         border.color: clBorder
                                         border.width: 1
+                                        implicitHeight: 28
                                         RowLayout {
                                             anchors.fill: parent
                                             anchors.leftMargin: 6
@@ -1728,22 +1728,21 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     }
 
                                     Button {
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 30
-                                        text: loopSending ? "⏹ 停止" : "▶ 循环发送"
+                                        text: loopSending ? "⏹ 停止" : "▶ 循环"
+                                        flat: true
                                         font.pixelSize: 11
                                         contentItem: Text {
                                             text: parent.text
-                                            color: clHighlight
+                                            color: loopSending ? "#e53935" : clText
                                             font.pixelSize: 11
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
+                                            Behavior on color { ColorAnimation { duration: 200 } }
                                         }
                                         background: Rectangle {
-                                            color: loopBtnMouse.containsMouse ? (isDark ? "#2a3a5a" : "#E8F0FE") : "transparent"
-                                            radius: 8
-                                            border.color: clHighlight
+                                            color: loopSending ? (isDark ? "#3a2020" : "#FFEBEE") : (loopBtnMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent")
+                                            radius: 6
+                                            border.color: loopSending ? "#e53935" : clBorder
                                             border.width: 1
+                                            Behavior on color { ColorAnimation { duration: 200 } }
                                             MouseArea { id: loopBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                                         }
                                         onClicked: {
