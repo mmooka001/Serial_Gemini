@@ -1699,6 +1699,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                                     Rectangle {
                                         Layout.preferredWidth: 60
+                                        Layout.preferredHeight: 28
                                         radius: 6
                                         color: clInput
                                         border.color: clBorder
