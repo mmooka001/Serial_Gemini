@@ -1699,7 +1699,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                                     Rectangle {
                                         Layout.preferredWidth: 60
-                                        Layout.preferredHeight: 28
+                                        Layout.preferredHeight: 24
                                         radius: 6
                                         color: clInput
                                         border.color: clBorder
@@ -1729,7 +1729,8 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                                     Button {
                                         Layout.fillWidth: true
-                                        text: loopSending ? "⏹ 停止" : "▶ 循环发送"
+                                        Layout.preferredHeight: 24
+                                        text: loopSending
                                         flat: true
                                         font.pixelSize: 11
                                         contentItem: Text {
@@ -1758,6 +1759,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     }
 
                                     Button {
+                                        Layout.preferredHeight: 24
                                         text: "导入"
                                         flat: true
                                         font.pixelSize: 11
@@ -1777,6 +1779,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     }
 
                                     Button {
+                                        Layout.preferredHeight: 24
                                         text: "导出"
                                         flat: true
                                         font.pixelSize: 11
