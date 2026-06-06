@@ -1,6 +1,7 @@
 #include "SerialManager.h"
 #include "ChecksumHelper.h"
 #include <QDebug>
+#include <QRegularExpression>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -12,6 +13,45 @@ SerialManager::SerialManager(QObject *parent)
     connect(m_serialPort, &QSerialPort::readyRead, this, &SerialManager::readData);
 }
 
+
+
+namespace {
+
+bool parseHexOrText(const QString &data, QByteArray &bytes)
+{
+    QString cleanData = data;
+    cleanData.remove("0x", Qt::CaseInsensitive);
+    cleanData.remove(QRegularExpression("\\s+"));
+
+    bool looksLikeHex = !cleanData.isEmpty() && cleanData.size() % 2 == 0;
+    if (looksLikeHex) {
+        for (const QChar &c : cleanData) {
+            if (!c.isDigit()
+                && !(c >= QChar('a') && c <= QChar('f'))
+                && !(c >= QChar('A') && c <= QChar('F'))) {
+                looksLikeHex = false;
+                break;
+            }
+        }
+    }
+
+    if (looksLikeHex) {
+        bytes = QByteArray::fromHex(cleanData.toUtf8());
+        return true;
+    }
+
+    bytes = data.toUtf8();
+    return false;
+}
+
+void appendLineEnding(QByteArray &bytes, int lineEndingMode)
+{
+    if (lineEndingMode == 1) bytes.append("\n");        // LF
+    else if (lineEndingMode == 2) bytes.append("\r");   // CR
+    else if (lineEndingMode == 3) bytes.append("\r\n"); // CRLF
+}
+
+} // namespace
 
 SerialManager::~SerialManager()
 {
@@ -99,20 +139,13 @@ void SerialManager::sendData(const QString &data, bool isHex)
 
     QByteArray bytes;
     if (isHex) {
-        QString cleanData = data;
-        cleanData.remove("0x", Qt::CaseInsensitive);
-        cleanData.remove(" ");
-        bytes = QByteArray::fromHex(cleanData.toUtf8());
+        parseHexOrText(data, bytes);
     } else {
         bytes = data.toUtf8();
     }
 
-    // Append line ending based on mode (only for TXT)
-    if (!isHex) {
-        if (m_lineEndingMode == 1) bytes.append("\n");        // LF
-        else if (m_lineEndingMode == 2) bytes.append("\r");   // CR
-        else if (m_lineEndingMode == 3) bytes.append("\r\n"); // CRLF
-    }
+    // Append line ending based on mode (applies to both TXT and HEX)
+    appendLineEnding(bytes, m_lineEndingMode);
 
     m_serialPort->write(bytes);
     m_serialPort->flush();
@@ -130,10 +163,7 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
 
     QByteArray bytes;
     if (isHex) {
-        QString cleanData = data;
-        cleanData.remove("0x", Qt::CaseInsensitive);
-        cleanData.remove(" ");
-        bytes = QByteArray::fromHex(cleanData.toUtf8());
+        parseHexOrText(data, bytes);
     } else {
         bytes = data.toUtf8();
     }
@@ -143,12 +173,8 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
         bytes.append(checksum);
     }
 
-    // Append line ending based on mode (only for TXT)
-    if (!isHex) {
-        if (m_lineEndingMode == 1) bytes.append("\n");        // LF
-        else if (m_lineEndingMode == 2) bytes.append("\r");   // CR
-        else if (m_lineEndingMode == 3) bytes.append("\r\n"); // CRLF
-    }
+    // Append line ending based on mode (applies to both TXT and HEX)
+    appendLineEnding(bytes, m_lineEndingMode);
 
     m_serialPort->write(bytes);
     m_serialPort->flush();

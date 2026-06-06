@@ -2500,6 +2500,12 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                 terminalView.positionViewAtEnd()
             }
         }
+        function onErrorOccurred(error) {
+            terminalModel.append({ "contentAscii": "错误: " + error, "contentHex": "", "isHexMode": false, "isSent": false, "timestamp": Qt.formatDateTime(new Date(), "hh:mm:ss.zzz") })
+            if (autoScroll) {
+                terminalView.positionViewAtEnd()
+            }
+        }
     }
 
     // Sync line ending mode from settingsStore to serialManager
