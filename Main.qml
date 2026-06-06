@@ -35,8 +35,9 @@ Window {
 
     property int activePanel: -1          // -1=none, 0=指令, 1=码表, 2=设置
     property int featurePanelWidth: 300
+    property int configPanelWidth: 260
     property int clickOffset: 0           // Click animation offset
-    readonly property int centerWidth: width - 260 - (activePanel >= 0 ? featurePanelWidth + 50 + 8 : 50) - 46
+    readonly property int centerWidth: width - configPanelWidth - (activePanel >= 0 ? featurePanelWidth + 50 + 8 : 50) - 46
     property bool globalRxHex: true 
     property bool globalTxHex: true 
     property bool globalTimestamp: true
@@ -401,13 +402,34 @@ Window {
                 
                 Rectangle {
                     id: configCard
-                    Layout.preferredWidth: 260
+                    Layout.preferredWidth: configPanelWidth
+                    Layout.minimumWidth: 200
+                    Layout.maximumWidth: 400
                     Layout.fillHeight: true
                     Layout.rightMargin: 15
                     color: clCard
                     radius: 12
                     border.color: clBorder
                     clip: true
+
+                    // Right edge drag handle for resizing
+                    MouseArea {
+                        width: 6
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        cursorShape: Qt.SizeHorCursor
+                        property real dragStartX: 0
+                        property int startWidth: 0
+                        onPressed: (mouse) => { dragStartX = mapToItem(null, mouse.x, mouse.y).x; startWidth = configPanelWidth }
+                        onPositionChanged: (mouse) => {
+                            if (pressed) {
+                                var globalX = mapToItem(null, mouse.x, mouse.y).x
+                                var delta = globalX - dragStartX
+                                configPanelWidth = Math.max(200, Math.min(400, startWidth + delta))
+                            }
+                        }
+                    }
 
                     Flickable {
                         anchors.fill: parent
@@ -427,7 +449,7 @@ Window {
                          color: whiteText
                          font.bold: true
                          font.pixelSize: 14
-                         Layout.topMargin: 4 }
+                         Layout.topMargin: 12 }
 
                         ColumnLayout {
                             spacing: 8
@@ -940,10 +962,6 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                 }
                                 RowLayout {
                                     spacing: 6
-                                     Text { text: "日志:"
-                                     color: "#777"
-                                     font.pixelSize: 10
-                                     visible: centerWidth > 420 }
                                     Button { width: window.width > 800 ? 45 : 35
                                      height: 26
                                      contentItem: Text { text: "TIME"
@@ -954,6 +972,21 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                      background: Rectangle { color: globalTimestamp ? clHighlight : clInput
                                      radius: 6 }
                                      onClicked: { globalTimestamp = !globalTimestamp } }
+                                    Button { width: window.width > 800 ? 45 : 35
+                                     height: 26
+                                     contentItem: Text { text: autoSending ? "⏹" : "自动"
+                                     color: autoSending ? "white" : "#777"
+                                     font.pixelSize: 9
+                                     font.bold: true
+                                     horizontalAlignment: Text.AlignHCenter
+                                     verticalAlignment: Text.AlignVCenter }
+                                     background: Rectangle { color: autoSending ? "#e53935" : clInput
+                                     radius: 6
+                                     Behavior on color { ColorAnimation { duration: 200 } } }
+                                     onClicked: {
+                                         if (autoSending) { autoSendTimer.stop(); autoSending = false }
+                                         else { autoSendTimer.start(); autoSending = true }
+                                     } }
                                 }
                                 Item { Layout.fillWidth: true }
                                 ComboBox { 
@@ -1078,37 +1111,6 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                      font.pixelSize: window.width > 750 ? 13 : 18
                                      horizontalAlignment: Text.AlignHCenter
                                      verticalAlignment: Text.AlignVCenter } }
-
-                                    // Auto-send button
-                                    Button {
-                                        id: autoSendBtn
-                                        Layout.preferredWidth: window.width > 750 ? 60 : 40
-                                        Layout.fillHeight: true
-                                        text: autoSending ? "⏹" : (window.width > 750 ? "自动" : "⏱")
-                                        onClicked: {
-                                            if (autoSending) {
-                                                autoSendTimer.stop()
-                                                autoSending = false
-                                            } else {
-                                                autoSendTimer.start()
-                                                autoSending = true
-                                            }
-                                        }
-                                        background: Rectangle {
-                                            radius: 10
-                                            color: autoSending ? "#e53935" : (autoSendBtn.hovered ? (isDark ? "#3e4043" : "#E8EAED") : clInput)
-                                            Behavior on color { ColorAnimation { duration: 200 } }
-                                        }
-                                        contentItem: Text {
-                                            text: parent.text
-                                            color: autoSending ? "white" : clText
-                                            font.bold: true
-                                            font.pixelSize: window.width > 750 ? 12 : 16
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                            Behavior on color { ColorAnimation { duration: 200 } }
-                                        }
-                                    }
                                 }
                             }
                         }
