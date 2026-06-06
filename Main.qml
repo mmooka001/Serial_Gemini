@@ -52,12 +52,12 @@ Window {
     readonly property int rightPanelTotal: activePanel >= 0 ? (effectiveFeaturePanelWidth + activityBarWidth) : activityBarWidth
     readonly property int centerWidth: width - clampedConfigWidth - rightPanelTotal - panelGap * 2
 
-    // Toolbar fade-out thresholds (reverse order: checksum fades first, RX last)
-    readonly property bool showChecksumControl: sendCard.width >= 520
-    readonly property bool showAutoControl: sendCard.width >= 445
-    readonly property bool showTimeControl: sendCard.width >= 385
-    readonly property bool showTxModeControl: sendCard.width >= 285
-    readonly property bool showRxModeControl: sendCard.width >= 180
+    // Toolbar fade-out thresholds (lower so controls squeeze before disappearing)
+    readonly property bool showChecksumControl: sendCard.width >= 350
+    readonly property bool showAutoControl: sendCard.width >= 280
+    readonly property bool showTimeControl: sendCard.width >= 240
+    readonly property bool showTxModeControl: sendCard.width >= 180
+    readonly property bool showRxModeControl: sendCard.width >= 100
     property bool globalRxHex: true 
     property bool globalTxHex: true 
     property bool globalTimestamp: true
