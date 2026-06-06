@@ -403,8 +403,6 @@ Window {
                 Rectangle {
                     id: configCard
                     Layout.preferredWidth: configPanelWidth
-                    Layout.minimumWidth: 200
-                    Layout.maximumWidth: 400
                     Layout.fillHeight: true
                     Layout.rightMargin: 15
                     color: clCard
@@ -426,7 +424,7 @@ Window {
                             if (pressed) {
                                 var globalX = mapToItem(null, mouse.x, mouse.y).x
                                 var delta = globalX - dragStartX
-                                configPanelWidth = Math.max(200, Math.min(400, startWidth + delta))
+                                configPanelWidth = Math.max(60, startWidth + delta)
                             }
                         }
                     }
@@ -961,32 +959,26 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                      onClicked: { globalTxHex = (index === 1) } } } }
                                 }
                                 RowLayout {
-                                    spacing: 6
-                                    Button { width: window.width > 800 ? 45 : 35
-                                     height: 26
-                                     contentItem: Text { text: "TIME"
+                                    spacing: 4
+                                    Rectangle { width: 45; height: 26; radius: 6
+                                     color: globalTimestamp ? clHighlight : clInput
+                                     Text { text: "TIME"; anchors.centerIn: parent
                                      color: globalTimestamp ? "white" : "#777"
-                                     font.pixelSize: 9
-                                     horizontalAlignment: Text.AlignHCenter
-                                     verticalAlignment: Text.AlignVCenter }
-                                     background: Rectangle { color: globalTimestamp ? clHighlight : clInput
-                                     radius: 6 }
-                                     onClicked: { globalTimestamp = !globalTimestamp } }
-                                    Button { width: window.width > 800 ? 45 : 35
-                                     height: 26
-                                     contentItem: Text { text: autoSending ? "⏹" : "自动"
+                                     font.pixelSize: 9 }
+                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                     onClicked: globalTimestamp = !globalTimestamp } }
+                                    Rectangle { width: 45; height: 26; radius: 6
+                                     color: autoSending ? "#e53935" : clInput
+                                     Behavior on color { ColorAnimation { duration: 200 } }
+                                     Text { text: autoSending ? "⏹" : "自动"; anchors.centerIn: parent
                                      color: autoSending ? "white" : "#777"
-                                     font.pixelSize: 9
-                                     font.bold: true
-                                     horizontalAlignment: Text.AlignHCenter
-                                     verticalAlignment: Text.AlignVCenter }
-                                     background: Rectangle { color: autoSending ? "#e53935" : clInput
-                                     radius: 6
+                                     font.pixelSize: 9; font.bold: true
                                      Behavior on color { ColorAnimation { duration: 200 } } }
+                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                      onClicked: {
                                          if (autoSending) { autoSendTimer.stop(); autoSending = false }
                                          else { autoSendTimer.start(); autoSending = true }
-                                     } }
+                                     } } }
                                 }
                                 Item { Layout.fillWidth: true }
                                 ComboBox { 
