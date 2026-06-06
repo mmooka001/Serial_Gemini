@@ -1244,7 +1244,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
                         anchors.right: activityBar.left
-                        color: isDark ? "#252628" : "#E8EAED"
+                        color: clCard
                         radius: 12
                         border.color: clBorder
                         clip: true
@@ -2092,7 +2092,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                         anchors.right: parent.right
                         anchors.top: parent.top
                         anchors.bottom: parent.bottom
-                        color: isDark ? "#252628" : "#E8EAED"
+                        color: clCard
                         radius: 12
 
                         ColumnLayout {
@@ -2253,7 +2253,28 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                             Text { text: "📧"; font.pixelSize: 16 }
                                             Text { text: "mmooka001@gmail.com"; color: whiteText; font.pixelSize: 13; font.bold: true }
                                             Item { Layout.fillWidth: true }
-                                            Text { text: "复制"; color: clHighlight; font.pixelSize: 11; MouseArea { anchors.fill: parent; onClicked: { /* TODO: Clipboard copy */ } } }
+                                            Rectangle {
+                                                Layout.preferredWidth: 44
+                                                Layout.preferredHeight: 24
+                                                radius: 6
+                                                color: emailCopyMouse.containsMouse ? (isDark ? "#2a3a5a" : "#E0ECFF") : "transparent"
+                                                border.color: emailCopyMouse.containsMouse ? clHighlight : "transparent"
+                                                border.width: 1
+                                                Text {
+                                                    anchors.centerIn: parent
+                                                    text: "复制"
+                                                    color: clHighlight
+                                                    font.pixelSize: 11
+                                                    font.bold: true
+                                                }
+                                                MouseArea {
+                                                    id: emailCopyMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    cursorShape: Qt.PointingHandCursor
+                                                    onClicked: serialManager.copyToClipboard("mmooka001@gmail.com")
+                                                }
+                                            }
                                         }
                                     }
                                 }
