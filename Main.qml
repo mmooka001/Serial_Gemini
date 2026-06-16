@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import MySerial_Gemini
 import com.gemini.serial
 import QtQuick.Dialogs
+import QtCore
 
 Window {
     id: window
@@ -51,6 +52,11 @@ Window {
     readonly property int effectiveFeaturePanelWidth: Math.max(200, Math.min(500, Math.min(featurePanelWidth, maxFeatureWidth)))
     readonly property int rightPanelTotal: activePanel >= 0 ? (effectiveFeaturePanelWidth + activityBarWidth) : activityBarWidth
     readonly property int centerWidth: width - clampedConfigWidth - rightPanelTotal - panelGap * 2
+    property int sendPanelHeight: 180
+    readonly property int minSendPanelHeight: 130
+    readonly property int minTerminalHeight: 160
+    readonly property int terminalSendGap: 15
+    readonly property int maxSendPanelHeight: Math.max(minSendPanelHeight, centerColumn.height - minTerminalHeight - terminalSendResizeHandle.height)
 
     // Toolbar fade-out thresholds (lower so controls squeeze before disappearing)
     readonly property bool showChecksumControl: sendCard.width >= 350
@@ -64,6 +70,31 @@ Window {
     property int currentPageIndex: 0
     property bool autoScroll: true
     property string checksumValue: ChecksumHelper.hexChecksumPreview(sendInput.text, globalTxHex, checksumCombo.currentIndex)
+
+    function exportTimestamp() {
+        return Qt.formatDateTime(new Date(), "yyyyMMddhhmmss")
+    }
+
+    function commandExportFileName() {
+        return "指令 " + exportTimestamp() + ".json"
+    }
+
+    function recordExportFileName() {
+        return "对话记录 " + exportTimestamp() + ".csv"
+    }
+
+    function fileUrlFromLocalPath(path) {
+        var normalized = String(path).replace(/\\/g, "/")
+        if (normalized.indexOf("file:/") === 0)
+            return normalized
+        if (normalized.charAt(0) === "/")
+            return "file://" + normalized
+        return "file:///" + normalized
+    }
+
+    function defaultExportFileUrl(fileName) {
+        return fileUrlFromLocalPath(StandardPaths.writableLocation(StandardPaths.DocumentsLocation) + "/" + fileName)
+    }
 
     // Send history
     property var sendHistory: []
@@ -787,13 +818,14 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.minimumWidth: 0
-                    spacing: 15
+                    spacing: 0
                     clip: true
                     
                     Rectangle {
                         id: terminalCard
                          Layout.fillWidth: true
                          Layout.fillHeight: true
+                         Layout.minimumHeight: minTerminalHeight
                          color: clCard
                          radius: 15
                          border.color: clBorder
@@ -917,11 +949,37 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                         }
                     }
 
+                    Item {
+                        id: terminalSendResizeHandle
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: terminalSendGap
+
+                        MouseArea {
+                            id: terminalSendResizeMouse
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.SizeVerCursor
+                            property real pressY: 0
+                            property int startHeight: 0
+                            onPressed: {
+                                pressY = mouseY
+                                startHeight = sendPanelHeight
+                            }
+                            onPositionChanged: {
+                                if (pressed) {
+                                    sendPanelHeight = Math.max(minSendPanelHeight, Math.min(maxSendPanelHeight, startHeight - (mouseY - pressY)))
+                                }
+                            }
+                        }
+                    }
+
                     Rectangle {
                         id: sendCard
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
-                        Layout.preferredHeight: 180
+                        Layout.minimumHeight: minSendPanelHeight
+                        Layout.maximumHeight: maxSendPanelHeight
+                        Layout.preferredHeight: sendPanelHeight
                         color: clCard
                         radius: 15
                         border.color: clBorder
@@ -1829,7 +1887,10 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                             border.width: 1
                                             MouseArea { id: exportBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
                                         }
-                                        onClicked: exportFileDialog.open()
+                                        onClicked: {
+                                            exportFileDialog.currentFile = defaultExportFileUrl(commandExportFileName())
+                                            exportFileDialog.open()
+                                        }
                                     }
                                 }
                             }
@@ -2365,14 +2426,14 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
             title: "导入指令预设"
             nameFilters: ["JSON files (*.json)", "All files (*)"]
             fileMode: FileDialog.OpenFile
-            onAccepted: commandStore.importFromFile(selectedFile.toString().replace("file:///", ""))
+            onAccepted: commandStore.importFromFile(selectedFile.toString())
         }
         FileDialog {
             id: exportFileDialog
             title: "导出指令预设"
             nameFilters: ["JSON files (*.json)", "All files (*)"]
             fileMode: FileDialog.SaveFile
-            onAccepted: commandStore.exportToFile(selectedFile.toString().replace("file:///", ""))
+            onAccepted: commandStore.exportToFile(selectedFile.toString())
         }
 
         Rectangle {
@@ -2453,7 +2514,10 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                             id: exportMouse
                             anchors.fill: parent
                             hoverEnabled: true
-                            onClicked: exportRecordDialog.open()
+                            onClicked: {
+                                exportRecordDialog.currentFile = defaultExportFileUrl(recordExportFileName())
+                                exportRecordDialog.open()
+                            }
                         }
                     }
                     Rectangle {
@@ -2490,7 +2554,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
         FileDialog {
             id: exportRecordDialog
             title: "导出通信记录"
-            nameFilters: ["JSON files (*.json)", "CSV files (*.csv)", "All files (*)"]
+            nameFilters: ["CSV files (*.csv)", "All files (*)"]
             fileMode: FileDialog.SaveFile
             onAccepted: recordStore.exportRecords(selectedFile.toString())
         }
