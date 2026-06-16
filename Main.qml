@@ -2261,7 +2261,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     }
                                     ColumnLayout {
                                         Text { text: "MySerial Gemini"; color: whiteText; font.bold: true; font.pixelSize: 22 }
-                                        Text { text: "v0.1.1 Alpha Build"; color: clText; font.pixelSize: 13 }
+                                        Text { text: "v0.1.2 Alpha Build"; color: clText; font.pixelSize: 13 }
                                     }
                                 }
                                 Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.5 }
@@ -2421,7 +2421,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                             }
                             onClicked: { 
                                 if (deleteType === "group") { commandStore.deleteGroup(targetGroupIdx) } 
-                                else if (deleteType === "cmd") { commandStore.deleteCommand(targetGroupIdx, targetCmdIdx) } 
+                                else if (deleteType === "command") { commandStore.deleteCommand(targetGroupIdx, targetCmdIdx) } 
                                 deleteConfirmOverlay.visible = false 
                             } 
                         }
