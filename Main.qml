@@ -108,6 +108,11 @@ Window {
     property int loopIndex: -1
     property bool loopSending: false
     property int loopInterval: 500
+    property var portList: []
+
+    function refreshPorts() {
+        portList = serialManager.availablePorts()
+    }
 
     Timer {
         id: autoSendTimer
@@ -122,6 +127,13 @@ Window {
                 }
             }
         }
+    }
+
+    Timer {
+        id: startupPortRefreshTimer
+        interval: 200
+        repeat: false
+        onTriggered: refreshPorts()
     }
 
     Timer {
@@ -524,16 +536,14 @@ Window {
                                      color: clHighlight
                                      font.pixelSize: 10
                                      horizontalAlignment: Text.AlignRight }
-                                    onClicked: {
-                                        portCombo.model = serialManager.availablePorts()
-                                    }
+                                    onClicked: refreshPorts()
                                 }
                             }
                             ComboBox { 
                                 id: portCombo
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 34
-                                model: serialManager.availablePorts()
+                                model: portList
                                 textRole: "name"
                                 background: Rectangle { color: clInput
                                  radius: 10
@@ -2641,5 +2651,6 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
     // Initialize line ending mode on startup
     Component.onCompleted: {
         serialManager.lineEndingMode = settingsStore.lineEndingMode
+        startupPortRefreshTimer.start()
     }
 }
