@@ -19,6 +19,7 @@ layout(std140, binding = 0) uniform buf {
     float glassDepth;
     float bevelWidth;
     float cornerRadius;
+    float edgeStrength;
 } ubuf;
 layout(binding = 1) uniform sampler2D source;
 
@@ -99,6 +100,14 @@ void main()
     vec2 uv = (pixel + displacement * ubuf.presence) / size;
 
     vec3 backdrop = frostedBackdrop(uv, ubuf.blurRadius);
+    // Separate colour channels only along the curved bezel, leaving the centre clear.
+    float dispersionMask = (1.0 - smoothstep(0.0, 0.8, u)) * ubuf.edgeStrength;
+    vec2 dispersion = edgeNormal * (0.65 + length(displacement) * 0.12)
+                    * dispersionMask * ubuf.presence / size;
+    vec4 redSample = sampleBackdrop(uv + dispersion);
+    vec4 blueSample = sampleBackdrop(uv - dispersion);
+    backdrop.r = mix(backdrop.r, redSample.r + ubuf.baseColor.r * (1.0 - redSample.a), dispersionMask);
+    backdrop.b = mix(backdrop.b, blueSample.b + ubuf.baseColor.b * (1.0 - blueSample.a), dispersionMask);
     float luminance = dot(backdrop, vec3(0.2126, 0.7152, 0.0722));
     backdrop = mix(vec3(luminance), backdrop, 1.08);
     vec3 material = mix(backdrop, ubuf.baseColor.rgb, ubuf.materialMix);
@@ -123,6 +132,17 @@ void main()
                      * max(dot(edgeNormal, normalize(vec2(0.6, 0.8))), 0.0);
     material += vec3(0.75, 0.86, 1.0) * caustic * 0.055;
     material *= 1.0 - innerShade * 0.075;
+
+    // A fine contrast-reversing reflection follows the edge rather than painting a border.
+    float edgeBand = exp(-pow((sd + 0.65) / 0.75, 2.0));
+    float innerBand = exp(-pow((sd + 1.9) / 0.8, 2.0));
+    float direction = dot(edgeNormal, normalize(vec2(-0.55, -0.85)));
+    float contrast = 1.0 - 2.0 * smoothstep(0.18, 0.78, luminance);
+    material += vec3(contrast) * (edgeBand * (0.13 + 0.10 * abs(direction))
+                              - innerBand * 0.045) * ubuf.edgeStrength;
+    vec3 spectralReflection = direction > 0.0 ? vec3(-0.025, 0.012, 0.045)
+                                             : vec3(0.045, 0.005, -0.025);
+    material += spectralReflection * edgeBand * ubuf.edgeStrength;
 
     float alpha = coverage * ubuf.presence;
     fragColor = vec4(clamp(material, vec3(0.0), vec3(1.0)) * alpha,

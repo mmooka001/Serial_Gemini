@@ -112,8 +112,7 @@ Window {
 
     // 左侧面板统一状态：-1=全关 0=连接 1=指令 2=码表 3=设置（互斥）
     property int sidePanel: 0
-    property int featurePanelWidth: settingsStore.featurePanelWidth
-    property int configPanelWidth: settingsStore.configPanelWidth
+    property int sidePanelWidth: settingsStore.sidePanelWidth
     property int clickOffset: 0           // Click animation offset
 
     // Layout constants
@@ -125,8 +124,7 @@ Window {
 
     // Clamp panels so center never collapses
     readonly property int maxSidePanelWidth: Math.max(180, width - leftRailWidth - panelGap * 2 - minimumCenterWidth)
-    readonly property int clampedConfigWidth: Math.max(180, Math.min(420, Math.min(configPanelWidth, maxSidePanelWidth)))
-    readonly property int effectiveFeaturePanelWidth: Math.max(200, Math.min(500, Math.min(featurePanelWidth, maxSidePanelWidth)))
+    readonly property int effectiveSidePanelWidth: Math.max(200, Math.min(500, Math.min(sidePanelWidth, maxSidePanelWidth)))
     property int sendPanelHeight: 180
     readonly property int minSendPanelHeight: 130
     readonly property int minTerminalHeight: 160
@@ -292,6 +290,14 @@ Window {
         } else {
             sendInput.text = sendHistory[historyIndex]
         }
+    }
+
+    component SidePanelHeading: Text {
+        Layout.preferredHeight: 32
+        verticalAlignment: Text.AlignVCenter
+        color: window.clHighlight
+        font.bold: true
+        font.pixelSize: 15
     }
 
     component ConfigComboBox: GlassComboBox {
@@ -665,7 +671,7 @@ Window {
                 // ── 左侧面板：连接/指令/码表/设置（四选一互斥）──
                 Rectangle {
                     id: sidePanelCard
-                    Layout.preferredWidth: sidePanel < 0 ? 0 : (sidePanel === 0 ? clampedConfigWidth : effectiveFeaturePanelWidth)
+                    Layout.preferredWidth: sidePanel < 0 ? 0 : effectiveSidePanelWidth
                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     Layout.fillHeight: true
                     Layout.rightMargin: sidePanel < 0 ? 0 : panelGap
@@ -687,18 +693,13 @@ Window {
                         hoverEnabled: true
                         property real dragStartX: 0
                         property int startWidth: 0
-                        onPressed: (mouse) => { dragStartX = mapToItem(null, mouse.x, mouse.y).x; startWidth = (sidePanel === 0 ? configPanelWidth : featurePanelWidth) }
+                        onPressed: (mouse) => { dragStartX = mapToItem(null, mouse.x, mouse.y).x; startWidth = effectiveSidePanelWidth }
                         onPositionChanged: (mouse) => {
                             if (pressed) {
                                 var globalX = mapToItem(null, mouse.x, mouse.y).x
                                 var delta = globalX - dragStartX
-                                if (sidePanel === 0) {
-                                    configPanelWidth = Math.max(180, Math.min(420, startWidth + delta))
-                                    settingsStore.configPanelWidth = configPanelWidth
-                                } else {
-                                    featurePanelWidth = Math.max(200, Math.min(500, startWidth + delta))
-                                    settingsStore.featurePanelWidth = featurePanelWidth
-                                }
+                                sidePanelWidth = Math.max(200, Math.min(maxSidePanelWidth, Math.min(500, startWidth + delta)))
+                                settingsStore.sidePanelWidth = sidePanelWidth
                             }
                         }
                         // Highlight line on hover
@@ -720,8 +721,8 @@ Window {
                         // Page 0: 连接配置
                     Flickable {
                         anchors.fill: parent
-                        anchors.margins: 0
-                        contentHeight: configColumn.implicitHeight + 40
+                        anchors.margins: 12
+                        contentHeight: configColumn.implicitHeight
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
 
@@ -729,14 +730,9 @@ Window {
                         id: configColumn
                         anchors.left: parent.left
                         anchors.right: parent.right
-                        anchors.margins: 20
-                        spacing: 16
+                        spacing: 8
                         
-                        Text { text: "连接配置"
-                         color: whiteText
-                         font.bold: true
-                         font.pixelSize: 14
-                         Layout.topMargin: 12 }
+                        SidePanelHeading { text: "连接配置" }
 
                         ColumnLayout {
                             spacing: 8
@@ -890,15 +886,14 @@ Window {
                                 // Header
                                 RowLayout {
                                     Layout.fillWidth: true
-                                    Text {
+                                    Layout.preferredHeight: 32
+                                    SidePanelHeading {
                                         text: "指令预设库"
-                                        color: clHighlight
-                                        font.bold: true
-                                        font.pixelSize: 15
                                     }
                                     Item { Layout.fillWidth: true }
                                     Button {
                                         text: "＋分组"
+                                        Layout.preferredHeight: 32
                                         flat: true
                                         font.pixelSize: 12
                                         contentItem: Text {
@@ -1438,11 +1433,8 @@ Window {
                                     anchors.left: parent.left
                                     anchors.right: parent.right
 
-                                Text {
+                                SidePanelHeading {
                                     text: "码表工具"
-                                    color: clHighlight
-                                    font.bold: true
-                                    font.pixelSize: 15
                                 }
 
                                 // 进制转换器
@@ -1544,15 +1536,12 @@ Window {
 
                                 ColumnLayout {
                                     id: settingsColumn
-                                    spacing: 10
+                                    spacing: 8
                                     anchors.left: parent.left
                                     anchors.right: parent.right
 
-                                Text {
+                                SidePanelHeading {
                                     text: "设置"
-                                    color: clHighlight
-                                    font.bold: true
-                                    font.pixelSize: 15
                                 }
 
                                 // 行尾模式

@@ -118,6 +118,7 @@ ComboBox {
 
         background: LiquidGlassSelection {
             id: menuMaterial
+        edgeStrength: 0.45
             sourceItem: control.backdropItem
             sourceRect: {
                 if (!menu.visible || !control.backdropItem)
