@@ -295,6 +295,7 @@ Window {
     }
 
     component ConfigComboBox: GlassComboBox {
+        backdropItem: sidePanelCard
         dark: window.isDark
         textColor: window.whiteText
         secondaryTextColor: window.clText
@@ -304,16 +305,20 @@ Window {
         accentColor: window.clHighlight
     }
 
-    Rectangle {
+    Item {
         id: rootRect
         anchors.fill: parent
         // 外轮廓由系统统一裁切；内容铺满，避免与系统圆角形成双层边框。
-        gradient: Gradient {
-            GradientStop { position: 0.0; color: bgGradStarts[themeMode] }
-            GradientStop { position: 1.0; color: bgGradEnds[themeMode] }
+        clip: true
+
+        Rectangle {
+            id: shellBackdrop
+            anchors.fill: parent
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: bgGradStarts[themeMode] }
+                GradientStop { position: 1.0; color: bgGradEnds[themeMode] }
+            }
         }
-        antialiasing: true
-        clip: true 
 
         Rectangle {
             id: leftRail
@@ -345,6 +350,7 @@ Window {
 
                 Column {
                     id: railButtons
+                    z: 1
                     width: parent.width
                     spacing: 4
 
@@ -423,7 +429,9 @@ Window {
 
                 LiquidGlassSelection {
                     anchors.fill: parent
-                    sourceItem: railButtons
+                    sourceItem: shellBackdrop
+                    sourceRect: Qt.rect(0, railNavigation.y, width, height)
+                    baseColor: window.clToolSurface
                     selectedIndex: sidePanel
                     selectedItem: sidePanel >= 0 && railRepeater.count > sidePanel
                                   ? railRepeater.itemAt(sidePanel) : null

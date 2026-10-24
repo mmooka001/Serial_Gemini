@@ -8,6 +8,7 @@ ComboBox {
 
     property bool dark: true
     property bool portDetails: false
+    property Item backdropItem: null
     property color textColor: "#ffffff"
     property color secondaryTextColor: "#afb1b3"
     property color inputColor: "#1e1f22"
@@ -115,16 +116,32 @@ ComboBox {
         }
         onClosed: glass.animationsEnabled = false
 
-        background: Rectangle {
-            color: control.surfaceColor
-            radius: 12
-            border.color: control.outlineColor
+        background: LiquidGlassSelection {
+            id: menuMaterial
+            sourceItem: control.backdropItem
+            sourceRect: {
+                if (!menu.visible || !control.backdropItem)
+                    return Qt.rect(0, 0, width, height)
+                var origin = menu.contentItem.mapToItem(control.backdropItem,
+                                                        -menu.leftPadding, -menu.topPadding)
+                return Qt.rect(origin.x, origin.y, width, height)
+            }
+            fixedRect: Qt.rect(0, 0, width, height)
+            baseColor: control.surfaceColor
+            materialMix: control.dark ? 0.80 : 0.85
+            blurRadius: 14
+            bevelWidth: 7
+            glassDepth: 10
+            cornerRadius: 12
+            dark: control.dark
+            animationsEnabled: false
         }
         contentItem: Item {
             implicitHeight: optionsView.contentHeight
 
             ListView {
                 id: optionsView
+                z: 1
                 anchors.fill: parent
                 clip: true
                 model: menu.visible ? control.delegateModel : null
@@ -139,15 +156,16 @@ ComboBox {
                 id: glass
                 anchors.fill: parent
                 clip: true
-                sourceItem: optionsView.contentItem
-                sourceRect: Qt.rect(0, optionsView.contentY, optionsView.width, optionsView.height)
+                sourceItem: menuMaterial
+                sourceRect: Qt.rect(menu.leftPadding, menu.topPadding, width, height)
+                contentOffsetY: optionsView.contentY
                 selectedIndex: optionsView.currentIndex
                 selectedItem: optionsView.currentItem
                 horizontalInset: 2
                 verticalInset: 1
                 moveDuration: 220
-                magnification: 1.02
-                glassStrength: 1.6
+                baseColor: control.dark ? Qt.lighter(control.surfaceColor, 1.08) : control.surfaceColor
+                materialMix: 0.10
                 dark: control.dark
             }
         }
