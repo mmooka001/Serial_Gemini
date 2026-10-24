@@ -120,7 +120,6 @@ Window {
     readonly property int moduleRadius: 14
     readonly property int leftRailWidth: 52
     readonly property int minimumCenterWidth: 200
-    readonly property int dragHandleWidth: 6
 
     // Clamp panels so center never collapses
     readonly property int maxSidePanelWidth: Math.max(180, width - leftRailWidth - panelGap * 2 - minimumCenterWidth)
@@ -674,44 +673,11 @@ Window {
                     Layout.preferredWidth: sidePanel < 0 ? 0 : effectiveSidePanelWidth
                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     Layout.fillHeight: true
-                    Layout.rightMargin: sidePanel < 0 ? 0 : panelGap
-                    Behavior on Layout.rightMargin { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     visible: sidePanel >= 0 || width > 1
                     color: clToolSurface
                     radius: moduleRadius
                     border.color: clSurfaceLine
                     clip: true
-
-                    // Right edge drag handle (resizes whichever panel is active)
-                    MouseArea {
-                        z: 1
-                        width: dragHandleWidth
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        cursorShape: Qt.SizeHorCursor
-                        hoverEnabled: true
-                        property real dragStartX: 0
-                        property int startWidth: 0
-                        onPressed: (mouse) => { dragStartX = mapToItem(null, mouse.x, mouse.y).x; startWidth = effectiveSidePanelWidth }
-                        onPositionChanged: (mouse) => {
-                            if (pressed) {
-                                var globalX = mapToItem(null, mouse.x, mouse.y).x
-                                var delta = globalX - dragStartX
-                                sidePanelWidth = Math.max(200, Math.min(maxSidePanelWidth, Math.min(500, startWidth + delta)))
-                                settingsStore.sidePanelWidth = sidePanelWidth
-                            }
-                        }
-                        // Highlight line on hover
-                        Rectangle {
-                            width: 2
-                            anchors.right: parent.right
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            color: parent.containsMouse || parent.pressed ? clHighlight : "transparent"
-                            Behavior on color { ColorAnimation { duration: 120 } }
-                        }
-                    }
 
                     StackLayout {
                         id: sidePanelStack
@@ -1660,6 +1626,45 @@ Window {
                                 Item { Layout.fillHeight: true }
                             }
                             }
+                        }
+                    }
+                }
+
+                // 整条模块间隙均可拖动，提示柄位于间隙中央。
+                Item {
+                    Layout.preferredWidth: sidePanel < 0 ? 0 : panelGap
+                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                    Layout.fillHeight: true
+                    visible: sidePanel >= 0 || width > 1
+
+                    MouseArea {
+                        id: sidePanelResizeHandle
+                        anchors.fill: parent
+                        enabled: sidePanel >= 0
+                        cursorShape: Qt.SizeHorCursor
+                        hoverEnabled: true
+                        property real dragStartX: 0
+                        property int startWidth: 0
+                        onPressed: (mouse) => {
+                            dragStartX = mapToItem(null, mouse.x, mouse.y).x
+                            startWidth = effectiveSidePanelWidth
+                        }
+                        onPositionChanged: (mouse) => {
+                            if (pressed) {
+                                var delta = mapToItem(null, mouse.x, mouse.y).x - dragStartX
+                                sidePanelWidth = Math.max(200, Math.min(maxSidePanelWidth, Math.min(500, startWidth + delta)))
+                                settingsStore.sidePanelWidth = sidePanelWidth
+                            }
+                        }
+
+                        Rectangle {
+                            anchors.centerIn: parent
+                            width: 3
+                            height: Math.min(64, parent.height * 0.25)
+                            radius: 1.5
+                            color: clHighlight
+                            opacity: sidePanelResizeHandle.pressed ? 0.9 : (sidePanelResizeHandle.containsMouse ? 0.5 : 0)
+                            Behavior on opacity { NumberAnimation { duration: 120 } }
                         }
                     }
                 }
