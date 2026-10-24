@@ -27,6 +27,7 @@ Window {
 
     readonly property bool isNarrow: width < 1100
     readonly property bool isUltraNarrow: width < 900
+    readonly property bool edgeToEdge: visibility === Window.Maximized || visibility === Window.FullScreen
 
     property int themeMode: settingsStore.themeMode
     readonly property bool isDark: themeMode !== 5
@@ -296,15 +297,11 @@ Window {
     Rectangle {
         id: rootRect
         anchors.fill: parent
-        // 最大化/全屏时圆角转直角（贴边无边框）
-        readonly property bool windowPinned: window.visibility === Window.Maximized || window.visibility === Window.FullScreen
-        radius: windowPinned ? 0 : 16
+        // 外轮廓由系统统一裁切；内容铺满，避免与系统圆角形成双层边框。
         gradient: Gradient {
             GradientStop { position: 0.0; color: bgGradStarts[themeMode] }
             GradientStop { position: 1.0; color: bgGradEnds[themeMode] }
         }
-        border.color: clBorder
-        border.width: windowPinned ? 0 : 1
         antialiasing: true
         clip: true 
 
@@ -439,12 +436,12 @@ Window {
             anchors.top: titleBar.bottom
             anchors.bottom: statusBar.top
             anchors.right: parent.right
-            anchors.leftMargin: 4
-            anchors.rightMargin: 8
-            anchors.topMargin: 6
-            anchors.bottomMargin: 4
+            anchors.leftMargin: window.edgeToEdge ? 0 : 4
+            anchors.rightMargin: window.edgeToEdge ? 0 : 8
+            anchors.topMargin: window.edgeToEdge ? 0 : 6
+            anchors.bottomMargin: window.edgeToEdge ? 0 : 4
             color: clWorkspace
-            radius: 20
+            radius: window.edgeToEdge ? 0 : 20
         }
 
         Rectangle {
@@ -504,7 +501,7 @@ Window {
                             window.startSystemMove()
                         }
                         onDoubleClicked: {
-                            if (window.visibility === Window.Maximized) {
+                            if (window.edgeToEdge) {
                                 window.showNormal()
                             } else {
                                 window.showMaximized()
@@ -602,7 +599,7 @@ Window {
                         height: 42
                         flat: true
                         contentItem: Text { 
-                            text: window.visibility === Window.Maximized ? "\uE923" : "\uE922"
+                            text: window.edgeToEdge ? "\uE923" : "\uE922"
                             font.family: "Segoe Fluent Icons"
                             color: clText
                             font.pixelSize: 12
@@ -614,7 +611,7 @@ Window {
                             radius: 8
                         }
                         onClicked: {
-                            if (window.visibility === Window.Maximized) {
+                            if (window.edgeToEdge) {
                                 window.showNormal()
                             } else {
                                 window.showMaximized()
@@ -634,22 +631,10 @@ Window {
                             verticalAlignment: Text.AlignVCenter 
                         }
                         background: Rectangle { 
+                            anchors.fill: parent
+                            anchors.margins: 4
                             color: parent.hovered ? "#e81123" : "transparent"
-                            radius: 12
-                            Rectangle {
-                                width: 20
-                                height: 42
-                                color: parent.color
-                                anchors.left: parent.left
-                                visible: parent.color !== "transparent"
-                            }
-                            Rectangle {
-                                width: 45
-                                height: 20
-                                color: parent.color
-                                anchors.bottom: parent.bottom
-                                visible: parent.color !== "transparent"
-                            }
+                            radius: 8
                         }
                         onClicked: {
                             Qt.quit()
@@ -2686,49 +2671,49 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
     }
 
     // Resize handles (outside rootRect so clip doesn't cut them)
-    MouseArea { z: 1000; width: 8
+    MouseArea { enabled: !window.edgeToEdge; z: 1000; width: 8
      anchors.left: parent.left
      anchors.top: parent.top
      anchors.bottom: parent.bottom
      cursorShape: Qt.SizeHorCursor
      onPressed: { window.startSystemResize(Qt.LeftEdge) } }
-    MouseArea { z: 1000; width: 8
+    MouseArea { enabled: !window.edgeToEdge; z: 1000; width: 8
      anchors.right: parent.right
      anchors.top: parent.top
      anchors.bottom: parent.bottom
      cursorShape: Qt.SizeHorCursor
      onPressed: { window.startSystemResize(Qt.RightEdge) } }
-    MouseArea { z: 1000; height: 8
+    MouseArea { enabled: !window.edgeToEdge; z: 1000; height: 8
      anchors.top: parent.top
      anchors.left: parent.left
      anchors.right: parent.right
      cursorShape: Qt.SizeVerCursor
      onPressed: { window.startSystemResize(Qt.TopEdge) } }
-    MouseArea { z: 1000; height: 8
+    MouseArea { enabled: !window.edgeToEdge; z: 1000; height: 8
      anchors.bottom: parent.bottom
      anchors.left: parent.left
      anchors.right: parent.right
      cursorShape: Qt.SizeVerCursor
      onPressed: { window.startSystemResize(Qt.BottomEdge) } }
-    MouseArea { z: 1000; width: 16
+    MouseArea { enabled: !window.edgeToEdge; z: 1000; width: 16
      height: 16
      anchors.left: parent.left
      anchors.top: parent.top
      cursorShape: Qt.SizeFDiagCursor
      onPressed: { window.startSystemResize(Qt.TopEdge | Qt.LeftEdge) } }
-    MouseArea { z: 1000; width: 16
+    MouseArea { enabled: !window.edgeToEdge; z: 1000; width: 16
      height: 16
      anchors.right: parent.right
      anchors.top: parent.top
      cursorShape: Qt.SizeBDiagCursor
      onPressed: { window.startSystemResize(Qt.TopEdge | Qt.RightEdge) } }
-    MouseArea { z: 1000; width: 16
+    MouseArea { enabled: !window.edgeToEdge; z: 1000; width: 16
      height: 16
      anchors.left: parent.left
      anchors.bottom: parent.bottom
      cursorShape: Qt.SizeBDiagCursor
      onPressed: { window.startSystemResize(Qt.BottomEdge | Qt.LeftEdge) } }
-    MouseArea { z: 1000; width: 16
+    MouseArea { enabled: !window.edgeToEdge; z: 1000; width: 16
      height: 16
      anchors.right: parent.right
      anchors.bottom: parent.bottom

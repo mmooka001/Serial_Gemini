@@ -3,6 +3,7 @@
 #include <QQmlContext>
 #include <QUrl>
 #include <QQuickWindow>
+#include <QPointer>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -19,6 +20,12 @@
 #endif
 #ifndef DWMSBT_NONE
 #define DWMSBT_NONE 1
+#endif
+#ifndef DWMWA_WINDOW_CORNER_PREFERENCE
+#define DWMWA_WINDOW_CORNER_PREFERENCE 33
+#endif
+#ifndef DWMWA_BORDER_COLOR
+#define DWMWA_BORDER_COLOR 34
 #endif
 
 // ---- 未公开 API：SetWindowCompositionAttribute（任务栏同款亚克力，激活态不退化为实色）----
@@ -42,8 +49,26 @@ class AcrylicHelper : public QObject {
     Q_OBJECT
 public:
     Q_INVOKABLE void enable(QQuickWindow *w) {
-        if (!w) return;
+        if (!w || m_window == w) return;
+        m_window = w;
         m_hwnd = reinterpret_cast<HWND>(w->winId());
+
+        // 保留系统吸附能力，由 DWM 统一处理外轮廓与阴影。
+        LONG style = GetWindowLong(m_hwnd, GWL_STYLE);
+        style |= WS_THICKFRAME | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
+        SetWindowLong(m_hwnd, GWL_STYLE, style);
+        BOOL darkMode = TRUE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+        int backdrop = DWMSBT_NONE;
+        DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
+        const COLORREF noBorder = 0xFFFFFFFE; // DWMWA_COLOR_NONE
+        DwmSetWindowAttribute(m_hwnd, DWMWA_BORDER_COLOR, &noBorder, sizeof(noBorder));
+        connect(w, &QWindow::visibilityChanged, this, [this](QWindow::Visibility) {
+            updateFrame();
+        });
+        updateFrame();
+        SetWindowPos(m_hwnd, nullptr, 0, 0, 0, 0,
+                     SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
         apply();
     }
     Q_INVOKABLE void setTint(double r, double g, double b, double a) {
@@ -55,6 +80,18 @@ public:
         apply();
     }
 private:
+    void updateFrame() {
+        if (!m_window || !m_hwnd) return;
+        const bool edgeToEdge = m_window->visibility() == QWindow::Maximized
+                            || m_window->visibility() == QWindow::FullScreen;
+        const int cornerPreference = edgeToEdge ? 1 : 2; // DWMWCP_DONOTROUND / DWMWCP_ROUND
+        DwmSetWindowAttribute(m_hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
+                              &cornerPreference, sizeof(cornerPreference));
+        const int inset = edgeToEdge ? 0 : 1;
+        const MARGINS margins = { inset, inset, inset, inset };
+        DwmExtendFrameIntoClientArea(m_hwnd, &margins);
+    }
+
     void apply() {
         if (!m_hwnd) return;
         static SetWindowCompositionAttributeFn fn = []() -> SetWindowCompositionAttributeFn {
@@ -75,6 +112,7 @@ private:
         fn(m_hwnd, &data);
     }
     HWND m_hwnd = nullptr;
+    QPointer<QQuickWindow> m_window;
     UINT m_gradient = 0x80101014;            // 默认深色 tint (黑 50%)
 };
 #endif
@@ -128,35 +166,6 @@ int main(int argc, char *argv[])
         if (!obj && url == objUrl)
             QCoreApplication::exit(-1);
 
-#ifdef Q_OS_WIN
-        // --- Windows 原生吸附交互 (Aero Snap) 开启逻辑 ---
-        QQuickWindow *window = qobject_cast<QQuickWindow *>(obj);
-        if (window) {
-            HWND hwnd = (HWND)window->winId();
-
-            // 获取当前样式
-            LONG style = GetWindowLong(hwnd, GWL_STYLE);
-
-            // 注入 ThickFrame (支持吸附) 和 Caption (支持分屏感应)
-            style |= WS_THICKFRAME | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
-            SetWindowLong(hwnd, GWL_STYLE, style);
-
-            // 启用窗口阴影
-            const MARGINS shadow_margin = { 1, 1, 1, 1 };
-            DwmExtendFrameIntoClientArea(hwnd, &shadow_margin);
-
-            // 暗色沉浸式边框
-            BOOL darkMode = TRUE;
-            DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
-
-            // 关闭系统 backdrop（改用 SetWindowCompositionAttribute 亚克力，二者互斥）
-            int backdrop = DWMSBT_NONE;
-            DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
-
-            // 刷新窗口位置
-            SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE);
-        }
-#endif
     }, Qt::QueuedConnection);
     engine.load(url);
 
