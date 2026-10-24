@@ -13,6 +13,8 @@ layout(std140, binding = 0) uniform buf {
     float pixelSize;
     float presence;
     float darkMode;
+    float magnification;
+    float glassStrength;
 } ubuf;
 layout(binding = 1) uniform sampler2D source;
 
@@ -49,7 +51,7 @@ void main()
     // 边缘位移按三次方衰减，中心保持清晰；RGB 分别采样产生细微色散。
     vec2 normal = normalize(local + vec2(0.001));
     float rim = pow(clamp(1.0 + distanceToLens / 7.0, 0.0, 1.0), 3.0);
-    vec2 samplePixel = center + local / 1.035 - normal * rim * 1.5;
+    vec2 samplePixel = center + local / ubuf.magnification - normal * rim * 1.5;
     vec2 uv = clamp(samplePixel / size, vec2(0.0), vec2(1.0));
     vec2 dispersion = normal * rim * 0.25 / size;
     vec4 red = texture(source, clamp(uv + dispersion, vec2(0.0), vec2(1.0)));
@@ -62,7 +64,7 @@ void main()
                          * vec2(1.7, 2.8),
                          (local / halfSize - vec2(-0.35, -0.55))
                          * vec2(1.7, 2.8)));
-    float glassAlpha = mix(0.065, 0.018, vertical) + sheen * 0.07;
+    float glassAlpha = (mix(0.065, 0.018, vertical) + sheen * 0.07) * ubuf.glassStrength;
     vec3 glassTint = mix(vec3(0.60, 0.67, 0.76), vec3(0.90, 0.94, 1.0), ubuf.darkMode);
     vec4 glass = vec4(glassTint * glassAlpha, glassAlpha);
     vec4 inside = over(content, glass);

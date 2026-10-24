@@ -294,6 +294,16 @@ Window {
         }
     }
 
+    component ConfigComboBox: GlassComboBox {
+        dark: window.isDark
+        textColor: window.whiteText
+        secondaryTextColor: window.clText
+        inputColor: window.clInput
+        surfaceColor: window.clCard
+        outlineColor: window.clBorder
+        accentColor: window.clHighlight
+    }
+
     Rectangle {
         id: rootRect
         anchors.fill: parent
@@ -314,23 +324,15 @@ Window {
             anchors.bottom: parent.bottom
             color: "transparent"
 
-            // 品牌位与标题栏对齐。
+            // 软件图标的单色轮廓版，按可见图形的光学中心对齐。
             Item {
                 width: parent.width
-                height: 42
-                Rectangle {
+                height: 48
+                SerialLogo {
                     anchors.centerIn: parent
-                    width: 28
-                    height: 28
-                    radius: 8
-                    color: clHighlight
-                    Text {
-                        anchors.centerIn: parent
-                        text: "G"
-                        color: "white"
-                        font.bold: true
-                        font.pixelSize: 15
-                    }
+                    width: 32
+                    height: 32
+                    strokeColor: window.whiteText
                 }
             }
 
@@ -747,66 +749,14 @@ Window {
                                     onClicked: refreshPorts()
                                 }
                             }
-                            ComboBox { 
+                            ConfigComboBox {
                                 id: portCombo
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 34
                                 model: portList
                                 textRole: "name"
-                                background: Rectangle { color: clInput
-                                 radius: 10
-                                 border.color: portCombo.activeFocus ? clHighlight : clBorder }
-                                contentItem: Text { text: portCombo.currentText
-                                 color: whiteText
-                                 font.pixelSize: 13
-                                 verticalAlignment: Text.AlignVCenter
-                                 leftPadding: 15 }
-                                popup: Popup {
-                                    y: portCombo.height + 5
-                                     width: portCombo.width
-                                     implicitHeight: Math.min(contentItem.implicitHeight, 250)
-                                     padding: 5
-                                    contentItem: ListView { clip: true
-                                     implicitHeight: contentHeight
-                                     model: portCombo.popup.visible ? portCombo.delegateModel : null
-                                     ScrollIndicator.vertical: ScrollIndicator { } }
-                                    background: Rectangle { color: clCard
-                                     radius: 10
-                                     border.color: clBorder
-                                     border.width: 1 }
-                                }
-                                delegate: ItemDelegate {
-                                    width: portCombo.width
-                                    height: 44
-                                    contentItem: Column {
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: 12
-                                        anchors.right: parent.right
-                                        anchors.rightMargin: 8
-                                        spacing: 1
-                                        Text { text: modelData.name
-                                            color: highlighted ? "white" : whiteText
-                                            font.pixelSize: 12
-                                            font.bold: true }
-                                        Text { text: (modelData.description || "") + (modelData.manufacturer ? " (" + modelData.manufacturer + ")" : "")
-                                            color: highlighted ? "#ccc" : "#888"
-                                            font.pixelSize: 9
-                                            elide: Text.ElideRight
-                                            width: parent.width }
-                                    }
-                                    background: Rectangle {
-                                        color: highlighted ? clHighlight : (portDelegateHover.containsMouse ? (isDark ? Qt.rgba(255,255,255,0.08) : Qt.rgba(0,0,0,0.06)) : "transparent")
-                                        radius: 6
-                                        MouseArea {
-                                            id: portDelegateHover
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            acceptedButtons: Qt.NoButton
-                                        }
-                                    }
-                                    highlighted: portCombo.highlightedIndex === index
-                                }
+                                portDetails: true
+                                font.pixelSize: 13
                             }
                         }
 
@@ -816,54 +766,13 @@ Window {
                             Text { text: "通信波特率"
                              color: "#777"
                              font.pixelSize: 11 }
-                            ComboBox { 
+                            ConfigComboBox {
                                 id: baudCombo
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 34
                                 model: [9600, 19200, 38400, 57600, 115200, 230400, 256000, 460800, 921600, 1000000, 2000000]
                                 currentIndex: 4
-                                background: Rectangle { color: clInput
-                                 radius: 10
-                                 border.color: baudCombo.activeFocus ? clHighlight : clBorder }
-                                contentItem: Text { text: baudCombo.currentText
-                                 color: whiteText
-                                 font.pixelSize: 13
-                                 verticalAlignment: Text.AlignVCenter
-                                 leftPadding: 15 }
-                                popup: Popup {
-                                    y: baudCombo.height + 5
-                                     width: baudCombo.width
-                                     implicitHeight: 250
-                                     padding: 5
-                                    contentItem: ListView { clip: true
-                                     implicitHeight: contentHeight
-                                     model: baudCombo.popup.visible ? baudCombo.delegateModel : null
-                                     ScrollIndicator.vertical: ScrollIndicator { } }
-                                    background: Rectangle { color: clCard
-                                     radius: 10
-                                     border.color: clBorder
-                                     border.width: 1 }
-                                }
-                                delegate: ItemDelegate {
-                                    width: baudCombo.width
-                                    height: 36
-                                    contentItem: Text { text: modelData
-                                        color: (highlighted || baudDelegateHover.containsMouse) ? "white" : whiteText
-                                        font.pixelSize: 12
-                                        verticalAlignment: Text.AlignVCenter
-                                        leftPadding: 12 }
-                                    background: Rectangle {
-                                        color: (highlighted || baudDelegateHover.containsMouse) ? clHighlight : "transparent"
-                                        radius: 4
-                                        MouseArea {
-                                            id: baudDelegateHover
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            acceptedButtons: Qt.NoButton
-                                        }
-                                    }
-                                    highlighted: baudCombo.highlightedIndex === index
-                                }
+                                font.pixelSize: 13
                             }
                         }
 
@@ -873,38 +782,12 @@ Window {
                             Text { text: "数据位"
                              color: "#777"
                              font.pixelSize: 11 }
-                            ComboBox {
+                            ConfigComboBox {
                                 id: dataBitsCombo
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 32
                                 model: [5, 6, 7, 8]
                                 currentIndex: 3
-                                background: Rectangle { color: clInput
-                                 radius: 8
-                                 border.color: dataBitsCombo.activeFocus ? clHighlight : clBorder }
-                                contentItem: Text { text: dataBitsCombo.currentText
-                                 color: whiteText
-                                 font.pixelSize: 12
-                                 verticalAlignment: Text.AlignVCenter
-                                 leftPadding: 12 }
-                                popup: Popup {
-                                    y: dataBitsCombo.height + 3
-                                     width: dataBitsCombo.width
-                                     implicitHeight: Math.min(contentItem.implicitHeight, 200)
-                                     padding: 3
-                                    contentItem: ListView { clip: true
-                                     implicitHeight: contentHeight
-                                     model: dataBitsCombo.popup.visible ? dataBitsCombo.delegateModel : null }
-                                    background: Rectangle { color: clCard; radius: 8; border.color: clBorder; border.width: 1 }
-                                }
-                                delegate: ItemDelegate {
-                                    width: dataBitsCombo.width; height: 32
-                                    contentItem: Text { text: modelData; color: (highlighted || dataBitsDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
-                                    background: Rectangle {
-color: (highlighted || dataBitsDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 4
-                                        MouseArea { id: dataBitsDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                    }
-                                }
                             }
                         }
 
@@ -915,54 +798,24 @@ color: (highlighted || dataBitsDelegateHover.containsMouse) ? clHighlight : "tra
                                 Layout.fillWidth: true
                                 spacing: 4
                                 Text { text: "停止位"; color: "#777"; font.pixelSize: 10 }
-                                ComboBox {
+                                ConfigComboBox {
                                     id: stopBitsCombo
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 34
                                     model: ["1", "1.5", "2"]
                                     currentIndex: 0
-                                    background: Rectangle { color: clInput; radius: 8; border.color: stopBitsCombo.activeFocus ? clHighlight : clBorder }
-                                    contentItem: Text { text: stopBitsCombo.currentText; color: whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
-                                    popup: Popup {
-                                        y: stopBitsCombo.height + 3; width: stopBitsCombo.width; implicitHeight: contentItem.implicitHeight; padding: 3
-                                        contentItem: ListView { clip: true; implicitHeight: contentHeight; model: stopBitsCombo.popup.visible ? stopBitsCombo.delegateModel : null }
-                                        background: Rectangle { color: clCard; radius: 8; border.color: clBorder }
-                                    }
-                                    delegate: ItemDelegate {
-                                        width: stopBitsCombo.width; height: 30
-                                        contentItem: Text { text: modelData; color: (highlighted || stopBitsDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
-                                        background: Rectangle {
-color: (highlighted || stopBitsDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 4
-                                            MouseArea { id: stopBitsDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                        }
-                                    }
                                 }
                             }
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 4
                                 Text { text: "校验位"; color: "#777"; font.pixelSize: 10 }
-                                ComboBox {
+                                ConfigComboBox {
                                     id: parityCombo
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 34
                                     model: ["None", "Odd", "Even", "Mark", "Space"]
                                     currentIndex: 0
-                                    background: Rectangle { color: clInput; radius: 8; border.color: parityCombo.activeFocus ? clHighlight : clBorder }
-                                    contentItem: Text { text: parityCombo.currentText; color: whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
-                                    popup: Popup {
-                                        y: parityCombo.height + 3; width: parityCombo.width; implicitHeight: contentItem.implicitHeight; padding: 3
-                                        contentItem: ListView { clip: true; implicitHeight: contentHeight; model: parityCombo.popup.visible ? parityCombo.delegateModel : null }
-                                        background: Rectangle { color: clCard; radius: 8; border.color: clBorder }
-                                    }
-                                    delegate: ItemDelegate {
-                                        width: parityCombo.width; height: 30
-                                        contentItem: Text { text: modelData; color: (highlighted || parityDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 10 }
-                                        background: Rectangle {
-color: (highlighted || parityDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 4
-                                            MouseArea { id: parityDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -973,27 +826,12 @@ color: (highlighted || parityDelegateHover.containsMouse) ? clHighlight : "trans
                             Text { text: "流控制"
                              color: "#777"
                              font.pixelSize: 11 }
-                            ComboBox {
+                            ConfigComboBox {
                                 id: flowCombo
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 32
                                 model: ["None", "Hardware", "Software"]
                                 currentIndex: 0
-                                background: Rectangle { color: clInput; radius: 8; border.color: flowCombo.activeFocus ? clHighlight : clBorder }
-                                contentItem: Text { text: flowCombo.currentText; color: whiteText; font.pixelSize: 12; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
-                                popup: Popup {
-                                    y: flowCombo.height + 3; width: flowCombo.width; implicitHeight: contentItem.implicitHeight; padding: 3
-                                    contentItem: ListView { clip: true; implicitHeight: contentHeight; model: flowCombo.popup.visible ? flowCombo.delegateModel : null }
-                                    background: Rectangle { color: clCard; radius: 8; border.color: clBorder }
-                                }
-                                delegate: ItemDelegate {
-                                    width: flowCombo.width; height: 32
-                                    contentItem: Text { text: modelData; color: (highlighted || flowDelegateHover.containsMouse) ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
-                                    background: Rectangle {
-color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transparent"; radius: 4
-                                        MouseArea { id: flowDelegateHover; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                    }
-                                }
                             }
                         }
 
