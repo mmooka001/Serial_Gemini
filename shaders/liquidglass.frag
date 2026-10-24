@@ -20,6 +20,9 @@ layout(std140, binding = 0) uniform buf {
     float bevelWidth;
     float cornerRadius;
     float edgeStrength;
+    float saturation;
+    float brightness;
+    float dispersion;
 } ubuf;
 layout(binding = 1) uniform sampler2D source;
 
@@ -102,14 +105,14 @@ void main()
     vec3 backdrop = frostedBackdrop(uv, ubuf.blurRadius);
     // Separate colour channels only along the curved bezel, leaving the centre clear.
     float dispersionMask = (1.0 - smoothstep(0.0, 0.8, u)) * ubuf.edgeStrength;
-    vec2 dispersion = edgeNormal * (0.65 + length(displacement) * 0.12)
+    vec2 dispersion = edgeNormal * ubuf.dispersion * (0.65 + length(displacement) * 0.12)
                     * dispersionMask * ubuf.presence / size;
     vec4 redSample = sampleBackdrop(uv + dispersion);
     vec4 blueSample = sampleBackdrop(uv - dispersion);
     backdrop.r = mix(backdrop.r, redSample.r + ubuf.baseColor.r * (1.0 - redSample.a), dispersionMask);
     backdrop.b = mix(backdrop.b, blueSample.b + ubuf.baseColor.b * (1.0 - blueSample.a), dispersionMask);
     float luminance = dot(backdrop, vec3(0.2126, 0.7152, 0.0722));
-    backdrop = mix(vec3(luminance), backdrop, 1.08);
+    backdrop = mix(vec3(luminance), backdrop, ubuf.saturation) * ubuf.brightness;
     vec3 material = mix(backdrop, ubuf.baseColor.rgb, ubuf.materialMix);
 
     // Schlick reflectance and directional specular light replace a painted white outline.

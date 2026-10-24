@@ -39,77 +39,24 @@ Window {
     }
     onThemeModeChanged: updateAcrylicTint()
 
-    // Theme names
-    readonly property var themeNames: ["赛博脉冲", "深蓝之境", "翡翠绿野", "烈焰熔岩", "极简暗黑", "优雅冰白"]
-
-    // Background gradient start and end colors
-    // 带 alpha(40≈25%)：QML 层只做主题染色，模糊与主染色由 accent 亚克力层负责
-    readonly property var bgGradStarts: ["#400f0c1b", "#40050b1a", "#4005160b", "#40120a0a", "#40141517", "#40eef1f6"]
-    readonly property var bgGradEnds:   ["#401e0a2b", "#400a1e3f", "#400c2b18", "#40241010", "#401e1f22", "#40cfd9df"]
-
-    // Card background (solid, no glass)
-    readonly property var cardColors: [
-        Qt.rgba(26/255, 16/255, 38/255, 1.0),     // Cyberpunk
-        Qt.rgba(13/255, 28/255, 54/255, 1.0),     // Ocean
-        Qt.rgba(12/255, 34/255, 20/255, 1.0),     // Emerald
-        Qt.rgba(28/255, 14/255, 14/255, 1.0),     // Volcano
-        Qt.rgba(43/255, 45/255, 48/255, 1.0),     // Classic Dark
-        Qt.rgba(255/255, 255/255, 255/255, 1.0)   // Light
-    ]
-
-    // Input / Item backgrounds
-    readonly property var inputColors: [
-        Qt.rgba(18/255, 11/255, 27/255, 1.0),
-        Qt.rgba(8/255, 19/255, 38/255, 1.0),
-        Qt.rgba(8/255, 23/255, 13/255, 1.0),
-        Qt.rgba(19/255, 9/255, 9/255, 1.0),
-        Qt.rgba(30/255, 31/255, 34/255, 1.0),
-        Qt.rgba(240/255, 242/255, 245/255, 1.0)
-    ]
-
-    // Borders
-    readonly property var borderColors: [
-        Qt.rgba(255/255, 255/255, 255/255, 0.10),
-        Qt.rgba(255/255, 255/255, 255/255, 0.10),
-        Qt.rgba(255/255, 255/255, 255/255, 0.10),
-        Qt.rgba(255/255, 255/255, 255/255, 0.10),
-        Qt.rgba(255/255, 255/255, 255/255, 0.10),
-        Qt.rgba(0/255, 0/255, 0/255, 0.10)
-    ]
-
-    // Highlights
-    readonly property var highlightColors: ["#a04ef6", "#00b4d8", "#2ec4b6", "#ff5400", "#3574f0", "#1a73e8"]
-
-    // Text colors
-    readonly property var textColors: ["#b5a5c9", "#9abbeb", "#9abfa6", "#dbb1ab", "#afb1b3", "#444746"]
-    readonly property var whiteTextColors: ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff", "#1f1f1f"]
-
-    // Header colors
-    // 低透明度：标题栏与窗口亚克力背景融合，浑然一体
-    readonly property var headerColors: [
-        Qt.rgba(35/255, 20/255, 50/255, 0.45),
-        Qt.rgba(18/255, 35/255, 65/255, 0.45),
-        Qt.rgba(16/255, 42/255, 25/255, 0.45),
-        Qt.rgba(38/255, 20/255, 20/255, 0.45),
-        Qt.rgba(50/255, 52/255, 55/255, 0.45),
-        Qt.rgba(255/255, 255/255, 255/255, 0.45)
-    ]
-
-    readonly property color clCard: cardColors[themeMode]
-    readonly property color clInput: inputColors[themeMode]
-    readonly property color clHeader: headerColors[themeMode]
-    readonly property color clText: textColors[themeMode]
-    readonly property color clHighlight: highlightColors[themeMode]
-    readonly property color clBorder: borderColors[themeMode]
-    readonly property color clAccent: themeMode === 3 ? "#ff2a00" : (themeMode === 5 ? "#d93025" : "#f26522")
-    readonly property color whiteText: whiteTextColors[themeMode]
-    readonly property color grayPlaceholder: isDark ? "#666666" : "#707070"
-    // 实色工作区与导航磨砂分层；模块内部共用表面，不再叠加整块输入底板。
-    readonly property color clWorkspace: isDark ? Qt.darker(clInput, 1.10) : "#e9edf2"
-    readonly property color clToolSurface: isDark ? Qt.lighter(clInput, 1.18) : "#f6f8fa"
-    readonly property color clCanvas: isDark ? clInput : "#ffffff"
-    readonly property color clSurfaceLine: isDark ? Qt.rgba(1, 1, 1, 0.045) : Qt.rgba(0, 0, 0, 0.055)
-
+    AppTheme {
+        id: appTheme
+        mode: window.themeMode
+        style: settingsStore.colorStyle
+    }
+    readonly property var themeNames: appTheme.names
+    readonly property color clCard: appTheme.surface
+    readonly property color clInput: appTheme.block
+    readonly property color clHeader: appTheme.alpha(appTheme.raised, 0.35)
+    readonly property color clText: appTheme.secondary
+    readonly property color clHighlight: appTheme.primary
+    readonly property color clBorder: appTheme.line
+    readonly property color whiteText: appTheme.text
+    readonly property color grayPlaceholder: appTheme.muted
+    readonly property color clWorkspace: appTheme.workspace
+    readonly property color clToolSurface: appTheme.surface
+    readonly property color clCanvas: appTheme.surface
+    readonly property color clSurfaceLine: appTheme.line
     // 左侧面板统一状态：-1=全关 0=连接 1=指令 2=码表 3=设置（互斥）
     property int sidePanel: 0
     property int sidePanelWidth: settingsStore.sidePanelWidth
@@ -122,7 +69,7 @@ Window {
     readonly property int minimumCenterWidth: 200
 
     // Clamp panels so center never collapses
-    readonly property int maxSidePanelWidth: Math.max(180, width - leftRailWidth - panelGap * 2 - minimumCenterWidth)
+    readonly property int maxSidePanelWidth: Math.max(200, bodyBg.width - panelGap * 3 - minimumCenterWidth)
     readonly property int effectiveSidePanelWidth: Math.max(200, Math.min(500, Math.min(sidePanelWidth, maxSidePanelWidth)))
     property int sendPanelHeight: 180
     readonly property int minSendPanelHeight: 130
@@ -294,9 +241,17 @@ Window {
     component SidePanelHeading: Text {
         Layout.preferredHeight: 32
         verticalAlignment: Text.AlignVCenter
-        color: window.clHighlight
+        color: window.whiteText
         font.bold: true
         font.pixelSize: 15
+    }
+
+    component UiButton: ActionButton {
+        theme: appTheme
+    }
+
+    component ModeSwitch: SegmentedControl {
+        theme: appTheme
     }
 
     component ConfigComboBox: GlassComboBox {
@@ -320,8 +275,8 @@ Window {
             id: shellBackdrop
             anchors.fill: parent
             gradient: Gradient {
-                GradientStop { position: 0.0; color: bgGradStarts[themeMode] }
-                GradientStop { position: 1.0; color: bgGradEnds[themeMode] }
+                GradientStop { position: 0.0; color: appTheme.shellStart }
+                GradientStop { position: 1.0; color: appTheme.shellEnd }
             }
         }
 
@@ -401,7 +356,7 @@ Window {
                                     text: railButton.modelData.symbol
                                     font.family: "Segoe Fluent Icons"
                                     font.pixelSize: 19
-                                    color: railButton.selected ? whiteText : clText
+                                    color: railButton.selected ? clHighlight : clText
                                     Behavior on color { ColorAnimation { duration: 180 } }
                                 }
                                 Text {
@@ -412,7 +367,7 @@ Window {
                                     verticalAlignment: Text.AlignVCenter
                                     text: railButton.modelData.label
                                     font.pixelSize: 9
-                                    color: railButton.selected ? whiteText : clText
+                                    color: railButton.selected ? clHighlight : clText
                                     Behavior on color { ColorAnimation { duration: 180 } }
                                 }
                             }
@@ -671,6 +626,8 @@ Window {
                 Rectangle {
                     id: sidePanelCard
                     Layout.preferredWidth: sidePanel < 0 ? 0 : effectiveSidePanelWidth
+                    Layout.minimumWidth: Layout.preferredWidth
+                    Layout.maximumWidth: Layout.preferredWidth
                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     Layout.fillHeight: true
                     visible: sidePanel >= 0 || width > 1
@@ -705,17 +662,14 @@ Window {
                             Layout.fillWidth: true
                             RowLayout {
                                 Text { text: "选择端口"
-                                 color: "#777"
+                                 color: appTheme.muted
                                  font.pixelSize: 11
                                  Layout.fillWidth: true }
-                                Button {
+                                UiButton {
                                     text: "刷新"
-                                    flat: true
-                                    Layout.preferredHeight: 16
-                                    contentItem: Text { text: parent.text
-                                     color: clHighlight
-                                     font.pixelSize: 10
-                                     horizontalAlignment: Text.AlignRight }
+                                    glyph: "\uE72C"
+                                    Layout.preferredHeight: 26
+                                    hint: "重新扫描串口"
                                     onClicked: refreshPorts()
                                 }
                             }
@@ -734,7 +688,7 @@ Window {
                             spacing: 8
                             Layout.fillWidth: true
                             Text { text: "通信波特率"
-                             color: "#777"
+                             color: appTheme.muted
                              font.pixelSize: 11 }
                             ConfigComboBox {
                                 id: baudCombo
@@ -750,7 +704,7 @@ Window {
                             spacing: 8
                             Layout.fillWidth: true
                             Text { text: "数据位"
-                             color: "#777"
+                             color: appTheme.muted
                              font.pixelSize: 11 }
                             ConfigComboBox {
                                 id: dataBitsCombo
@@ -767,7 +721,7 @@ Window {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 4
-                                Text { text: "停止位"; color: "#777"; font.pixelSize: 10 }
+                                Text { text: "停止位"; color: appTheme.muted; font.pixelSize: 10 }
                                 ConfigComboBox {
                                     id: stopBitsCombo
                                     Layout.fillWidth: true
@@ -779,7 +733,7 @@ Window {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 4
-                                Text { text: "校验位"; color: "#777"; font.pixelSize: 10 }
+                                Text { text: "校验位"; color: appTheme.muted; font.pixelSize: 10 }
                                 ConfigComboBox {
                                     id: parityCombo
                                     Layout.fillWidth: true
@@ -794,7 +748,7 @@ Window {
                             spacing: 8
                             Layout.fillWidth: true
                             Text { text: "流控制"
-                             color: "#777"
+                             color: appTheme.muted
                              font.pixelSize: 11 }
                             ConfigComboBox {
                                 id: flowCombo
@@ -805,11 +759,15 @@ Window {
                             }
                         }
 
-                        Button {
+                        UiButton {
                             id: connectBtn
+                            font.pixelSize: 13
+                            font.weight: Font.DemiBold
                              Layout.fillWidth: true
                              Layout.preferredHeight: 45
                              text: serialManager.isOpen ? "断开当前连接" : "建立串口连接"
+                            kind: serialManager.isOpen ? "tonal" : "primary"
+                            glyph: "\uE839"
                             onClicked: {
                                 if (serialManager.isOpen) {
                                     serialManager.closePort()
@@ -824,14 +782,6 @@ Window {
                                     )
                                 }
                             }
-                            background: Rectangle { radius: 10
-                             color: serialManager.isOpen ? "#3c3f41" : clHighlight }
-                            contentItem: Text { text: parent.text
-                             color: "white"
-                             font.bold: true
-                             font.pixelSize: 13
-                             horizontalAlignment: Text.AlignHCenter
-                             verticalAlignment: Text.AlignVCenter }
                         }
 
                         Item { Layout.fillHeight: true }
@@ -857,17 +807,10 @@ Window {
                                         text: "指令预设库"
                                     }
                                     Item { Layout.fillWidth: true }
-                                    Button {
+                                    UiButton {
                                         text: "＋分组"
                                         Layout.preferredHeight: 32
-                                        flat: true
                                         font.pixelSize: 12
-                                        contentItem: Text {
-                                            text: parent.text
-                                            color: clHighlight
-                                            font: parent.font
-                                        }
-                                        background: Rectangle { color: "transparent" }
                                         onClicked: commandStore.addGroup("新分组")
                                     }
                                 }
@@ -935,18 +878,6 @@ Window {
                                             border.width: 1
                                             clip: true
 
-                                            // Left accent bar
-                                            Rectangle {
-                                                width: 3
-                                                height: parent.height - 8
-                                                anchors.left: parent.left
-                                                anchors.leftMargin: 1
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                radius: 1.5
-                                                color: clHighlight
-                                                opacity: 0.9
-                                            }
-
                                             MouseArea {
                                                 id: groupHeaderMouse
                                                 anchors.fill: parent
@@ -961,7 +892,9 @@ Window {
                                                 spacing: 6
 
                                                 Text {
-                                                    text: groupExpanded ? "📂" : "📁"
+                                                    text: groupExpanded ? "\uE838" : "\uE8B7"
+                                                    color: clText
+                                                    font.family: "Segoe Fluent Icons"
                                                     font.pixelSize: 14
                                                 }
 
@@ -990,29 +923,20 @@ Window {
                                                     }
                                                 }
 
-                                                Button {
-                                                    text: "＋"
-                                                    flat: true
-                                                    font.pixelSize: 14
-                                                    contentItem: Text {
-                                                        text: parent.text
-                                                        color: clHighlight
-                                                        font: parent.font
-                                                    }
-                                                    background: Rectangle { color: "transparent" }
+                                                UiButton {
+                                                    glyph: "\uE710"
+                                                    hint: "添加指令"
+                                                    Layout.preferredWidth: 28
+                                                    Layout.preferredHeight: 28
                                                     onClicked: commandStore.addCommand(index, "新指令", "", false)
                                                 }
 
-                                                Button {
-                                                    text: "✕"
-                                                    flat: true
-                                                    font.pixelSize: 13
-                                                    contentItem: Text {
-                                                        text: parent.text
-                                                        color: clAccent
-                                                        font: parent.font
-                                                    }
-                                                    background: Rectangle { color: "transparent" }
+                                                UiButton {
+                                                    glyph: "\uE74D"
+                                                    hint: "删除分组"
+                                                    kind: "danger"
+                                                    Layout.preferredWidth: 28
+                                                    Layout.preferredHeight: 28
                                                     onClicked: {
                                                         deleteType = "group"
                                                         targetGroupIdx = index
@@ -1137,67 +1061,38 @@ Window {
                                                             }
 
                                                             // HEX/TXT badge
-                                                            Rectangle {
-                                                                Layout.preferredWidth: 30
-                                                                Layout.preferredHeight: 18
-                                                                radius: 3
-                                                                color: isHexMode ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.15) : "transparent"
-                                                                border.color: isHexMode ? clHighlight : clBorder
-                                                                border.width: 1
-                                                                Text {
-                                                                    anchors.centerIn: parent
-                                                                    text: isHexMode ? "HEX" : "TXT"
-                                                                    font.pixelSize: 8
-                                                                    font.bold: true
-                                                                    color: isHexMode ? clHighlight : clText
-                                                                }
-                                                                MouseArea {
-                                                                    anchors.fill: parent
-                                                                    cursorShape: Qt.PointingHandCursor
-                                                                    onClicked: commandStore.setCommandHex(groupIdx, cmdIdx, !isHexMode)
-                                                                }
+                                                            UiButton {
+                                                                Layout.preferredWidth: 32
+                                                                Layout.preferredHeight: 22
+                                                                leftPadding: 4
+                                                                rightPadding: 4
+                                                                text: isHexMode ? "HEX" : "TXT"
+                                                                font.pixelSize: 8
+                                                                kind: "tonal"
+                                                                hint: "切换 TXT / HEX"
+                                                                onClicked: commandStore.setCommandHex(groupIdx, cmdIdx, !isHexMode)
                                                             }
 
                                                             // Send
-                                                            Rectangle {
-                                                                Layout.preferredWidth: 30
-                                                                Layout.preferredHeight: 18
-                                                                radius: 3
-                                                                color: sendBadgeMouse.containsMouse ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.15) : "transparent"
-                                                                border.color: sendBadgeMouse.containsMouse ? clHighlight : clBorder
-                                                                border.width: 1
-                                                                Text {
-                                                                    anchors.centerIn: parent
-                                                                    text: "发送"
-                                                                    font.pixelSize: 8
-                                                                    font.bold: true
-                                                                    color: sendBadgeMouse.containsMouse ? clHighlight : clText
-                                                                }
-                                                                MouseArea {
-                                                                    id: sendBadgeMouse
-                                                                    anchors.fill: parent
-                                                                    cursorShape: Qt.PointingHandCursor
-                                                                    hoverEnabled: true
-                                                                    onClicked: window.sendCommand(modelData.payload, isHexMode)
-                                                                }
+                                                            UiButton {
+                                                                Layout.preferredWidth: 32
+                                                                Layout.preferredHeight: 22
+                                                                leftPadding: 4
+                                                                rightPadding: 4
+                                                                text: "发送"
+                                                                font.pixelSize: 8
+                                                                onClicked: window.sendCommand(modelData.payload, isHexMode)
                                                             }
 
                                                             // Delete
-                                                            Button {
-                                                                text: "✕"
-                                                                flat: true
-                                                                font.pixelSize: 10
-                                                                Layout.preferredWidth: 20
-                                                                Layout.preferredHeight: 18
-                                                                padding: 0
-                                                                contentItem: Text {
-                                                                    text: parent.text
-                                                                    color: parent.hovered ? "#FF6B6B" : "#888"
-                                                                    font: parent.font
-                                                                    horizontalAlignment: Text.AlignHCenter
-                                                                    verticalAlignment: Text.AlignVCenter
-                                                                }
-                                                                background: Rectangle { radius: 4; color: "transparent" }
+                                                            UiButton {
+                                                                glyph: "\uE74D"
+                                                                kind: "danger"
+                                                                hint: "删除指令"
+                                                                Layout.preferredWidth: 22
+                                                                Layout.preferredHeight: 22
+                                                                leftPadding: 3
+                                                                rightPadding: 3
                                                                 onClicked: {
                                                                     deleteType = "command"
                                                                     targetGroupIdx = groupIdx
@@ -1266,7 +1161,7 @@ Window {
                                             anchors.leftMargin: 4
                                             anchors.rightMargin: 4
                                             spacing: 2
-                                            Text { text: "ms"; color: "#777"; font.pixelSize: 9 }
+                                            Text { text: "ms"; color: appTheme.muted; font.pixelSize: 9 }
                                             TextInput {
                                                 Layout.fillWidth: true
                                                 color: whiteText
@@ -1284,32 +1179,18 @@ Window {
                                         }
                                     }
 
-                                    Button {
+                                    UiButton {
                                         Layout.fillWidth: true
                                         Layout.minimumWidth: 54
                                         Layout.preferredWidth: 80
                                         Layout.preferredHeight: 24
                                         clip: true
                                         text: loopSending ? "停止" : "循环"
-                                        flat: true
                                         font.pixelSize: 10
-                                        contentItem: Text {
-                                            text: parent.text
-                                            color: loopSending ? "#e53935" : clText
-                                            font.pixelSize: 10
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                            elide: Text.ElideRight
-                                            Behavior on color { ColorAnimation { duration: 200 } }
-                                        }
-                                        background: Rectangle {
-                                            color: loopSending ? (isDark ? Qt.rgba(255,0,0,0.15) : Qt.rgba(255,0,0,0.08)) : (loopBtnMouse.containsMouse ? clInput : "transparent")
-                                            radius: 6
-                                            border.color: loopSending ? "#e53935" : clBorder
-                                            border.width: 1
-                                            Behavior on color { ColorAnimation { duration: 200 } }
-                                            MouseArea { id: loopBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                        }
+                                        kind: loopSending ? "danger" : "tonal"
+                                        selected: loopSending
+                                        leftPadding: 4
+                                        rightPadding: 4
                                         onClicked: {
                                             if (loopSending) {
                                                 loopSending = false
@@ -1321,61 +1202,35 @@ Window {
                                         }
                                     }
 
-                                    Button {
+                                    UiButton {
                                         Layout.preferredWidth: commandBottomBar.importExportButtonWidth
                                         Layout.minimumWidth: 0
                                         Layout.maximumWidth: 30
                                         Layout.preferredHeight: 24
                                         text: "导入"
-                                        flat: true
+                                        kind: "tonal"
                                         clip: true
                                         visible: commandBottomBar.showImportExport
                                         enabled: commandBottomBar.showImportExport
                                         font.pixelSize: 11
-                                        contentItem: Text {
-                                            text: parent.text
-                                            color: clText
-                                            font.pixelSize: 10
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                            clip: true
-                                        }
-                                        background: Rectangle {
-                                            color: importBtnMouse.containsMouse ? clInput : "transparent"
-                                            radius: 6
-                                            border.color: clBorder
-                                            border.width: 1
-                                            MouseArea { id: importBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                        }
+                                        leftPadding: 4
+                                        rightPadding: 4
                                         onClicked: importFileDialog.open()
                                     }
 
-                                    Button {
+                                    UiButton {
                                         Layout.preferredWidth: commandBottomBar.importExportButtonWidth
                                         Layout.minimumWidth: 0
                                         Layout.maximumWidth: 30
                                         Layout.preferredHeight: 24
                                         text: "导出"
-                                        flat: true
+                                        kind: "tonal"
                                         clip: true
                                         visible: commandBottomBar.showImportExport
                                         enabled: commandBottomBar.showImportExport
                                         font.pixelSize: 11
-                                        contentItem: Text {
-                                            text: parent.text
-                                            color: clText
-                                            font.pixelSize: 10
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                            clip: true
-                                        }
-                                        background: Rectangle {
-                                            color: exportBtnMouse.containsMouse ? clInput : "transparent"
-                                            radius: 6
-                                            border.color: clBorder
-                                            border.width: 1
-                                            MouseArea { id: exportBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                        }
+                                        leftPadding: 4
+                                        rightPadding: 4
                                         onClicked: {
                                             exportFileDialog.currentFile = defaultExportFileUrl(commandExportFileName())
                                             exportFileDialog.open()
@@ -1441,13 +1296,13 @@ Window {
                                         GridLayout {
                                             columns: 2; columnSpacing: 8; rowSpacing: 4
                                             Layout.fillWidth: true
-                                            Text { text: "HEX"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { text: "HEX"; color: clText; font.pixelSize: 10; font.bold: true }
                                             Text { id: hexOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
-                                            Text { text: "DEC"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { text: "DEC"; color: clText; font.pixelSize: 10; font.bold: true }
                                             Text { id: decOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
-                                            Text { text: "OCT"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { text: "OCT"; color: clText; font.pixelSize: 10; font.bold: true }
                                             Text { id: octOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
-                                            Text { text: "BIN"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { text: "BIN"; color: clText; font.pixelSize: 10; font.bold: true }
                                             Text { id: binOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true; wrapMode: Text.Wrap }
                                         }
                                     }
@@ -1472,8 +1327,8 @@ Window {
                                             anchors.leftMargin: 8
                                             anchors.rightMargin: 8
                                             spacing: 10
-                                            Text { text: index; color: clHighlight; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 30 }
-                                            Text { text: "0x" + index.toString(16).toUpperCase().padStart(2, '0'); color: "#888"; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 35 }
+                                            Text { text: index; color: clText; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 30 }
+                                            Text { text: "0x" + index.toString(16).toUpperCase().padStart(2, '0'); color: appTheme.muted; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 35 }
                                             Text {
                                                 text: {
                                                     if (index < 32) return ["NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","HT","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"][index]
@@ -1515,33 +1370,12 @@ Window {
                                     spacing: 6
                                     Layout.fillWidth: true
                                     Text { text: "行尾模式"; color: clText; font.pixelSize: 11; font.bold: true }
-                                    RowLayout {
-                                        spacing: 4
+                                    ModeSwitch {
                                         Layout.fillWidth: true
-                                        Repeater {
-                                            model: ["无", "LF", "CR", "CRLF"]
-                                            Rectangle {
-                                                Layout.fillWidth: true
-                                                height: 32
-                                                radius: 8
-                                                color: settingsStore.lineEndingMode === index ? clHighlight : (leMouse.containsMouse ? clCard : clInput)
-                                                border.color: settingsStore.lineEndingMode === index ? clHighlight : clBorder
-                                                border.width: settingsStore.lineEndingMode === index ? 1 : 0
-                                                Text {
-                                                    text: modelData
-                                                    anchors.centerIn: parent
-                                                    color: settingsStore.lineEndingMode === index ? "white" : clText
-                                                    font.pixelSize: 11
-                                                    font.bold: settingsStore.lineEndingMode === index
-                                                }
-                                                MouseArea {
-                                                    id: leMouse
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    onClicked: settingsStore.lineEndingMode = index
-                                                }
-                                            }
-                                        }
+                                        Layout.preferredHeight: 32
+                                        model: ["无", "LF", "CR", "CRLF"]
+                                        currentIndex: settingsStore.lineEndingMode
+                                        onActivated: (index) => settingsStore.lineEndingMode = index
                                     }
                                 }
 
@@ -1552,28 +1386,13 @@ Window {
                                     spacing: 6
                                     Layout.fillWidth: true
                                     Text { text: "数据编码"; color: clText; font.pixelSize: 11; font.bold: true }
-                                    ComboBox {
+                                    ConfigComboBox {
                                         id: encodingCombo
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 36
                                         model: ["UTF-8", "GBK", "GB2312", "ASCII", "ISO-8859-1"]
-                                        currentIndex: {
-                                            var idx = model.indexOf(settingsStore.dataEncoding)
-                                            return idx >= 0 ? idx : 0
-                                        }
-                                        onCurrentTextChanged: settingsStore.dataEncoding = currentText
-                                        background: Rectangle { color: clInput; radius: 8; border.color: encodingCombo.activeFocus ? clHighlight : clBorder }
-                                        contentItem: Text { text: encodingCombo.currentText; color: whiteText; font.pixelSize: 12; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
-                                        popup: Popup {
-                                            y: encodingCombo.height + 3; width: encodingCombo.width; implicitHeight: contentItem.implicitHeight; padding: 5
-                                            contentItem: ListView { clip: true; implicitHeight: contentHeight; model: encodingCombo.popup.visible ? encodingCombo.delegateModel : null }
-                                            background: Rectangle { color: clCard; radius: 10; border.color: clBorder; border.width: 1 }
-                                        }
-                                        delegate: ItemDelegate {
-                                            width: encodingCombo.width; height: 32
-                                            contentItem: Text { text: modelData; color: highlighted ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
-                                            background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
-                                        }
+                                        currentIndex: Math.max(0, model.indexOf(settingsStore.dataEncoding))
+                                        onActivated: settingsStore.dataEncoding = currentText
                                     }
                                 }
 
@@ -1589,13 +1408,13 @@ Window {
                                         columnSpacing: 12
                                         rowSpacing: 6
                                         Layout.fillWidth: true
-                                        Text { text: "数据位"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "数据位"; color: appTheme.muted; font.pixelSize: 11 }
                                         Text { text: "8"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                        Text { text: "停止位"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "停止位"; color: appTheme.muted; font.pixelSize: 11 }
                                         Text { text: "1"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                        Text { text: "校验位"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "校验位"; color: appTheme.muted; font.pixelSize: 11 }
                                         Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                        Text { text: "流控"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "流控"; color: appTheme.muted; font.pixelSize: 11 }
                                         Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
                                     }
                                 }
@@ -1611,7 +1430,7 @@ Window {
                                         color: settingsStore.hasDecimalMode ? clHighlight : (isDark ? Qt.rgba(255,255,255,0.2) : Qt.rgba(0,0,0,0.15))
                                         Rectangle {
                                             width: 20; height: 20; radius: 10
-                                            color: "white"
+                                            color: settingsStore.hasDecimalMode ? appTheme.primaryText : whiteText
                                             anchors.verticalCenter: parent.verticalCenter
                                             x: settingsStore.hasDecimalMode ? parent.width - 22 : 2
                                             Behavior on x { NumberAnimation { duration: 150 } }
@@ -1698,24 +1517,18 @@ Window {
                                 Item { Layout.fillWidth: true }
                                 
                                 // 自动滚动开关
-                                Button {
+                                UiButton {
                                     id: scrollToggle
-                                    flat: true
-                                    contentItem: Text { 
-                                        text: autoScroll ? "自动滚动" : "锁定滚动"
-                                        color: autoScroll ? clHighlight : "#888"
-                                        font.pixelSize: 11
-                                    }
+                                    text: autoScroll ? "跟随" : "已锁定"
+                                    glyph: autoScroll ? "\uE74B" : "\uE72E"
+                                    selected: !autoScroll
+                                    hint: autoScroll ? "自动跟随新数据，点击锁定位置" : "滚动已锁定，点击恢复跟随"
                                     onClicked: autoScroll = !autoScroll
                                 }
 
-                                Button { text: "清除"
-                                 flat: true
-                                 contentItem: Text { text: parent.text
-                                 color: "#888"
-                                 font.pixelSize: 11 }
-                                 background: Rectangle { radius: 6
-                                 color: parent.hovered ? Qt.rgba(1,1,1,0.05) : "transparent" }
+                                UiButton { text: "清除"
+                                 glyph: "\uE74D"
+                                 hint: "清空终端显示"
                                  onClicked: { terminalModel.clear() } }
                             }
                             Rectangle {
@@ -1747,7 +1560,7 @@ Window {
                                              spacing: 6
                                             Text { text: model.timestamp
                                              font.pixelSize: 9
-                                             color: "#555"
+                                             color: appTheme.muted
                                              visible: globalTimestamp
                                              MouseArea {
                                                  anchors.fill: parent
@@ -1760,13 +1573,13 @@ Window {
                                                 width: 38
                                                  height: 16
                                                  radius: 4
-                                                 border.color: model.isHexMode ? clHighlight : clBorder
-                                                 color: model.isHexMode ? Qt.rgba(53/255, 116/255, 240/255, 0.15) : "transparent"
+                                                 border.width: 0
+                                                 color: appTheme.block
                                                 Text { text: model.isHexMode ? "HEX" : "TXT"
                                                  anchors.centerIn: parent
                                                  font.pixelSize: 8
                                                  font.bold: true
-                                                 color: model.isHexMode ? clHighlight : "#666" }
+                                                 color: clText }
                                                 MouseArea { anchors.fill: parent
                                                  onClicked: { model.isHexMode = !model.isHexMode } }
                                             }
@@ -1780,7 +1593,7 @@ Window {
                                                 width: msgText.width + 30
                                                  height: Math.max(msgCol.height + 12, 24)
                                                  radius: 16
-                                                 color: model.isSent ? clHighlight : (isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.05))
+                                                 color: model.isSent ? appTheme.selection : appTheme.block
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     hoverEnabled: true
@@ -1804,7 +1617,7 @@ Window {
                                                      }
                                                      width: Math.min(implicitWidth, terminalView.width * 0.75)
                                                      topPadding: 2; bottomPadding: 2
-                                                     color: model.isSent ? "white" : whiteText
+                                                     color: whiteText
                                                      font.family: "Consolas"
                                                      font.pixelSize: 13
                                                      wrapMode: Text.Wrap
@@ -1816,7 +1629,7 @@ Window {
                                                     Text { id: msgToggle
                                                      visible: expanded ? wasTruncated : msgText.truncated
                                                      text: expanded ? "收起 ▴" : "展开全文 ▾"
-                                                     color: model.isSent ? "#e8e8e8" : clHighlight
+                                                     color: clText
                                                      font.pixelSize: 9
                                                      MouseArea {
                                                          anchors.fill: parent
@@ -1891,30 +1704,13 @@ Window {
                                     RowLayout {
                                         anchors.fill: parent
                                         spacing: 6
-                                        Text { text: "接收:"; color: "#777"; font.pixelSize: 10 }
-                                        Row {
-                                            Repeater {
-                                                model: ["TXT", "HEX"]
-                                                Button {
-                                                    width: 35
-                                                    height: 26
-                                                    property bool active: (index === 1) === globalRxHex
-                                                    contentItem: Text {
-                                                        text: modelData
-                                                        color: active ? (isDark ? whiteText : clHighlight) : clText
-                                                        font.pixelSize: 9
-                                                        horizontalAlignment: Text.AlignHCenter
-                                                        verticalAlignment: Text.AlignVCenter
-                                                    }
-                                                    background: Rectangle {
-                                                        color: active ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.14) : "transparent"
-                                                        radius: 6
-                                                        Rectangle { width: 10; height: 26; color: parent.color; anchors.right: parent.right; visible: index === 0 }
-                                                        Rectangle { width: 10; height: 26; color: parent.color; anchors.left: parent.left; visible: index === 1 }
-                                                    }
-                                                    onClicked: globalRxHex = (index === 1)
-                                                }
-                                            }
+                                        Text { text: "接收"; color: appTheme.muted; font.pixelSize: 10 }
+                                        ModeSwitch {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: 28
+                                            model: ["TXT", "HEX"]
+                                            currentIndex: globalRxHex ? 1 : 0
+                                            onActivated: (index) => globalRxHex = index === 1
                                         }
                                     }
                                 }
@@ -1932,30 +1728,13 @@ Window {
                                     RowLayout {
                                         anchors.fill: parent
                                         spacing: 6
-                                        Text { text: "发送:"; color: "#777"; font.pixelSize: 10 }
-                                        Row {
-                                            Repeater {
-                                                model: ["TXT", "HEX"]
-                                                Button {
-                                                    width: 38
-                                                    height: 26
-                                                    property bool active: (index === 1) === globalTxHex
-                                                    contentItem: Text {
-                                                        text: modelData
-                                                        color: active ? (isDark ? whiteText : clHighlight) : clText
-                                                        font.pixelSize: 9
-                                                        horizontalAlignment: Text.AlignHCenter
-                                                        verticalAlignment: Text.AlignVCenter
-                                                    }
-                                                    background: Rectangle {
-                                                        color: active ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.14) : "transparent"
-                                                        radius: 6
-                                                        Rectangle { width: 10; height: 26; color: parent.color; anchors.right: parent.right; visible: index === 0 }
-                                                        Rectangle { width: 10; height: 26; color: parent.color; anchors.left: parent.left; visible: index === 1 }
-                                                    }
-                                                    onClicked: globalTxHex = (index === 1)
-                                                }
-                                            }
+                                        Text { text: "发送"; color: appTheme.muted; font.pixelSize: 10 }
+                                        ModeSwitch {
+                                            Layout.fillWidth: true
+                                            Layout.preferredHeight: 28
+                                            model: ["TXT", "HEX"]
+                                            currentIndex: globalTxHex ? 1 : 0
+                                            onActivated: (index) => globalTxHex = index === 1
                                         }
                                     }
                                 }
@@ -1970,14 +1749,12 @@ Window {
                                     clip: true
                                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 45
-                                        height: 26
-                                        radius: 6
-                                        color: globalTimestamp ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.14) : "transparent"
-                                        Text { text: "TIME"; anchors.centerIn: parent; color: globalTimestamp ? (isDark ? whiteText : clHighlight) : clText; font.pixelSize: 9 }
-                                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: globalTimestamp = !globalTimestamp }
+                                    UiButton {
+                                        anchors.fill: parent
+                                        text: "时间"
+                                        selected: globalTimestamp
+                                        hint: "显示消息时间戳"
+                                        onClicked: globalTimestamp = !globalTimestamp
                                     }
                                 }
 
@@ -1991,34 +1768,15 @@ Window {
                                     clip: true
                                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                                    Rectangle {
-                                        anchors.centerIn: parent
-                                        width: 54
-                                        height: 26
-                                        radius: 6
-                                        color: autoSending ? (isDark ? Qt.rgba(255, 0, 0, 0.15) : Qt.rgba(255, 0, 0, 0.08)) : (autoBtnMouse.containsMouse ? (isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.06)) : "transparent")
-                                        border.color: autoSending ? "#e53935" : clBorder
-                                        border.width: 1
-                                        Behavior on color { ColorAnimation { duration: 200 } }
-                                        Text {
-                                            text: autoSending ? "停止" : "自动"
-                                            anchors.centerIn: parent
-                                            color: autoSending ? "#e53935" : clText
-                                            font.pixelSize: 10
-                                            font.bold: true
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                            Behavior on color { ColorAnimation { duration: 200 } }
-                                        }
-                                        MouseArea {
-                                            id: autoBtnMouse
-                                            anchors.fill: parent
-                                            hoverEnabled: true
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: {
-                                                if (autoSending) { autoSendTimer.stop(); autoSending = false }
-                                                else { autoSendTimer.start(); autoSending = true }
-                                            }
+                                    UiButton {
+                                        anchors.fill: parent
+                                        text: autoSending ? "停止" : "定时"
+                                        kind: autoSending ? "danger" : "tonal"
+                                        selected: autoSending
+                                        hint: autoSending ? "停止定时发送" : "按设定间隔重复发送"
+                                        onClicked: {
+                                            if (autoSending) { autoSendTimer.stop(); autoSending = false }
+                                            else { autoSendTimer.start(); autoSending = true }
                                         }
                                     }
                                 }
@@ -2035,51 +1793,12 @@ Window {
                                     clip: true
                                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                                    ComboBox {
+                                    ConfigComboBox {
                                         id: checksumCombo
+                                        backdropItem: sendCard
                                         anchors.fill: parent
                                         model: ["无校验", "BCC", "Sum8", "CRC16"]
-                                        background: Rectangle {
-                                            color: clInput
-                                            radius: 8
-                                            border.color: checksumCombo.activeFocus ? clHighlight : clBorder
-                                        }
-                                        contentItem: Text {
-                                            text: checksumCombo.currentText
-                                            color: clText
-                                            font.pixelSize: 11
-                                            verticalAlignment: Text.AlignVCenter
-                                            leftPadding: 10
-                                        }
-                                        popup: Popup {
-                                            y: checksumCombo.height + 3
-                                            width: checksumCombo.width
-                                            implicitHeight: contentItem.implicitHeight
-                                            padding: 5
-                                            contentItem: ListView {
-                                                clip: true
-                                                implicitHeight: contentHeight
-                                                model: checksumCombo.popup.visible ? checksumCombo.delegateModel : null
-                                            }
-                                            background: Rectangle {
-                                                color: clCard
-                                                radius: 10
-                                                border.color: clBorder
-                                                border.width: 1
-                                            }
-                                        }
-                                        delegate: ItemDelegate {
-                                            width: checksumCombo.width
-                                            height: 32
-                                            contentItem: Text {
-                                                text: modelData
-                                                color: highlighted ? "white" : whiteText
-                                                font.pixelSize: 11
-                                                verticalAlignment: Text.AlignVCenter
-                                                leftPadding: 10
-                                            }
-                                            background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
-                                        }
+                                        font.pixelSize: 11
                                     }
                                 }
                             }
@@ -2140,28 +1859,24 @@ Window {
                                      Column { anchors.centerIn: parent
                                      spacing: 2
                                      Text { text: "校验"
-                                     color: "#777"
+                                     color: appTheme.muted
                                      font.pixelSize: 9
                                      visible: window.width > 750 }
                                      Text { text: checksumValue
-                                     color: clAccent
+                                     color: whiteText
                                      font.bold: true
                                      font.pixelSize: 13 } } }
-                                    Button { id: sendBtn
+                                    UiButton { id: sendBtn
                                      Layout.preferredWidth: 60
                                      Layout.minimumWidth: 60
                                      Layout.preferredHeight: 40
                                      Layout.alignment: Qt.AlignBottom
                                      text: "发送"
+                                     font.pixelSize: 12
+                                     font.weight: Font.DemiBold
+                                     kind: "primary"
                                      onClicked: doSend()
-                                     background: Rectangle { color: clHighlight
-                                     radius: 10 }
-                                     contentItem: Text { text: parent.text
-                                     color: "white"
-                                     font.bold: true
-                                     font.pixelSize: 14
-                                     horizontalAlignment: Text.AlignHCenter
-                                     verticalAlignment: Text.AlignVCenter } }
+                                     }
                                 }
                             }
                         }
@@ -2202,8 +1917,8 @@ Window {
                                     spacing: 20
                                     Rectangle {
                                         width: 60; height: 60; radius: 12
-                                        color: clHighlight
-                                        Text { text: "G"; color: "white"; font.bold: true; font.pixelSize: 32; anchors.centerIn: parent }
+                                        color: appTheme.block
+                                        Text { text: "G"; color: whiteText; font.bold: true; font.pixelSize: 32; anchors.centerIn: parent }
                                     }
                                     ColumnLayout {
                                         Text { text: "MySerial Gemini"; color: whiteText; font.bold: true; font.pixelSize: 22 }
@@ -2231,7 +1946,7 @@ Window {
                                 border.color: clBorder
                                 ColumnLayout {
                                     anchors.fill: parent; anchors.margins: 20; spacing: 12
-                                    Text { text: "运行环境"; color: clHighlight; font.bold: true; font.pixelSize: 14 }
+                                    Text { text: "运行环境"; color: whiteText; font.bold: true; font.pixelSize: 14 }
                                     ListModel {
                                         id: envModel
                                         ListElement { k: "Qt Framework"; v: "6.11.0" }
@@ -2242,7 +1957,7 @@ Window {
                                     Repeater {
                                         model: envModel
                                         RowLayout {
-                                            Text { text: model.k; color: "#888"; font.pixelSize: 12; Layout.preferredWidth: 100 }
+                                            Text { text: model.k; color: appTheme.muted; font.pixelSize: 12; Layout.preferredWidth: 100 }
                                             Text { text: model.v; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
                                         }
                                     }
@@ -2257,7 +1972,7 @@ Window {
                                 border.color: clBorder
                                 ColumnLayout {
                                     anchors.fill: parent; anchors.margins: 20; spacing: 12
-                                    Text { text: "技术支持"; color: clHighlight; font.bold: true; font.pixelSize: 14 }
+                                    Text { text: "技术支持"; color: whiteText; font.bold: true; font.pixelSize: 14 }
                                     Text { 
                                         text: "如果您在使用过程中遇到任何问题或有改进建议，请通过邮件联系开发者。"
                                         color: clText; font.pixelSize: 12; Layout.fillWidth: true; wrapMode: Text.Wrap
@@ -2274,7 +1989,7 @@ Window {
                                                 Layout.preferredWidth: 44
                                                 Layout.preferredHeight: 24
                                                 radius: 6
-                                                color: emailCopyMouse.containsMouse ? (isDark ? "#2a3a5a" : "#E0ECFF") : "transparent"
+                                                color: emailCopyMouse.containsMouse ? appTheme.hover : "transparent"
                                                 border.color: emailCopyMouse.containsMouse ? clHighlight : "transparent"
                                                 border.width: 1
                                                 Text {
@@ -2314,7 +2029,7 @@ Window {
                  radius: 12
                  anchors.centerIn: parent
                  color: clCard
-                 border.color: clHighlight
+                 border.color: clSurfaceLine
                  border.width: 1
                 ColumnLayout {
                     anchors.fill: parent
@@ -2326,45 +2041,25 @@ Window {
                      font.pixelSize: 16
                      Layout.alignment: Qt.AlignHCenter }
                     Text { text: "操作后数据将无法恢复"
-                     color: "#888"
+                     color: appTheme.muted
                      font.pixelSize: 12
                      Layout.alignment: Qt.AlignHCenter }
                     RowLayout {
                         spacing: 15
                         Layout.fillWidth: true
-                        Button { 
+                        UiButton {
                             text: "取消"
+                            kind: "tonal"
                             Layout.fillWidth: true
                             Layout.preferredHeight: 38
-                            background: Rectangle { 
-                                anchors.fill: parent
-                                radius: 10
-                                color: parent.hovered ? "#444" : "#333" 
-                            }
-                            contentItem: Text { 
-                                text: parent.text
-                                color: "white"
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
                             onClicked: { deleteConfirmOverlay.visible = false } 
                         }
-                        Button { 
+                        UiButton {
                             text: "确定删除"
+                            kind: "danger"
+                            selected: true
                             Layout.fillWidth: true
                             Layout.preferredHeight: 38
-                            background: Rectangle { 
-                                anchors.fill: parent
-                                radius: 10
-                                color: parent.hovered ? Qt.lighter(clAccent, 1.1) : clAccent 
-                            }
-                            contentItem: Text { 
-                                text: parent.text
-                                color: "white"
-                                font.bold: true
-                                horizontalAlignment: Text.AlignHCenter
-                                verticalAlignment: Text.AlignVCenter
-                            }
                             onClicked: { 
                                 if (deleteType === "group") { commandStore.deleteGroup(targetGroupIdx) } 
                                 else if (deleteType === "command") { commandStore.deleteCommand(targetGroupIdx, targetCmdIdx) } 
@@ -2412,7 +2107,7 @@ Window {
                         width: 8
                         height: 8
                         radius: 4
-                        color: serialManager.isOpen ? "#4CAF50" : "#F44336"
+                        color: serialManager.isOpen ? appTheme.success : appTheme.muted
                     }
                     Text {
                         text: serialManager.isOpen ? "已连接" : "未连接"
@@ -2427,13 +2122,13 @@ Window {
                     visible: serialManager.isOpen
                     Text {
                         text: "▼ RX: " + recordStore.rxCount + " B"
-                        color: "#4CAF50"
+                        color: clText
                         font.pixelSize: 10
                         font.family: "Consolas"
                     }
                     Text {
                         text: "▲ TX: " + recordStore.txCount + " B"
-                        color: clHighlight
+                        color: clText
                         font.pixelSize: 10
                         font.family: "Consolas"
                     }
@@ -2456,7 +2151,7 @@ Window {
                         Text {
                             text: "导出"
                             anchors.centerIn: parent
-                            color: clHighlight
+                            color: clText
                             font.pixelSize: 10
                         }
                         MouseArea {
@@ -2475,7 +2170,7 @@ Window {
                         Text {
                             text: "清空"
                             anchors.centerIn: parent
-                            color: "#888"
+                            color: appTheme.muted
                             font.pixelSize: 10
                         }
                         MouseArea {
@@ -2600,25 +2295,33 @@ Window {
         id: themePopup
         x: window.width - width - 145
         y: titleBar.height + 2
-        width: 160
-        implicitHeight: themeColumn.implicitHeight + 16
-        padding: 8
+        width: 248
+        implicitHeight: themeColumn.implicitHeight + 24
+        padding: 12
         modal: false
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
         
         background: Rectangle {
-            color: clCard
-            radius: 10
-            border.color: clBorder
-            border.width: 1
-            layer.enabled: true
+            color: appTheme.raised
+            radius: 14
+            border.color: appTheme.line
         }
         
         Column {
             id: themeColumn
             width: parent.width
-            spacing: 2
+            spacing: 4
+
+            Text { text: "外观"; color: whiteText; font.pixelSize: 13; font.weight: Font.DemiBold; height: 28 }
+            ModeSwitch {
+                width: parent.width
+                height: 30
+                model: appTheme.styleNames
+                currentIndex: settingsStore.colorStyle
+                onActivated: (index) => settingsStore.colorStyle = index
+            }
+            Text { text: "配色方案"; color: appTheme.muted; font.pixelSize: 10; height: 26; verticalAlignment: Text.AlignBottom }
             
             Repeater {
                 model: themeNames
@@ -2626,11 +2329,7 @@ Window {
                     width: themeColumn.width
                     height: 36
                     radius: 6
-                    color: (themeMouse.containsMouse || themeMode === index)
-                           ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, themeMode === index ? 0.25 : 0.12)
-                           : "transparent"
-                    border.color: themeMode === index ? clHighlight : "transparent"
-                    border.width: 1
+                    color: themeMouse.containsMouse ? appTheme.hover : "transparent"
                     
                     RowLayout {
                         anchors.fill: parent
@@ -2642,14 +2341,12 @@ Window {
                             width: 12
                             height: 12
                             radius: 6
-                            color: highlightColors[index]
-                            border.color: "#ffffff"
-                            border.width: 1
+                            color: appTheme.seeds[index]
                         }
                         
                         Text {
                             text: modelData
-                            color: themeMode === index ? clHighlight : whiteText
+                            color: whiteText
                             font.pixelSize: 12
                             font.bold: themeMode === index
                             Layout.fillWidth: true

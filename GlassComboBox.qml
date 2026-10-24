@@ -28,7 +28,7 @@ ComboBox {
         color: control.inputColor
         border.color: control.popup.visible || control.visualFocus
                       ? Qt.rgba(control.accentColor.r, control.accentColor.g, control.accentColor.b, 0.55)
-                      : control.outlineColor
+                      : "transparent"
         Behavior on border.color { ColorAnimation { duration: 140 } }
     }
     contentItem: Text {
@@ -118,7 +118,10 @@ ComboBox {
 
         background: LiquidGlassSelection {
             id: menuMaterial
-        edgeStrength: 0.45
+            edgeStrength: 0.45
+            saturation: 1.35
+            brightness: 1.04
+            dispersion: 0.6
             sourceItem: control.backdropItem
             sourceRect: {
                 if (!menu.visible || !control.backdropItem)
@@ -129,7 +132,7 @@ ComboBox {
             }
             fixedRect: Qt.rect(0, 0, width, height)
             baseColor: control.surfaceColor
-            materialMix: control.dark ? 0.80 : 0.85
+            materialMix: control.dark ? 0.68 : 0.76
             blurRadius: 14
             bevelWidth: 7
             glassDepth: 10

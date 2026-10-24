@@ -19,6 +19,9 @@ Item {
     property real bevelWidth: 5
     property real cornerRadius: 14
     property real edgeStrength: 1
+    property real saturation: 1.2
+    property real brightness: dark ? 1.12 : 1
+    property real dispersion: 1.4
     property real contentOffsetY: 0
     property rect fixedRect: Qt.rect(0, 0, 0, 0)
     property bool animationsEnabled: true
@@ -108,6 +111,9 @@ Item {
         property real bevelWidth: root.bevelWidth
         property real cornerRadius: root.cornerRadius
         property real edgeStrength: root.edgeStrength
+        property real saturation: root.saturation
+        property real brightness: root.brightness
+        property real dispersion: root.dispersion
         fragmentShader: "qrc:/shaders/liquidglass.frag.qsb"
 
         Behavior on lensY {

@@ -12,6 +12,7 @@ class SettingsStore : public QObject
     Q_PROPERTY(bool hasDecimalMode READ hasDecimalMode WRITE setHasDecimalMode NOTIFY hasDecimalModeChanged)
     Q_PROPERTY(int sidePanelWidth READ sidePanelWidth WRITE setSidePanelWidth NOTIFY sidePanelWidthChanged)
     Q_PROPERTY(int themeMode READ themeMode WRITE setThemeMode NOTIFY themeModeChanged)
+    Q_PROPERTY(int colorStyle READ colorStyle WRITE setColorStyle NOTIFY colorStyleChanged)
 
 public:
     explicit SettingsStore(QObject *parent = nullptr) : QObject(parent) {
@@ -21,6 +22,7 @@ public:
         m_hasDecimalMode = s.value("settings/hasDecimalMode", false).toBool();
         m_sidePanelWidth = s.value("settings/sidePanelWidth", 300).toInt();
         m_themeMode = s.value("settings/themeMode", 4).toInt(); // Default to 4 (Classic Dark)
+        m_colorStyle = qBound(0, s.value("settings/colorStyle", 2).toInt(), 3);
     }
 
     int lineEndingMode() const { return m_lineEndingMode; }
@@ -59,6 +61,16 @@ public:
         }
     }
 
+    int colorStyle() const { return m_colorStyle; }
+    void setColorStyle(int style) {
+        style = qBound(0, style, 3);
+        if (m_colorStyle != style) {
+            m_colorStyle = style;
+            QSettings s; s.setValue("settings/colorStyle", style);
+            emit colorStyleChanged();
+        }
+    }
+
     int themeMode() const { return m_themeMode; }
     void setThemeMode(int mode) {
         if (m_themeMode != mode) {
@@ -69,6 +81,7 @@ public:
     }
 
 signals:
+    void colorStyleChanged();
     void lineEndingModeChanged();
     void dataEncodingChanged();
     void hasDecimalModeChanged();
@@ -76,6 +89,7 @@ signals:
     void themeModeChanged();
 
 private:
+    int m_colorStyle;
     int m_lineEndingMode;
     QString m_dataEncoding;
     bool m_hasDecimalMode;
