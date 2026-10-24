@@ -94,7 +94,6 @@ Window {
         Qt.rgba(255/255, 255/255, 255/255, 0.45)
     ]
 
-    readonly property color clBg: bgGradStarts[themeMode]
     readonly property color clCard: cardColors[themeMode]
     readonly property color clInput: inputColors[themeMode]
     readonly property color clHeader: headerColors[themeMode]
@@ -104,7 +103,11 @@ Window {
     readonly property color clAccent: themeMode === 3 ? "#ff2a00" : (themeMode === 5 ? "#d93025" : "#f26522")
     readonly property color whiteText: whiteTextColors[themeMode]
     readonly property color grayPlaceholder: isDark ? "#666666" : "#707070"
-    readonly property color clTitleBg: headerColors[themeMode]
+    // 实色工作区与导航磨砂分层；模块内部共用表面，不再叠加整块输入底板。
+    readonly property color clWorkspace: isDark ? Qt.darker(clInput, 1.10) : "#e9edf2"
+    readonly property color clToolSurface: isDark ? Qt.lighter(clInput, 1.18) : "#f6f8fa"
+    readonly property color clCanvas: isDark ? clInput : "#ffffff"
+    readonly property color clSurfaceLine: isDark ? Qt.rgba(1, 1, 1, 0.045) : Qt.rgba(0, 0, 0, 0.055)
 
     // 左侧面板统一状态：-1=全关 0=连接 1=指令 2=码表 3=设置（互斥）
     property int sidePanel: 0
@@ -114,6 +117,7 @@ Window {
 
     // Layout constants
     readonly property int panelGap: 12
+    readonly property int moduleRadius: 14
     readonly property int leftRailWidth: 52
     readonly property int minimumCenterWidth: 200
     readonly property int dragHandleWidth: 6
@@ -128,12 +132,12 @@ Window {
     readonly property int terminalSendGap: 15
     readonly property int maxSendPanelHeight: Math.max(minSendPanelHeight, centerColumn.height - minTerminalHeight - terminalSendResizeHandle.height)
 
-    // Toolbar fade-out thresholds (lower so controls squeeze before disappearing)
-    readonly property bool showChecksumControl: sendCard.width >= 350
-    readonly property bool showAutoControl: sendCard.width >= 280
-    readonly property bool showTimeControl: sendCard.width >= 240
-    readonly property bool showTxModeControl: sendCard.width >= 180
-    readonly property bool showRxModeControl: sendCard.width >= 100
+    // 阈值包含控件实际宽度、左右内边距和行间距，避免窄窗口把控件裁成半截。
+    readonly property bool showChecksumControl: sendCard.width >= 500
+    readonly property bool showAutoControl: sendCard.width >= 410
+    readonly property bool showTimeControl: sendCard.width >= 355
+    readonly property bool showTxModeControl: sendCard.width >= 310
+    readonly property bool showRxModeControl: sendCard.width >= 200
     property bool globalRxHex: true 
     property bool globalTxHex: true 
     property bool globalTimestamp: true
@@ -294,8 +298,11 @@ Window {
         anchors.fill: parent
         // 最大化/全屏时圆角转直角（贴边无边框）
         readonly property bool windowPinned: window.visibility === Window.Maximized || window.visibility === Window.FullScreen
-        radius: windowPinned ? 0 : 12
-        color: "transparent"
+        radius: windowPinned ? 0 : 16
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: bgGradStarts[themeMode] }
+            GradientStop { position: 1.0; color: bgGradEnds[themeMode] }
+        }
         border.color: clBorder
         border.width: windowPinned ? 0 : 1
         antialiasing: true
@@ -308,11 +315,7 @@ Window {
             anchors.left: parent.left
             anchors.top: parent.top
             anchors.bottom: parent.bottom
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: bgGradStarts[themeMode] }
-                GradientStop { position: 1.0; color: bgGradEnds[themeMode] }
-            }
-
+            color: "transparent"
 
             // 品牌位与标题栏对齐。
             Item {
@@ -337,7 +340,7 @@ Window {
             Item {
                 id: railNavigation
                 x: 0
-                y: 57
+                y: bodyBg.y + 12
                 width: parent.width
                 height: 4 * 48 + 3 * 4
 
@@ -429,33 +432,27 @@ Window {
                 }
             }
         }
-        // ── 主体背景渐变（工具栏右侧；窗口整体半透明透出亚克力）──
+        // 导航共用 rootRect 的磨砂底层，工作内容收在独立的实色圆角区域中。
         Rectangle {
             id: bodyBg
             anchors.left: leftRail.right
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
+            anchors.top: titleBar.bottom
+            anchors.bottom: statusBar.top
             anchors.right: parent.right
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: bgGradStarts[themeMode] }
-                GradientStop { position: 1.0; color: bgGradEnds[themeMode] }
-            }
+            anchors.leftMargin: 4
+            anchors.rightMargin: 8
+            anchors.topMargin: 6
+            anchors.bottomMargin: 4
+            color: clWorkspace
+            radius: 20
         }
 
         Rectangle {
             id: titleBar
             width: parent.width
             height: 42
-            color: clHeader
-            radius: windowPinned ? 0 : 12
+            color: "transparent"
             z: 100
-            
-            Rectangle { 
-                width: parent.width
-                height: 20
-                color: parent.color
-                anchors.bottom: parent.bottom 
-            }
             
             RowLayout {
                 anchors.fill: parent
@@ -470,7 +467,17 @@ Window {
                         Rectangle {
                             width: 110
                             height: 42
-                            color: currentPageIndex === index ? clBg : "transparent"
+                            color: "transparent"
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.margins: 6
+                                anchors.topMargin: 7
+                                anchors.bottomMargin: 7
+                                radius: 8
+                                color: isDark ? Qt.rgba(1, 1, 1, 0.065) : Qt.rgba(0, 0, 0, 0.045)
+                                opacity: currentPageIndex === index ? 1 : 0
+                                Behavior on opacity { NumberAnimation { duration: 160 } }
+                            }
                             Text {
                                 text: modelData
                                 anchors.centerIn: parent
@@ -483,13 +490,6 @@ Window {
                                 onClicked: {
                                     currentPageIndex = index 
                                 }
-                            }
-                            Rectangle { 
-                                width: parent.width
-                                height: 2
-                                color: clHighlight
-                                anchors.bottom: parent.bottom
-                                visible: currentPageIndex === index 
                             }
                         }
                     }
@@ -533,7 +533,8 @@ Window {
                         flat: true
                         property bool isTop: false
                         contentItem: Text { 
-                            text: "📌"
+                            text: "\uE718"
+                            font.family: "Segoe Fluent Icons"
                             font.pixelSize: 13
                             color: pinBtn.isTop ? clHighlight : (pinBtn.hovered ? whiteText : clText)
                             opacity: pinBtn.isTop ? 1.0 : (pinBtn.hovered ? 0.9 : 0.3)
@@ -552,14 +553,15 @@ Window {
                         }
                     }
 
-                                        Button {
+                    Button {
                         id: themeBtn
                         width: 40
                         height: 42
                         flat: true
                         padding: 0
                         contentItem: Text { 
-                            text: "🎨"
+                            text: "\uE790"
+                            font.family: "Segoe Fluent Icons"
                             font.pixelSize: 14
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter 
@@ -600,7 +602,8 @@ Window {
                         height: 42
                         flat: true
                         contentItem: Text { 
-                            text: window.visibility === Window.Maximized ? "❐" : "⬜"
+                            text: window.visibility === Window.Maximized ? "\uE923" : "\uE922"
+                            font.family: "Segoe Fluent Icons"
                             color: clText
                             font.pixelSize: 12
                             horizontalAlignment: Text.AlignHCenter
@@ -657,11 +660,8 @@ Window {
         }
 
         StackLayout {
-            anchors.top: titleBar.bottom
-            anchors.bottom: statusBar.top
-            anchors.left: leftRail.right
-            anchors.right: parent.right
-            anchors.margins: 15
+            anchors.fill: bodyBg
+            anchors.margins: 12
             currentIndex: currentPageIndex
 
             RowLayout {
@@ -676,9 +676,9 @@ Window {
                     Layout.rightMargin: sidePanel < 0 ? 0 : panelGap
                     Behavior on Layout.rightMargin { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     visible: sidePanel >= 0 || width > 1
-                    color: clCard
-                    radius: 12
-                    border.color: clBorder
+                    color: clToolSurface
+                    radius: moduleRadius
+                    border.color: clSurfaceLine
                     clip: true
 
                     // Right edge drag handle (resizes whichever panel is active)
@@ -1857,16 +1857,17 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                          Layout.fillWidth: true
                          Layout.fillHeight: true
                          Layout.minimumHeight: minTerminalHeight
-                         color: clCard
-                         radius: 12
-                         border.color: clBorder
+                         color: clCanvas
+                         radius: moduleRadius
+                         border.color: clSurfaceLine
+                         clip: true
                         ColumnLayout {
                             anchors.fill: parent
-                             anchors.margins: 15
+                             anchors.margins: 16
                              spacing: 10
                             RowLayout {
                                 Text { text: "数据终端"
-                                 color: "#777"
+                                 color: clText
                                  font.pixelSize: 11
                                  font.bold: true }
                                 Item { Layout.fillWidth: true }
@@ -1876,9 +1877,9 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     id: scrollToggle
                                     flat: true
                                     contentItem: Text { 
-                                        text: autoScroll ? "🔓 自动滚动" : "🔒 锁定滚动"
+                                        text: autoScroll ? "自动滚动" : "锁定滚动"
                                         color: autoScroll ? clHighlight : "#888"
-                                        font.pixelSize: 10
+                                        font.pixelSize: 11
                                     }
                                     onClicked: autoScroll = !autoScroll
                                 }
@@ -1894,14 +1895,17 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                             }
                             Rectangle {
                                 Layout.fillWidth: true
+                                Layout.preferredHeight: 1
+                                color: clSurfaceLine
+                            }
+                            Rectangle {
+                                Layout.fillWidth: true
                                  Layout.fillHeight: true
-                                 color: clInput
-                                 radius: 12
-                                 border.color: clBorder
+                                 color: "transparent"
                                 ListView {
                                     id: terminalView
                                      anchors.fill: parent
-                                     anchors.margins: 15
+                                     anchors.topMargin: 4
                                      model: ListModel { id: terminalModel }
                                      spacing: 10
                                      clip: true
@@ -2030,18 +2034,18 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
                     Rectangle {
                         id: sendCard
+                        clip: true
                         Layout.fillWidth: true
                         Layout.minimumWidth: 0
                         Layout.minimumHeight: minSendPanelHeight
                         Layout.maximumHeight: maxSendPanelHeight
                         Layout.preferredHeight: sendPanelHeight
-                        color: clCard
-                        radius: 12
-                        border.color: clBorder
-                        clip: true
+                        color: clToolSurface
+                        radius: moduleRadius
+                        border.color: sendInput.activeFocus ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.38) : clSurfaceLine
                         ColumnLayout {
                             anchors.fill: parent
-                            anchors.margins: 15
+                            anchors.margins: 16
                             spacing: 12
                             RowLayout {
                                 Layout.fillWidth: true
@@ -2072,13 +2076,13 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                                     property bool active: (index === 1) === globalRxHex
                                                     contentItem: Text {
                                                         text: modelData
-                                                        color: active ? "white" : "#777"
+                                                        color: active ? (isDark ? whiteText : clHighlight) : clText
                                                         font.pixelSize: 9
                                                         horizontalAlignment: Text.AlignHCenter
                                                         verticalAlignment: Text.AlignVCenter
                                                     }
                                                     background: Rectangle {
-                                                        color: active ? clHighlight : clInput
+                                                        color: active ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.14) : "transparent"
                                                         radius: 6
                                                         Rectangle { width: 10; height: 26; color: parent.color; anchors.right: parent.right; visible: index === 0 }
                                                         Rectangle { width: 10; height: 26; color: parent.color; anchors.left: parent.left; visible: index === 1 }
@@ -2113,13 +2117,13 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                                     property bool active: (index === 1) === globalTxHex
                                                     contentItem: Text {
                                                         text: modelData
-                                                        color: active ? "white" : "#777"
+                                                        color: active ? (isDark ? whiteText : clHighlight) : clText
                                                         font.pixelSize: 9
                                                         horizontalAlignment: Text.AlignHCenter
                                                         verticalAlignment: Text.AlignVCenter
                                                     }
                                                     background: Rectangle {
-                                                        color: active ? clHighlight : clInput
+                                                        color: active ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.14) : "transparent"
                                                         radius: 6
                                                         Rectangle { width: 10; height: 26; color: parent.color; anchors.right: parent.right; visible: index === 0 }
                                                         Rectangle { width: 10; height: 26; color: parent.color; anchors.left: parent.left; visible: index === 1 }
@@ -2146,8 +2150,8 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                         width: 45
                                         height: 26
                                         radius: 6
-                                        color: globalTimestamp ? clHighlight : clInput
-                                        Text { text: "TIME"; anchors.centerIn: parent; color: globalTimestamp ? "white" : "#777"; font.pixelSize: 9 }
+                                        color: globalTimestamp ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.14) : "transparent"
+                                        Text { text: "TIME"; anchors.centerIn: parent; color: globalTimestamp ? (isDark ? whiteText : clHighlight) : clText; font.pixelSize: 9 }
                                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: globalTimestamp = !globalTimestamp }
                                     }
                                 }
@@ -2257,12 +2261,9 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                             Rectangle {
                                 Layout.fillWidth: true
                                  Layout.fillHeight: true
-                                 color: clInput
-                                 radius: 12
-                                 border.color: sendInput.activeFocus ? clHighlight : "transparent"
+                                 color: "transparent"
                                 RowLayout {
                                     anchors.fill: parent
-                                    anchors.margins: 8
                                     spacing: 8
                                     clip: true
                                     TextArea { id: sendInput
@@ -2272,6 +2273,8 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                      color: whiteText
                                      font.family: "Consolas"
                                      font.pixelSize: 14
+                                     padding: 0
+                                     topPadding: 4
                                      placeholderText: "键入内容并发送..."
                                      placeholderTextColor: grayPlaceholder
                                      background: null
@@ -2322,7 +2325,8 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     Button { id: sendBtn
                                      Layout.preferredWidth: 60
                                      Layout.minimumWidth: 60
-                                     Layout.fillHeight: true
+                                     Layout.preferredHeight: 40
+                                     Layout.alignment: Qt.AlignBottom
                                      text: "发送"
                                      onClicked: doSend()
                                      background: Rectangle { color: clHighlight
@@ -2567,16 +2571,9 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
             id: statusBar
             width: parent.width
             height: 28
-            color: clHeader
+            color: "transparent"
             anchors.bottom: parent.bottom
             z: 100
-
-            Rectangle {
-                width: parent.width
-                height: 1
-                color: clBorder
-                anchors.top: parent.top
-            }
 
             RowLayout {
                 anchors.fill: parent
