@@ -34,7 +34,7 @@ Gemini Serial 是一款使用 **Qt 6、QML 和 C++17** 开发的现代化串口�
 
 ## 技术栈
 
-- Qt 6: Core、Gui、Quick、Qml、SerialPort、QuickDialogs2
+- Qt 6: Core、Gui、Quick、Qml、SerialPort、QuickDialogs2、ShaderTools
 - QML / Qt Quick Controls 2
 - C++17
 - CMake 3.16+
@@ -61,7 +61,7 @@ Gemini Serial 是一款使用 **Qt 6、QML 和 C++17** 开发的现代化串口�
    ```
 
 2. 使用 Qt Creator 打开 `CMakeLists.txt`。
-3. 选择包含 Qt SerialPort 与 QuickDialogs2 的 Qt 6 Kit。
+3. 选择包含 Qt SerialPort、QuickDialogs2 与 ShaderTools 的 Qt 6 Kit（ShaderTools 用于编译液态玻璃着色器）。
 4. 配置、构建并运行 `MySerial_Gemini`。
 
 ### CMake 命令行

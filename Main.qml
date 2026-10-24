@@ -13,6 +13,14 @@ Window {
     minimumWidth: 700
     minimumHeight: 550
     visible: true
+
+    // 窗口过窄时自动收起右侧功能面板与连接配置抽屉，避免中间区被压缩、面板被挤出屏幕。
+    // layoutReady 防止初始化阶段 width 从 0 增长时误触发
+    property bool layoutReady: false
+    onWidthChanged: {
+        if (!layoutReady) return
+        if (sidePanel >= 0 && width < 780) sidePanel = -1
+    }
     title: qsTr("MySerial Gemini")
     color: "transparent"
     flags: Qt.Window | Qt.FramelessWindowHint
@@ -20,38 +28,100 @@ Window {
     readonly property bool isNarrow: width < 1100
     readonly property bool isUltraNarrow: width < 900
 
-    property bool isDark: true 
-    
-    readonly property color clBg: isDark ? "#1e1f22" : "#F8F9FA"
-    readonly property color clCard: isDark ? "#2b2d30" : "#FFFFFF"
-    readonly property color clInput: isDark ? "#1e1f22" : "#F1F3F4"
-    readonly property color clHeader: isDark ? "#2b2d30" : "#FFFFFF"
-    readonly property color clText: isDark ? "#afb1b3" : "#444746"
-    readonly property color clHighlight: isDark ? "#3574f0" : "#1A73E8"
-    readonly property color clBorder: isDark ? "#393b40" : "#DEE2E6"
-    readonly property color clAccent: isDark ? "#f26522" : "#D93025"
-    readonly property color whiteText: isDark ? "#ffffff" : "#1F1F1F"
-    readonly property color grayPlaceholder: isDark ? "#666666" : "#707070"
-    readonly property color clTitleBg: isDark ? "#323335" : "#F1F3F4"
+    property int themeMode: settingsStore.themeMode
+    readonly property bool isDark: themeMode !== 5
 
-    property int activePanel: -1          // -1=none, 0=指令, 1=码表, 2=设置
+    // 磨砂层染色随主题切换（深色=暗 tint，浅色=白 tint）
+    function updateAcrylicTint() {
+        if (themeMode === 5) acrylic.setTint(1.0, 1.0, 1.0, 0.5)
+        else acrylic.setTint(0.06, 0.06, 0.08, 0.5)
+    }
+    onThemeModeChanged: updateAcrylicTint()
+
+    // Theme names
+    readonly property var themeNames: ["赛博脉冲", "深蓝之境", "翡翠绿野", "烈焰熔岩", "极简暗黑", "优雅冰白"]
+
+    // Background gradient start and end colors
+    // 带 alpha(40≈25%)：QML 层只做主题染色，模糊与主染色由 accent 亚克力层负责
+    readonly property var bgGradStarts: ["#400f0c1b", "#40050b1a", "#4005160b", "#40120a0a", "#40141517", "#40eef1f6"]
+    readonly property var bgGradEnds:   ["#401e0a2b", "#400a1e3f", "#400c2b18", "#40241010", "#401e1f22", "#40cfd9df"]
+
+    // Card background (solid, no glass)
+    readonly property var cardColors: [
+        Qt.rgba(26/255, 16/255, 38/255, 1.0),     // Cyberpunk
+        Qt.rgba(13/255, 28/255, 54/255, 1.0),     // Ocean
+        Qt.rgba(12/255, 34/255, 20/255, 1.0),     // Emerald
+        Qt.rgba(28/255, 14/255, 14/255, 1.0),     // Volcano
+        Qt.rgba(43/255, 45/255, 48/255, 1.0),     // Classic Dark
+        Qt.rgba(255/255, 255/255, 255/255, 1.0)   // Light
+    ]
+
+    // Input / Item backgrounds
+    readonly property var inputColors: [
+        Qt.rgba(18/255, 11/255, 27/255, 1.0),
+        Qt.rgba(8/255, 19/255, 38/255, 1.0),
+        Qt.rgba(8/255, 23/255, 13/255, 1.0),
+        Qt.rgba(19/255, 9/255, 9/255, 1.0),
+        Qt.rgba(30/255, 31/255, 34/255, 1.0),
+        Qt.rgba(240/255, 242/255, 245/255, 1.0)
+    ]
+
+    // Borders
+    readonly property var borderColors: [
+        Qt.rgba(255/255, 255/255, 255/255, 0.10),
+        Qt.rgba(255/255, 255/255, 255/255, 0.10),
+        Qt.rgba(255/255, 255/255, 255/255, 0.10),
+        Qt.rgba(255/255, 255/255, 255/255, 0.10),
+        Qt.rgba(255/255, 255/255, 255/255, 0.10),
+        Qt.rgba(0/255, 0/255, 0/255, 0.10)
+    ]
+
+    // Highlights
+    readonly property var highlightColors: ["#a04ef6", "#00b4d8", "#2ec4b6", "#ff5400", "#3574f0", "#1a73e8"]
+
+    // Text colors
+    readonly property var textColors: ["#b5a5c9", "#9abbeb", "#9abfa6", "#dbb1ab", "#afb1b3", "#444746"]
+    readonly property var whiteTextColors: ["#ffffff", "#ffffff", "#ffffff", "#ffffff", "#ffffff", "#1f1f1f"]
+
+    // Header colors
+    // 低透明度：标题栏与窗口亚克力背景融合，浑然一体
+    readonly property var headerColors: [
+        Qt.rgba(35/255, 20/255, 50/255, 0.45),
+        Qt.rgba(18/255, 35/255, 65/255, 0.45),
+        Qt.rgba(16/255, 42/255, 25/255, 0.45),
+        Qt.rgba(38/255, 20/255, 20/255, 0.45),
+        Qt.rgba(50/255, 52/255, 55/255, 0.45),
+        Qt.rgba(255/255, 255/255, 255/255, 0.45)
+    ]
+
+    readonly property color clBg: bgGradStarts[themeMode]
+    readonly property color clCard: cardColors[themeMode]
+    readonly property color clInput: inputColors[themeMode]
+    readonly property color clHeader: headerColors[themeMode]
+    readonly property color clText: textColors[themeMode]
+    readonly property color clHighlight: highlightColors[themeMode]
+    readonly property color clBorder: borderColors[themeMode]
+    readonly property color clAccent: themeMode === 3 ? "#ff2a00" : (themeMode === 5 ? "#d93025" : "#f26522")
+    readonly property color whiteText: whiteTextColors[themeMode]
+    readonly property color grayPlaceholder: isDark ? "#666666" : "#707070"
+    readonly property color clTitleBg: headerColors[themeMode]
+
+    // 左侧面板统一状态：-1=全关 0=连接 1=指令 2=码表 3=设置（互斥）
+    property int sidePanel: 0
     property int featurePanelWidth: settingsStore.featurePanelWidth
     property int configPanelWidth: settingsStore.configPanelWidth
     property int clickOffset: 0           // Click animation offset
 
     // Layout constants
     readonly property int panelGap: 12
-    readonly property int activityBarWidth: 50
+    readonly property int leftRailWidth: 52
     readonly property int minimumCenterWidth: 200
     readonly property int dragHandleWidth: 6
 
     // Clamp panels so center never collapses
-    readonly property int maxConfigWidth: Math.max(180, width - activityBarWidth - (activePanel >= 0 ? 200 : 0) - panelGap * 2 - minimumCenterWidth)
-    readonly property int clampedConfigWidth: Math.max(180, Math.min(420, Math.min(configPanelWidth, maxConfigWidth)))
-    readonly property int maxFeatureWidth: Math.max(200, width - clampedConfigWidth - activityBarWidth - panelGap * 2 - minimumCenterWidth)
-    readonly property int effectiveFeaturePanelWidth: Math.max(200, Math.min(500, Math.min(featurePanelWidth, maxFeatureWidth)))
-    readonly property int rightPanelTotal: activePanel >= 0 ? (effectiveFeaturePanelWidth + activityBarWidth) : activityBarWidth
-    readonly property int centerWidth: width - clampedConfigWidth - rightPanelTotal - panelGap * 2
+    readonly property int maxSidePanelWidth: Math.max(180, width - leftRailWidth - panelGap * 2 - minimumCenterWidth)
+    readonly property int clampedConfigWidth: Math.max(180, Math.min(420, Math.min(configPanelWidth, maxSidePanelWidth)))
+    readonly property int effectiveFeaturePanelWidth: Math.max(200, Math.min(500, Math.min(featurePanelWidth, maxSidePanelWidth)))
     property int sendPanelHeight: 180
     readonly property int minSendPanelHeight: 130
     readonly property int minTerminalHeight: 160
@@ -222,19 +292,162 @@ Window {
     Rectangle {
         id: rootRect
         anchors.fill: parent
-        radius: 12
-        color: clBg
+        // 最大化/全屏时圆角转直角（贴边无边框）
+        readonly property bool windowPinned: window.visibility === Window.Maximized || window.visibility === Window.FullScreen
+        radius: windowPinned ? 0 : 12
+        color: "transparent"
         border.color: clBorder
-        border.width: 1
+        border.width: windowPinned ? 0 : 1
         antialiasing: true
         clip: true 
+
+        Rectangle {
+            id: leftRail
+            z: 200
+            width: leftRailWidth
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: bgGradStarts[themeMode] }
+                GradientStop { position: 1.0; color: bgGradEnds[themeMode] }
+            }
+
+
+            // 品牌位与标题栏对齐。
+            Item {
+                width: parent.width
+                height: 42
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: 28
+                    height: 28
+                    radius: 8
+                    color: clHighlight
+                    Text {
+                        anchors.centerIn: parent
+                        text: "G"
+                        color: "white"
+                        font.bold: true
+                        font.pixelSize: 15
+                    }
+                }
+            }
+
+            Item {
+                id: railNavigation
+                x: 0
+                y: 57
+                width: parent.width
+                height: 4 * 48 + 3 * 4
+
+                Column {
+                    id: railButtons
+                    width: parent.width
+                    spacing: 4
+
+                    Repeater {
+                        id: railRepeater
+                        model: [
+                            { symbol: "\uE839", label: "连接" },
+                            { symbol: "\uE8A5", label: "指令" },
+                            { symbol: "\uE9D9", label: "码表" },
+                            { symbol: "\uE713", label: "设置" }
+                        ]
+                        delegate: Item {
+                            id: railButton
+                            required property int index
+                            required property var modelData
+                            width: railButtons.width
+                            height: 48
+                            readonly property bool selected: sidePanel === index
+
+                            Rectangle {
+                                anchors.fill: parent
+                                anchors.leftMargin: 4
+                                anchors.rightMargin: 4
+                                anchors.topMargin: 2
+                                anchors.bottomMargin: 2
+                                radius: 14
+                                color: isDark ? "#ffffff" : "#000000"
+                                opacity: railMouse.containsMouse && !railButton.selected ? 0.055 : 0
+                                Behavior on opacity { NumberAnimation { duration: 140 } }
+                            }
+
+                            Item {
+                                anchors.centerIn: parent
+                                width: parent.width
+                                height: 34
+                                scale: railMouse.pressed ? 0.94 : 1
+                                Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+                                Text {
+                                    width: parent.width
+                                    height: 20
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: railButton.modelData.symbol
+                                    font.family: "Segoe Fluent Icons"
+                                    font.pixelSize: 19
+                                    color: railButton.selected ? whiteText : clText
+                                    Behavior on color { ColorAnimation { duration: 180 } }
+                                }
+                                Text {
+                                    y: 23
+                                    width: parent.width
+                                    height: 11
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: railButton.modelData.label
+                                    font.pixelSize: 9
+                                    color: railButton.selected ? whiteText : clText
+                                    Behavior on color { ColorAnimation { duration: 180 } }
+                                }
+                            }
+
+                            MouseArea {
+                                id: railMouse
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    sidePanel = railButton.selected ? -1 : railButton.index
+                                    if (sidePanel >= 0 && currentPageIndex !== 0)
+                                        currentPageIndex = 0
+                                }
+                            }
+                        }
+                    }
+                }
+
+                LiquidGlassSelection {
+                    anchors.fill: parent
+                    sourceItem: railButtons
+                    selectedIndex: sidePanel
+                    selectedItem: sidePanel >= 0 && railRepeater.count > sidePanel
+                                  ? railRepeater.itemAt(sidePanel) : null
+                    dark: isDark
+                }
+            }
+        }
+        // ── 主体背景渐变（工具栏右侧；窗口整体半透明透出亚克力）──
+        Rectangle {
+            id: bodyBg
+            anchors.left: leftRail.right
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            gradient: Gradient {
+                GradientStop { position: 0.0; color: bgGradStarts[themeMode] }
+                GradientStop { position: 1.0; color: bgGradEnds[themeMode] }
+            }
+        }
 
         Rectangle {
             id: titleBar
             width: parent.width
             height: 42
             color: clHeader
-            radius: 12
+            radius: windowPinned ? 0 : 12
             z: 100
             
             Rectangle { 
@@ -244,19 +457,13 @@ Window {
                 anchors.bottom: parent.bottom 
             }
             
-            Rectangle { 
-                width: parent.width
-                height: 1
-                color: clBorder
-                anchors.bottom: parent.bottom 
-            }
-
             RowLayout {
                 anchors.fill: parent
                 spacing: 0
-                
+
                 Row {
                     Layout.fillHeight: true
+                    Layout.leftMargin: leftRailWidth
                     spacing: 0
                     Repeater {
                         model: ["主控制台", "系统信息"]
@@ -312,7 +519,7 @@ Window {
                     
                     Text { 
                         text: "GEMINI SERIAL"
-                        color: isDark ? "#444" : "#BBB"
+                        color: isDark ? Qt.rgba(255, 255, 255, 0.15) : Qt.rgba(0, 0, 0, 0.15)
                         font.pixelSize: 9
                         font.bold: true
                         anchors.verticalCenter: parent.verticalCenter
@@ -336,7 +543,7 @@ Window {
                         background: Rectangle { 
                             anchors.fill: parent
                             anchors.margins: 4
-                            color: pinBtn.hovered ? (isDark ? "#3e4043" : "#f1f3f4") : "transparent"
+                            color: pinBtn.hovered ? (isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
                             radius: 8
                         }
                         onClicked: {
@@ -345,26 +552,27 @@ Window {
                         }
                     }
 
-                    Button {
+                                        Button {
                         id: themeBtn
                         width: 40
                         height: 42
                         flat: true
                         padding: 0
                         contentItem: Text { 
-                            text: isDark ? "☀️" : "🌙"
-                            font.pixelSize: 13
+                            text: "🎨"
+                            font.pixelSize: 14
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter 
+                            color: themeBtn.hovered ? clHighlight : whiteText
                         }
                         background: Rectangle { 
                             anchors.fill: parent
                             anchors.margins: 4
-                            color: themeBtn.hovered ? (isDark ? "#3e4043" : "#f1f3f4") : "transparent"
-                            radius: 16
+                            color: themeBtn.hovered ? (isDark ? Qt.rgba(255,255,255,0.08) : Qt.rgba(0,0,0,0.06)) : "transparent"
+                            radius: 10
                         }
                         onClicked: {
-                            isDark = !isDark
+                            themePopup.open()
                         }
                     }
 
@@ -379,7 +587,7 @@ Window {
                             verticalAlignment: Text.AlignVCenter 
                         }
                         background: Rectangle { 
-                            color: parent.hovered ? (isDark ? "#3e4043" : "#e5e5e5") : "transparent"
+                            color: parent.hovered ? (isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
                             radius: 8
                         }
                         onClicked: {
@@ -399,7 +607,7 @@ Window {
                             verticalAlignment: Text.AlignVCenter 
                         }
                         background: Rectangle { 
-                            color: parent.hovered ? (isDark ? "#3e4043" : "#e5e5e5") : "transparent"
+                            color: parent.hovered ? (isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.06)) : "transparent"
                             radius: 8
                         }
                         onClicked: {
@@ -451,25 +659,29 @@ Window {
         StackLayout {
             anchors.top: titleBar.bottom
             anchors.bottom: statusBar.top
-            anchors.left: parent.left
+            anchors.left: leftRail.right
             anchors.right: parent.right
             anchors.margins: 15
             currentIndex: currentPageIndex
 
             RowLayout {
                 spacing: 0
-                
+
+                // ── 左侧面板：连接/指令/码表/设置（四选一互斥）──
                 Rectangle {
-                    id: configCard
-                    Layout.preferredWidth: clampedConfigWidth
+                    id: sidePanelCard
+                    Layout.preferredWidth: sidePanel < 0 ? 0 : (sidePanel === 0 ? clampedConfigWidth : effectiveFeaturePanelWidth)
+                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     Layout.fillHeight: true
-                    Layout.rightMargin: panelGap
+                    Layout.rightMargin: sidePanel < 0 ? 0 : panelGap
+                    Behavior on Layout.rightMargin { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                    visible: sidePanel >= 0 || width > 1
                     color: clCard
                     radius: 12
                     border.color: clBorder
                     clip: true
 
-                    // Right edge drag handle for resizing
+                    // Right edge drag handle (resizes whichever panel is active)
                     MouseArea {
                         z: 1
                         width: dragHandleWidth
@@ -480,13 +692,18 @@ Window {
                         hoverEnabled: true
                         property real dragStartX: 0
                         property int startWidth: 0
-                        onPressed: (mouse) => { dragStartX = mapToItem(null, mouse.x, mouse.y).x; startWidth = configPanelWidth }
+                        onPressed: (mouse) => { dragStartX = mapToItem(null, mouse.x, mouse.y).x; startWidth = (sidePanel === 0 ? configPanelWidth : featurePanelWidth) }
                         onPositionChanged: (mouse) => {
                             if (pressed) {
                                 var globalX = mapToItem(null, mouse.x, mouse.y).x
                                 var delta = globalX - dragStartX
-                                configPanelWidth = Math.max(180, Math.min(420, startWidth + delta))
-                                settingsStore.configPanelWidth = configPanelWidth
+                                if (sidePanel === 0) {
+                                    configPanelWidth = Math.max(180, Math.min(420, startWidth + delta))
+                                    settingsStore.configPanelWidth = configPanelWidth
+                                } else {
+                                    featurePanelWidth = Math.max(200, Math.min(500, startWidth + delta))
+                                    settingsStore.featurePanelWidth = featurePanelWidth
+                                }
                             }
                         }
                         // Highlight line on hover
@@ -500,6 +717,12 @@ Window {
                         }
                     }
 
+                    StackLayout {
+                        id: sidePanelStack
+                        anchors.fill: parent
+                        currentIndex: sidePanel < 0 ? 0 : (sidePanel === 0 ? 0 : 1)
+
+                        // Page 0: 连接配置
                     Flickable {
                         anchors.fill: parent
                         anchors.margins: 0
@@ -588,7 +811,7 @@ Window {
                                             width: parent.width }
                                     }
                                     background: Rectangle {
-                                        color: highlighted ? clHighlight : (portDelegateHover.containsMouse ? (isDark ? "#333537" : "#F0F1F3") : "transparent")
+                                        color: highlighted ? clHighlight : (portDelegateHover.containsMouse ? (isDark ? Qt.rgba(255,255,255,0.08) : Qt.rgba(0,0,0,0.06)) : "transparent")
                                         radius: 6
                                         MouseArea {
                                             id: portDelegateHover
@@ -821,6 +1044,804 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                         Item { Layout.fillHeight: true }
                     }
                     } // Flickable
+
+                        // Page 1: 指令/码表/设置
+                        StackLayout {
+                            id: featurePanelStack
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            currentIndex: sidePanel >= 1 ? sidePanel - 1 : 0
+
+                            // Tab 0: 指令 (Command Presets)
+                            ColumnLayout {
+                                spacing: 8
+
+                                // Header
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text {
+                                        text: "指令预设库"
+                                        color: clHighlight
+                                        font.bold: true
+                                        font.pixelSize: 15
+                                    }
+                                    Item { Layout.fillWidth: true }
+                                    Button {
+                                        text: "＋分组"
+                                        flat: true
+                                        font.pixelSize: 12
+                                        contentItem: Text {
+                                            text: parent.text
+                                            color: clHighlight
+                                            font: parent.font
+                                        }
+                                        background: Rectangle { color: "transparent" }
+                                        onClicked: commandStore.addGroup("新分组")
+                                    }
+                                }
+
+                                // Search Box
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 36
+                                    radius: 8
+                                    color: clInput
+                                    border.color: clBorder
+                                    border.width: 1
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 10
+                                        anchors.rightMargin: 10
+                                        spacing: 0
+
+                                        Text {
+                                            text: "🔍"
+                                            font.pixelSize: 13
+                                            color: grayPlaceholder
+                                        }
+
+                                        TextField {
+                                            id: cmdSearchField
+                                            Layout.fillWidth: true
+                                            placeholderText: "搜索指令..."
+                                            placeholderTextColor: grayPlaceholder
+                                            background: Rectangle { color: "transparent" }
+                                            color: whiteText
+                                            font.pixelSize: 12
+                                            leftPadding: 8
+                                            selectByMouse: true
+                                        }
+                                    }
+                                }
+
+                                // Command List
+                                ListView {
+                                    id: cmdListView
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    clip: true
+                                    spacing: 6
+                                    model: commandStore.groups
+
+                                    delegate: ColumnLayout {
+                                        width: cmdListView.width
+                                        spacing: 4
+
+                                        property var group: modelData
+                                        property bool groupExpanded: true
+                                        property int groupIndex: index
+
+                                        // Group Header
+                                        Rectangle {
+                                            id: groupHeaderRect
+                                            Layout.fillWidth: true
+                                            height: 38
+                                            radius: 10
+                                            color: groupHeaderMouse.containsMouse ? clInput : clHeader
+                                            border.color: clBorder
+                                            border.width: 1
+                                            clip: true
+
+                                            // Left accent bar
+                                            Rectangle {
+                                                width: 3
+                                                height: parent.height - 8
+                                                anchors.left: parent.left
+                                                anchors.leftMargin: 1
+                                                anchors.verticalCenter: parent.verticalCenter
+                                                radius: 1.5
+                                                color: clHighlight
+                                                opacity: 0.9
+                                            }
+
+                                            MouseArea {
+                                                id: groupHeaderMouse
+                                                anchors.fill: parent
+                                                hoverEnabled: true
+                                                onClicked: groupExpanded = !groupExpanded
+                                            }
+
+                                            RowLayout {
+                                                anchors.fill: parent
+                                                anchors.leftMargin: 10
+                                                anchors.rightMargin: 6
+                                                spacing: 6
+
+                                                Text {
+                                                    text: groupExpanded ? "📂" : "📁"
+                                                    font.pixelSize: 14
+                                                }
+
+                                                TextField {
+                                                    id: groupNameField
+                                                    Layout.fillWidth: true
+                                                    text: group.name
+                                                    color: whiteText
+                                                    font.bold: true
+                                                    font.pixelSize: 12
+                                                    background: Rectangle { color: "transparent" }
+                                                    selectByMouse: true
+                                                    readOnly: true
+                                                    onEditingFinished: {
+                                                        commandStore.updateGroupName(index, text)
+                                                        readOnly = true
+                                                    }
+                                                    MouseArea {
+                                                        anchors.fill: parent
+                                                        enabled: groupNameField.readOnly
+                                                        onClicked: {
+                                                            groupNameField.readOnly = false
+                                                            groupNameField.forceActiveFocus()
+                                                            groupNameField.selectAll()
+                                                        }
+                                                    }
+                                                }
+
+                                                Button {
+                                                    text: "＋"
+                                                    flat: true
+                                                    font.pixelSize: 14
+                                                    contentItem: Text {
+                                                        text: parent.text
+                                                        color: clHighlight
+                                                        font: parent.font
+                                                    }
+                                                    background: Rectangle { color: "transparent" }
+                                                    onClicked: commandStore.addCommand(index, "新指令", "", false)
+                                                }
+
+                                                Button {
+                                                    text: "✕"
+                                                    flat: true
+                                                    font.pixelSize: 13
+                                                    contentItem: Text {
+                                                        text: parent.text
+                                                        color: clAccent
+                                                        font: parent.font
+                                                    }
+                                                    background: Rectangle { color: "transparent" }
+                                                    onClicked: {
+                                                        deleteType = "group"
+                                                        targetGroupIdx = index
+                                                        targetCmdIdx = -1
+                                                        deleteConfirmOverlay.visible = true
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Commands under this group
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            visible: groupExpanded
+                                            spacing: 2
+
+                                            Repeater {
+                                                model: group.commands
+
+                                                delegate: Rectangle {
+                                                    Layout.fillWidth: true
+                                                    height: 50
+                                                    radius: 8
+                                                    color: cmdMouse.containsMouse ? clInput : "transparent"
+                                                    border.color: cmdMouse.containsMouse ? clHighlight : clBorder
+                                                    border.width: 1
+
+                                                    property int groupIdx: parent.parent.groupIndex
+                                                    property int cmdIdx: index
+                                                    property string mapKey: groupIdx + ":" + cmdIdx
+                                                    property bool isHexMode: {
+                                                        var g = commandStore.groups
+                                                        if (groupIdx >= 0 && groupIdx < g.length) {
+                                                            var cmds = g[groupIdx].commands || []
+                                                            if (cmdIdx >= 0 && cmdIdx < cmds.length)
+                                                                return cmds[cmdIdx].isHex || false
+                                                        }
+                                                        return false
+                                                    }
+
+                                                    MouseArea {
+                                                        id: cmdMouse
+                                                        anchors.fill: parent
+                                                        hoverEnabled: true
+                                                        acceptedButtons: Qt.NoButton
+                                                    }
+
+                                                    // Checkbox: vertically centered in the whole card
+                                                    Item {
+                                                        id: checkboxArea
+                                                        width: 28
+                                                        anchors.left: parent.left
+                                                        anchors.top: parent.top
+                                                        anchors.bottom: parent.bottom
+                                                        anchors.leftMargin: 4
+
+                                                        Rectangle {
+                                                            width: 16
+                                                            height: 16
+                                                            radius: 4
+                                                            anchors.centerIn: parent
+                                                            color: cmdCheckbox.checked ? clHighlight : clInput
+                                                            border.color: cmdCheckbox.checked ? clHighlight : clBorder
+                                                            border.width: 1
+
+                                                            Text {
+                                                                visible: cmdCheckbox.checked
+                                                                anchors.centerIn: parent
+                                                                text: "✓"
+                                                                color: "white"
+                                                                font.pixelSize: 11
+                                                                font.bold: true
+                                                            }
+
+                                                            MouseArea {
+                                                                id: cmdCheckbox
+                                                                property bool checked: checkedMap[mapKey] === true
+                                                                anchors.fill: parent
+                                                                cursorShape: Qt.PointingHandCursor
+                                                                onClicked: {
+                                                                    var m = Object.assign({}, checkedMap)
+                                                                    if (!checked) m[mapKey] = true
+                                                                    else delete m[mapKey]
+                                                                    checkedMap = m
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    ColumnLayout {
+                                                        anchors.left: checkboxArea.right
+                                                        anchors.right: parent.right
+                                                        anchors.top: parent.top
+                                                        anchors.bottom: parent.bottom
+                                                        anchors.leftMargin: 2
+                                                        anchors.rightMargin: 4
+                                                        anchors.topMargin: 4
+                                                        anchors.bottomMargin: 4
+                                                        spacing: 2
+
+                                                        // Row 1: name + HEX/TXT + send + delete
+                                                        RowLayout {
+                                                            Layout.fillWidth: true
+                                                            spacing: 4
+
+                                                            TextField {
+                                                                Layout.preferredWidth: parent.width * 0.35
+                                                                Layout.fillWidth: true
+                                                                text: modelData.name
+                                                                color: whiteText
+                                                                font.pixelSize: 10
+                                                                font.bold: true
+                                                                padding: 2
+                                                                background: Rectangle {
+                                                                    radius: 3
+                                                                    color: parent.activeFocus ? clInput : "transparent"
+                                                                    border.color: parent.activeFocus ? clHighlight : "transparent"
+                                                                    border.width: parent.activeFocus ? 1 : 0
+                                                                }
+                                                                selectByMouse: true
+                                                                onEditingFinished: commandStore.updateCommand(groupIdx, cmdIdx, text, modelData.payload)
+                                                            }
+
+                                                            // HEX/TXT badge
+                                                            Rectangle {
+                                                                Layout.preferredWidth: 30
+                                                                Layout.preferredHeight: 18
+                                                                radius: 3
+                                                                color: isHexMode ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.15) : "transparent"
+                                                                border.color: isHexMode ? clHighlight : clBorder
+                                                                border.width: 1
+                                                                Text {
+                                                                    anchors.centerIn: parent
+                                                                    text: isHexMode ? "HEX" : "TXT"
+                                                                    font.pixelSize: 8
+                                                                    font.bold: true
+                                                                    color: isHexMode ? clHighlight : clText
+                                                                }
+                                                                MouseArea {
+                                                                    anchors.fill: parent
+                                                                    cursorShape: Qt.PointingHandCursor
+                                                                    onClicked: commandStore.setCommandHex(groupIdx, cmdIdx, !isHexMode)
+                                                                }
+                                                            }
+
+                                                            // Send
+                                                            Rectangle {
+                                                                Layout.preferredWidth: 30
+                                                                Layout.preferredHeight: 18
+                                                                radius: 3
+                                                                color: sendBadgeMouse.containsMouse ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, 0.15) : "transparent"
+                                                                border.color: sendBadgeMouse.containsMouse ? clHighlight : clBorder
+                                                                border.width: 1
+                                                                Text {
+                                                                    anchors.centerIn: parent
+                                                                    text: "发送"
+                                                                    font.pixelSize: 8
+                                                                    font.bold: true
+                                                                    color: sendBadgeMouse.containsMouse ? clHighlight : clText
+                                                                }
+                                                                MouseArea {
+                                                                    id: sendBadgeMouse
+                                                                    anchors.fill: parent
+                                                                    cursorShape: Qt.PointingHandCursor
+                                                                    hoverEnabled: true
+                                                                    onClicked: window.sendCommand(modelData.payload, isHexMode)
+                                                                }
+                                                            }
+
+                                                            // Delete
+                                                            Button {
+                                                                text: "✕"
+                                                                flat: true
+                                                                font.pixelSize: 10
+                                                                Layout.preferredWidth: 20
+                                                                Layout.preferredHeight: 18
+                                                                padding: 0
+                                                                contentItem: Text {
+                                                                    text: parent.text
+                                                                    color: parent.hovered ? "#FF6B6B" : "#888"
+                                                                    font: parent.font
+                                                                    horizontalAlignment: Text.AlignHCenter
+                                                                    verticalAlignment: Text.AlignVCenter
+                                                                }
+                                                                background: Rectangle { radius: 4; color: "transparent" }
+                                                                onClicked: {
+                                                                    deleteType = "command"
+                                                                    targetGroupIdx = groupIdx
+                                                                    targetCmdIdx = cmdIdx
+                                                                    deleteConfirmOverlay.visible = true
+                                                                }
+                                                            }
+                                                        }
+
+                                                        // Row 2: payload (full width, bigger)
+                                                        TextField {
+                                                            Layout.fillWidth: true
+                                                            Layout.fillHeight: true
+                                                            text: modelData.payload || ""
+                                                            color: clText
+                                                            font.family: "Consolas"
+                                                            font.pixelSize: 11
+                                                            padding: 4
+                                                            placeholderText: "payload"
+                                                            placeholderTextColor: grayPlaceholder
+                                                            background: Rectangle {
+                                                                radius: 3
+                                                                color: parent.activeFocus ? clInput : clCard
+                                                                border.color: parent.activeFocus ? clHighlight : clBorder
+                                                                border.width: 1
+                                                            }
+                                                            selectByMouse: true
+                                                            onEditingFinished: commandStore.updateCommand(groupIdx, cmdIdx, modelData.name, text)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Empty state
+                                    Text {
+                                        anchors.centerIn: parent
+                                        visible: commandStore.groups.length === 0
+                                        text: "暂无指令分组\n点击「＋分组」添加"
+                                        color: grayPlaceholder
+                                        font.pixelSize: 12
+                                        horizontalAlignment: Text.AlignHCenter
+                                    }
+                                }
+
+                                // Bottom Bar
+                                RowLayout {
+                                    id: commandBottomBar
+                                    Layout.fillWidth: true
+                                    spacing: 3
+                                    clip: true
+                                    // 宽度足够时：循环按钮动态填充空白，把导入/导出顶到右边；不足171px时隐藏导入/导出
+                                    property bool showImportExport: width >= 171
+                                    property int importExportButtonWidth: showImportExport ? 30 : 0
+
+                                    Rectangle {
+                                        Layout.preferredWidth: 48
+                                        Layout.preferredHeight: 24
+                                        radius: 6
+                                        color: clInput
+                                        border.color: clBorder
+                                        border.width: 1
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 4
+                                            anchors.rightMargin: 4
+                                            spacing: 2
+                                            Text { text: "ms"; color: "#777"; font.pixelSize: 9 }
+                                            TextInput {
+                                                Layout.fillWidth: true
+                                                color: whiteText
+                                                font.pixelSize: 11
+                                                font.family: "Consolas"
+                                                text: loopInterval.toString()
+                                                validator: IntValidator { bottom: 50; top: 10000 }
+                                                horizontalAlignment: TextInput.AlignHCenter
+                                                onEditingFinished: {
+                                                    var v = parseInt(text)
+                                                    if (!isNaN(v) && v >= 50 && v <= 10000) loopInterval = v
+                                                    else text = loopInterval.toString()
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Button {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 54
+                                        Layout.preferredWidth: 80
+                                        Layout.preferredHeight: 24
+                                        clip: true
+                                        text: loopSending ? "停止" : "循环"
+                                        flat: true
+                                        font.pixelSize: 10
+                                        contentItem: Text {
+                                            text: parent.text
+                                            color: loopSending ? "#e53935" : clText
+                                            font.pixelSize: 10
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            elide: Text.ElideRight
+                                            Behavior on color { ColorAnimation { duration: 200 } }
+                                        }
+                                        background: Rectangle {
+                                            color: loopSending ? (isDark ? Qt.rgba(255,0,0,0.15) : Qt.rgba(255,0,0,0.08)) : (loopBtnMouse.containsMouse ? clInput : "transparent")
+                                            radius: 6
+                                            border.color: loopSending ? "#e53935" : clBorder
+                                            border.width: 1
+                                            Behavior on color { ColorAnimation { duration: 200 } }
+                                            MouseArea { id: loopBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                                        }
+                                        onClicked: {
+                                            if (loopSending) {
+                                                loopSending = false
+                                                loopIndex = -1
+                                                loopTimer.stop()
+                                            } else {
+                                                startLoopSend()
+                                            }
+                                        }
+                                    }
+
+                                    Button {
+                                        Layout.preferredWidth: commandBottomBar.importExportButtonWidth
+                                        Layout.minimumWidth: 0
+                                        Layout.maximumWidth: 30
+                                        Layout.preferredHeight: 24
+                                        text: "导入"
+                                        flat: true
+                                        clip: true
+                                        visible: commandBottomBar.showImportExport
+                                        enabled: commandBottomBar.showImportExport
+                                        font.pixelSize: 11
+                                        contentItem: Text {
+                                            text: parent.text
+                                            color: clText
+                                            font.pixelSize: 10
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            clip: true
+                                        }
+                                        background: Rectangle {
+                                            color: importBtnMouse.containsMouse ? clInput : "transparent"
+                                            radius: 6
+                                            border.color: clBorder
+                                            border.width: 1
+                                            MouseArea { id: importBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                                        }
+                                        onClicked: importFileDialog.open()
+                                    }
+
+                                    Button {
+                                        Layout.preferredWidth: commandBottomBar.importExportButtonWidth
+                                        Layout.minimumWidth: 0
+                                        Layout.maximumWidth: 30
+                                        Layout.preferredHeight: 24
+                                        text: "导出"
+                                        flat: true
+                                        clip: true
+                                        visible: commandBottomBar.showImportExport
+                                        enabled: commandBottomBar.showImportExport
+                                        font.pixelSize: 11
+                                        contentItem: Text {
+                                            text: parent.text
+                                            color: clText
+                                            font.pixelSize: 10
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            clip: true
+                                        }
+                                        background: Rectangle {
+                                            color: exportBtnMouse.containsMouse ? clInput : "transparent"
+                                            radius: 6
+                                            border.color: clBorder
+                                            border.width: 1
+                                            MouseArea { id: exportBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
+                                        }
+                                        onClicked: {
+                                            exportFileDialog.currentFile = defaultExportFileUrl(commandExportFileName())
+                                            exportFileDialog.open()
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Tab 1: 码表 (Code Table + Converter)
+                            Flickable {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                contentHeight: codeTableColumn.implicitHeight
+                                clip: true
+                                boundsBehavior: Flickable.StopAtBounds
+                                flickableDirection: Flickable.VerticalFlick
+
+                                ColumnLayout {
+                                    id: codeTableColumn
+                                    spacing: 8
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+
+                                Text {
+                                    text: "码表工具"
+                                    color: clHighlight
+                                    font.bold: true
+                                    font.pixelSize: 15
+                                }
+
+                                // 进制转换器
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    height: 180
+                                    radius: 10
+                                    color: clInput
+                                    border.color: clBorder
+                                    border.width: 1
+                                    ColumnLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 6
+                                        Text { text: "进制转换"; color: clText; font.pixelSize: 11; font.bold: true }
+                                        TextField {
+                                            id: converterInput
+                                            Layout.fillWidth: true
+                                            placeholderText: "输入数值..."
+                                            placeholderTextColor: grayPlaceholder
+                                            color: whiteText
+                                            font.family: "Consolas"
+                                            font.pixelSize: 13
+                                            background: Rectangle { color: clCard; radius: 6; border.color: converterInput.activeFocus ? clHighlight : clBorder }
+                                            selectByMouse: true
+                                            onTextChanged: {
+                                                var val = parseInt(text)
+                                                if (!isNaN(val)) {
+                                                    hexOut.text = "0x" + val.toString(16).toUpperCase()
+                                                    decOut.text = val.toString()
+                                                    octOut.text = "0o" + val.toString(8)
+                                                    binOut.text = "0b" + val.toString(2)
+                                                } else {
+                                                    hexOut.text = "-"; decOut.text = "-"; octOut.text = "-"; binOut.text = "-"
+                                                }
+                                            }
+                                        }
+                                        GridLayout {
+                                            columns: 2; columnSpacing: 8; rowSpacing: 4
+                                            Layout.fillWidth: true
+                                            Text { text: "HEX"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { id: hexOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
+                                            Text { text: "DEC"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { id: decOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
+                                            Text { text: "OCT"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { id: octOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
+                                            Text { text: "BIN"; color: clHighlight; font.pixelSize: 10; font.bold: true }
+                                            Text { id: binOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                                        }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
+
+                                // ASCII码表
+                                Text { text: "ASCII 码表"; color: clText; font.pixelSize: 11; font.bold: true }
+                                ListView {
+                                    Layout.fillWidth: true
+                                    height: 128 * 22
+                                    clip: true
+                                    spacing: 1
+                                    model: 128
+                                    delegate: Rectangle {
+                                        width: parent ? parent.width : 0
+                                        height: 22
+                                        color: index % 2 === 0 ? clCard : clInput
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 8
+                                            anchors.rightMargin: 8
+                                            spacing: 10
+                                            Text { text: index; color: clHighlight; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 30 }
+                                            Text { text: "0x" + index.toString(16).toUpperCase().padStart(2, '0'); color: "#888"; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 35 }
+                                            Text {
+                                                text: {
+                                                    if (index < 32) return ["NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","HT","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"][index]
+                                                    if (index === 32) return "SPACE"
+                                                    if (index === 127) return "DEL"
+                                                    return String.fromCharCode(index)
+                                                }
+                                                color: whiteText; font.pixelSize: 10; font.family: "Consolas"
+                                            }
+                                            Item { Layout.fillWidth: true }
+                                            Text { text: index >= 32 && index < 127 ? String.fromCharCode(index) : ""; color: clText; font.pixelSize: 10 }
+                                        }
+                                    }
+                                }
+                            }
+                            }
+
+                            // Tab 2: 设置 (Settings)
+                            Flickable {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                contentHeight: settingsColumn.implicitHeight
+                                clip: true
+                                boundsBehavior: Flickable.StopAtBounds
+                                flickableDirection: Flickable.VerticalFlick
+
+                                ColumnLayout {
+                                    id: settingsColumn
+                                    spacing: 10
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+
+                                Text {
+                                    text: "设置"
+                                    color: clHighlight
+                                    font.bold: true
+                                    font.pixelSize: 15
+                                }
+
+                                // 行尾模式
+                                ColumnLayout {
+                                    spacing: 6
+                                    Layout.fillWidth: true
+                                    Text { text: "行尾模式"; color: clText; font.pixelSize: 11; font.bold: true }
+                                    RowLayout {
+                                        spacing: 4
+                                        Layout.fillWidth: true
+                                        Repeater {
+                                            model: ["无", "LF", "CR", "CRLF"]
+                                            Rectangle {
+                                                Layout.fillWidth: true
+                                                height: 32
+                                                radius: 8
+                                                color: settingsStore.lineEndingMode === index ? clHighlight : (leMouse.containsMouse ? clCard : clInput)
+                                                border.color: settingsStore.lineEndingMode === index ? clHighlight : clBorder
+                                                border.width: settingsStore.lineEndingMode === index ? 1 : 0
+                                                Text {
+                                                    text: modelData
+                                                    anchors.centerIn: parent
+                                                    color: settingsStore.lineEndingMode === index ? "white" : clText
+                                                    font.pixelSize: 11
+                                                    font.bold: settingsStore.lineEndingMode === index
+                                                }
+                                                MouseArea {
+                                                    id: leMouse
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    onClicked: settingsStore.lineEndingMode = index
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
+
+                                // 数据编码
+                                ColumnLayout {
+                                    spacing: 6
+                                    Layout.fillWidth: true
+                                    Text { text: "数据编码"; color: clText; font.pixelSize: 11; font.bold: true }
+                                    ComboBox {
+                                        id: encodingCombo
+                                        Layout.fillWidth: true
+                                        Layout.preferredHeight: 36
+                                        model: ["UTF-8", "GBK", "GB2312", "ASCII", "ISO-8859-1"]
+                                        currentIndex: {
+                                            var idx = model.indexOf(settingsStore.dataEncoding)
+                                            return idx >= 0 ? idx : 0
+                                        }
+                                        onCurrentTextChanged: settingsStore.dataEncoding = currentText
+                                        background: Rectangle { color: clInput; radius: 8; border.color: encodingCombo.activeFocus ? clHighlight : clBorder }
+                                        contentItem: Text { text: encodingCombo.currentText; color: whiteText; font.pixelSize: 12; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
+                                        popup: Popup {
+                                            y: encodingCombo.height + 3; width: encodingCombo.width; implicitHeight: contentItem.implicitHeight; padding: 5
+                                            contentItem: ListView { clip: true; implicitHeight: contentHeight; model: encodingCombo.popup.visible ? encodingCombo.delegateModel : null }
+                                            background: Rectangle { color: clCard; radius: 10; border.color: clBorder; border.width: 1 }
+                                        }
+                                        delegate: ItemDelegate {
+                                            width: encodingCombo.width; height: 32
+                                            contentItem: Text { text: modelData; color: highlighted ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
+                                            background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
+                                        }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
+
+                                // 串口参数 (只读显示)
+                                ColumnLayout {
+                                    spacing: 6
+                                    Layout.fillWidth: true
+                                    Text { text: "串口参数"; color: clText; font.pixelSize: 11; font.bold: true }
+                                    GridLayout {
+                                        columns: 2
+                                        columnSpacing: 12
+                                        rowSpacing: 6
+                                        Layout.fillWidth: true
+                                        Text { text: "数据位"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "8"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                        Text { text: "停止位"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "1"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                        Text { text: "校验位"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                        Text { text: "流控"; color: "#888"; font.pixelSize: 11 }
+                                        Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                    }
+                                }
+
+                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
+
+                                // 十进制模式
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text { text: "启用十进制显示模式"; color: clText; font.pixelSize: 12; Layout.fillWidth: true }
+                                    Rectangle {
+                                        width: 44; height: 24; radius: 12
+                                        color: settingsStore.hasDecimalMode ? clHighlight : (isDark ? Qt.rgba(255,255,255,0.2) : Qt.rgba(0,0,0,0.15))
+                                        Rectangle {
+                                            width: 20; height: 20; radius: 10
+                                            color: "white"
+                                            anchors.verticalCenter: parent.verticalCenter
+                                            x: settingsStore.hasDecimalMode ? parent.width - 22 : 2
+                                            Behavior on x { NumberAnimation { duration: 150 } }
+                                        }
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            onClicked: settingsStore.hasDecimalMode = !settingsStore.hasDecimalMode
+                                        }
+                                    }
+                                }
+
+                                Item { Layout.fillHeight: true }
+                            }
+                            }
+                        }
+                    }
                 }
 
                 ColumnLayout {
@@ -837,7 +1858,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                          Layout.fillHeight: true
                          Layout.minimumHeight: minTerminalHeight
                          color: clCard
-                         radius: 15
+                         radius: 12
                          border.color: clBorder
                         ColumnLayout {
                             anchors.fill: parent
@@ -889,6 +1910,8 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                         width: terminalView.width
                                          spacing: 3
                                          property bool delegateHover: false
+                                         property bool expanded: false
+                                         property bool wasTruncated: false
                                         RowLayout {
                                             width: parent.width
                                              layoutDirection: model.isSent ? Qt.RightToLeft : Qt.LeftToRight
@@ -925,32 +1948,54 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                             width: parent.width
                                              layoutDirection: model.isSent ? Qt.RightToLeft : Qt.LeftToRight
                                             Rectangle {
-                                                width: msgText.implicitWidth + 30
-                                                 height: Math.max(msgText.implicitHeight + 4, 24)
+                                                width: msgText.width + 30
+                                                 height: Math.max(msgCol.height + 12, 24)
                                                  radius: 16
-                                                 color: model.isSent ? clHighlight : (isDark ? "#323336" : "#E8EAEF")
+                                                 color: model.isSent ? clHighlight : (isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.05))
                                                 MouseArea {
                                                     anchors.fill: parent
                                                     hoverEnabled: true
-                                                    acceptedButtons: Qt.NoButton
+                                                    cursorShape: Qt.IBeamCursor
+                                                    onDoubleClicked: {
+                                                        var raw = model.isHexMode ? model.contentHex : model.contentAscii
+                                                        serialManager.copyToClipboard(raw)
+                                                    }
                                                     onContainsMouseChanged: delegateHover = containsMouse
                                                 }
-                                                TextEdit { id: msgText
-                                                 text: {
-                                                     var raw = model.isHexMode ? model.contentHex : model.contentAscii
-                                                     while (raw.length > 0 && (raw.charAt(raw.length-1) === '\r' || raw.charAt(raw.length-1) === '\n' || raw.charAt(raw.length-1) === ' '))
-                                                         raw = raw.slice(0, -1)
-                                                     return raw
-                                                 }
-                                                 width: Math.min(implicitWidth, terminalView.width * 0.75)
-                                                 anchors.centerIn: parent
-                                                 topPadding: 2; bottomPadding: 2
-                                                 color: model.isSent ? "white" : whiteText
-                                                 font.family: "Consolas"
-                                                 font.pixelSize: 13
-                                                 readOnly: true
-                                                 selectByMouse: true
-                                                 wrapMode: Text.Wrap }
+                                                Column {
+                                                    id: msgCol
+                                                    anchors.centerIn: parent
+                                                    spacing: 3
+                                                    Text { id: msgText
+                                                     text: {
+                                                         var raw = model.isHexMode ? model.contentHex : model.contentAscii
+                                                         while (raw.length > 0 && (raw.charAt(raw.length-1) === '\r' || raw.charAt(raw.length-1) === '\n' || raw.charAt(raw.length-1) === ' '))
+                                                             raw = raw.slice(0, -1)
+                                                         return raw
+                                                     }
+                                                     width: Math.min(implicitWidth, terminalView.width * 0.75)
+                                                     topPadding: 2; bottomPadding: 2
+                                                     color: model.isSent ? "white" : whiteText
+                                                     font.family: "Consolas"
+                                                     font.pixelSize: 13
+                                                     wrapMode: Text.Wrap
+                                                     maximumLineCount: expanded ? 2147483647 : 3
+                                                     elide: Text.ElideRight
+                                                     onTruncatedChanged: if (!expanded) wasTruncated = truncated
+                                                     Component.onCompleted: if (!expanded) wasTruncated = truncated
+                                                    }
+                                                    Text { id: msgToggle
+                                                     visible: expanded ? wasTruncated : msgText.truncated
+                                                     text: expanded ? "收起 ▴" : "展开全文 ▾"
+                                                     color: model.isSent ? "#e8e8e8" : clHighlight
+                                                     font.pixelSize: 9
+                                                     MouseArea {
+                                                         anchors.fill: parent
+                                                         cursorShape: Qt.PointingHandCursor
+                                                         onClicked: expanded = !expanded
+                                                     }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -991,7 +2036,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                         Layout.maximumHeight: maxSendPanelHeight
                         Layout.preferredHeight: sendPanelHeight
                         color: clCard
-                        radius: 15
+                        radius: 12
                         border.color: clBorder
                         clip: true
                         ColumnLayout {
@@ -1122,7 +2167,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                         width: 54
                                         height: 26
                                         radius: 6
-                                        color: autoSending ? (isDark ? "#3a2020" : "#FFEBEE") : (autoBtnMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent")
+                                        color: autoSending ? (isDark ? Qt.rgba(255, 0, 0, 0.15) : Qt.rgba(255, 0, 0, 0.08)) : (autoBtnMouse.containsMouse ? (isDark ? Qt.rgba(255, 255, 255, 0.08) : Qt.rgba(0, 0, 0, 0.06)) : "transparent")
                                         border.color: autoSending ? "#e53935" : clBorder
                                         border.width: 1
                                         Behavior on color { ColorAnimation { duration: 200 } }
@@ -1258,7 +2303,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                     Rectangle { Layout.preferredWidth: (checksumCombo.currentIndex > 0 && sendCard.width >= 165) ? 50 : 0
                                      Layout.minimumWidth: 0
                                      Layout.fillHeight: true
-                                     color: isDark ? "#232428" : "#E8EAEF"
+                                     color: clInput
                                      radius: 8
                                      opacity: (checksumCombo.currentIndex > 0 && sendCard.width >= 165) ? 1 : 0
                                      visible: opacity > 0
@@ -1294,934 +2339,6 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                     }
                 }
 
-                // ── Right Column: Feature Panel + Activity Bar ──
-                Item {
-                    z: 2
-                    Layout.preferredWidth: rightPanelTotal
-                    Layout.fillHeight: true
-                    Layout.leftMargin: panelGap
-                    clip: true
-
-                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
-
-                    // Feature Panel (slides out from left of activity bar)
-                    Rectangle {
-                        id: featurePanel
-                        width: activePanel >= 0 ? effectiveFeaturePanelWidth : 0
-                        anchors.left: parent.left
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        anchors.right: activityBar.left
-                        color: clCard
-                        radius: 12
-                        border.color: clBorder
-                        clip: true
-
-                        visible: activePanel >= 0
-
-                        Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutCubic } }
-
-                        // Drag handle on left edge for resizing
-                        MouseArea {
-                            id: panelDragHandle
-                            width: dragHandleWidth
-                            anchors.left: parent.left
-                            anchors.top: parent.top
-                            anchors.bottom: parent.bottom
-                            cursorShape: Qt.SizeHorCursor
-                            hoverEnabled: true
-                            property real dragStartX: 0
-                            property int dragStartWidth: 0
-                            onPressed: function(mouse) {
-                                dragStartX = mouse.x
-                                dragStartWidth = featurePanelWidth
-                            }
-                            onPositionChanged: function(mouse) {
-                                if (pressed) {
-                                    var delta = dragStartX - mouse.x
-                                    var newWidth = Math.max(200, Math.min(500, dragStartWidth + delta))
-                                    featurePanelWidth = newWidth
-                                    settingsStore.featurePanelWidth = featurePanelWidth
-                                }
-                            }
-                            // Highlight line on hover
-                            Rectangle {
-                                width: 2
-                                anchors.left: parent.left
-                                anchors.top: parent.top
-                                anchors.bottom: parent.bottom
-                                color: parent.containsMouse || parent.pressed ? clHighlight : "transparent"
-                                Behavior on color { ColorAnimation { duration: 120 } }
-                            }
-                        }
-
-                        StackLayout {
-                            id: featurePanelStack
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            currentIndex: activePanel >= 0 ? activePanel : 0
-
-                            // Tab 0: 指令 (Command Presets)
-                            ColumnLayout {
-                                spacing: 8
-
-                                // Header
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Text {
-                                        text: "指令预设库"
-                                        color: clHighlight
-                                        font.bold: true
-                                        font.pixelSize: 15
-                                    }
-                                    Item { Layout.fillWidth: true }
-                                    Button {
-                                        text: "＋分组"
-                                        flat: true
-                                        font.pixelSize: 12
-                                        contentItem: Text {
-                                            text: parent.text
-                                            color: clHighlight
-                                            font: parent.font
-                                        }
-                                        background: Rectangle { color: "transparent" }
-                                        onClicked: commandStore.addGroup("新分组")
-                                    }
-                                }
-
-                                // Search Box
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    height: 36
-                                    radius: 8
-                                    color: clInput
-                                    border.color: clBorder
-                                    border.width: 1
-
-                                    RowLayout {
-                                        anchors.fill: parent
-                                        anchors.leftMargin: 10
-                                        anchors.rightMargin: 10
-                                        spacing: 0
-
-                                        Text {
-                                            text: "🔍"
-                                            font.pixelSize: 13
-                                            color: grayPlaceholder
-                                        }
-
-                                        TextField {
-                                            id: cmdSearchField
-                                            Layout.fillWidth: true
-                                            placeholderText: "搜索指令..."
-                                            placeholderTextColor: grayPlaceholder
-                                            background: Rectangle { color: "transparent" }
-                                            color: whiteText
-                                            font.pixelSize: 12
-                                            leftPadding: 8
-                                            selectByMouse: true
-                                        }
-                                    }
-                                }
-
-                                // Command List
-                                ListView {
-                                    id: cmdListView
-                                    Layout.fillWidth: true
-                                    Layout.fillHeight: true
-                                    clip: true
-                                    spacing: 6
-                                    model: commandStore.groups
-
-                                    delegate: ColumnLayout {
-                                        width: cmdListView.width
-                                        spacing: 4
-
-                                        property var group: modelData
-                                        property bool groupExpanded: true
-                                        property int groupIndex: index
-
-                                        // Group Header
-                                        Rectangle {
-                                            id: groupHeaderRect
-                                            Layout.fillWidth: true
-                                            height: 38
-                                            radius: 10
-                                            color: groupHeaderMouse.containsMouse
-                                                   ? (isDark ? "#45484b" : "#E8EAED")
-                                                   : (isDark ? "#3a3d40" : "#FFFFFF")
-                                            border.color: isDark ? "#3a3d40" : "#DEE2E6"
-                                            border.width: isDark ? 0 : 1
-                                            clip: true
-
-                                            // Left accent bar
-                                            Rectangle {
-                                                width: 3
-                                                height: parent.height - 8
-                                                anchors.left: parent.left
-                                                anchors.leftMargin: 1
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                radius: 1.5
-                                                color: clHighlight
-                                                opacity: 0.9
-                                            }
-
-                                            MouseArea {
-                                                id: groupHeaderMouse
-                                                anchors.fill: parent
-                                                hoverEnabled: true
-                                                onClicked: groupExpanded = !groupExpanded
-                                            }
-
-                                            RowLayout {
-                                                anchors.fill: parent
-                                                anchors.leftMargin: 10
-                                                anchors.rightMargin: 6
-                                                spacing: 6
-
-                                                Text {
-                                                    text: groupExpanded ? "📂" : "📁"
-                                                    font.pixelSize: 14
-                                                }
-
-                                                TextField {
-                                                    id: groupNameField
-                                                    Layout.fillWidth: true
-                                                    text: group.name
-                                                    color: whiteText
-                                                    font.bold: true
-                                                    font.pixelSize: 12
-                                                    background: Rectangle { color: "transparent" }
-                                                    selectByMouse: true
-                                                    readOnly: true
-                                                    onEditingFinished: {
-                                                        commandStore.updateGroupName(index, text)
-                                                        readOnly = true
-                                                    }
-                                                    MouseArea {
-                                                        anchors.fill: parent
-                                                        enabled: groupNameField.readOnly
-                                                        onClicked: {
-                                                            groupNameField.readOnly = false
-                                                            groupNameField.forceActiveFocus()
-                                                            groupNameField.selectAll()
-                                                        }
-                                                    }
-                                                }
-
-                                                Button {
-                                                    text: "＋"
-                                                    flat: true
-                                                    font.pixelSize: 14
-                                                    contentItem: Text {
-                                                        text: parent.text
-                                                        color: clHighlight
-                                                        font: parent.font
-                                                    }
-                                                    background: Rectangle { color: "transparent" }
-                                                    onClicked: commandStore.addCommand(index, "新指令", "", false)
-                                                }
-
-                                                Button {
-                                                    text: "✕"
-                                                    flat: true
-                                                    font.pixelSize: 13
-                                                    contentItem: Text {
-                                                        text: parent.text
-                                                        color: clAccent
-                                                        font: parent.font
-                                                    }
-                                                    background: Rectangle { color: "transparent" }
-                                                    onClicked: {
-                                                        deleteType = "group"
-                                                        targetGroupIdx = index
-                                                        targetCmdIdx = -1
-                                                        deleteConfirmOverlay.visible = true
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        // Commands under this group
-                                        ColumnLayout {
-                                            Layout.fillWidth: true
-                                            visible: groupExpanded
-                                            spacing: 2
-
-                                            Repeater {
-                                                model: group.commands
-
-                                                delegate: Rectangle {
-                                                    Layout.fillWidth: true
-                                                    height: 50
-                                                    radius: 8
-                                                    color: cmdMouse.containsMouse
-                                                           ? (isDark ? "#333537" : "#F5F6F8")
-                                                           : "transparent"
-                                                    border.color: cmdMouse.containsMouse ? clHighlight : (isDark ? "#3a3d40" : "#DEE2E6")
-                                                    border.width: 1
-
-                                                    property int groupIdx: parent.parent.groupIndex
-                                                    property int cmdIdx: index
-                                                    property string mapKey: groupIdx + ":" + cmdIdx
-                                                    property bool isHexMode: {
-                                                        var g = commandStore.groups
-                                                        if (groupIdx >= 0 && groupIdx < g.length) {
-                                                            var cmds = g[groupIdx].commands || []
-                                                            if (cmdIdx >= 0 && cmdIdx < cmds.length)
-                                                                return cmds[cmdIdx].isHex || false
-                                                        }
-                                                        return false
-                                                    }
-
-                                                    MouseArea {
-                                                        id: cmdMouse
-                                                        anchors.fill: parent
-                                                        hoverEnabled: true
-                                                        acceptedButtons: Qt.NoButton
-                                                    }
-
-                                                    // Checkbox: vertically centered in the whole card
-                                                    Item {
-                                                        id: checkboxArea
-                                                        width: 28
-                                                        anchors.left: parent.left
-                                                        anchors.top: parent.top
-                                                        anchors.bottom: parent.bottom
-                                                        anchors.leftMargin: 4
-
-                                                        Rectangle {
-                                                            width: 16
-                                                            height: 16
-                                                            radius: 4
-                                                            anchors.centerIn: parent
-                                                            color: cmdCheckbox.checked ? clHighlight : (isDark ? "#3a3d40" : "#E8EAED")
-                                                            border.color: cmdCheckbox.checked ? clHighlight : clBorder
-                                                            border.width: 1
-
-                                                            Text {
-                                                                visible: cmdCheckbox.checked
-                                                                anchors.centerIn: parent
-                                                                text: "✓"
-                                                                color: "white"
-                                                                font.pixelSize: 11
-                                                                font.bold: true
-                                                            }
-
-                                                            MouseArea {
-                                                                id: cmdCheckbox
-                                                                property bool checked: checkedMap[mapKey] === true
-                                                                anchors.fill: parent
-                                                                cursorShape: Qt.PointingHandCursor
-                                                                onClicked: {
-                                                                    var m = Object.assign({}, checkedMap)
-                                                                    if (!checked) m[mapKey] = true
-                                                                    else delete m[mapKey]
-                                                                    checkedMap = m
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-
-                                                    ColumnLayout {
-                                                        anchors.left: checkboxArea.right
-                                                        anchors.right: parent.right
-                                                        anchors.top: parent.top
-                                                        anchors.bottom: parent.bottom
-                                                        anchors.leftMargin: 2
-                                                        anchors.rightMargin: 4
-                                                        anchors.topMargin: 4
-                                                        anchors.bottomMargin: 4
-                                                        spacing: 2
-
-                                                        // Row 1: name + HEX/TXT + send + delete
-                                                        RowLayout {
-                                                            Layout.fillWidth: true
-                                                            spacing: 4
-
-                                                            TextField {
-                                                                Layout.preferredWidth: parent.width * 0.35
-                                                                Layout.fillWidth: true
-                                                                text: modelData.name
-                                                                color: whiteText
-                                                                font.pixelSize: 10
-                                                                font.bold: true
-                                                                padding: 2
-                                                                background: Rectangle {
-                                                                    radius: 3
-                                                                    color: parent.activeFocus ? clInput : "transparent"
-                                                                    border.color: parent.activeFocus ? clHighlight : "transparent"
-                                                                    border.width: parent.activeFocus ? 1 : 0
-                                                                }
-                                                                selectByMouse: true
-                                                                onEditingFinished: commandStore.updateCommand(groupIdx, cmdIdx, text, modelData.payload)
-                                                            }
-
-                                                            // HEX/TXT badge
-                                                            Rectangle {
-                                                                Layout.preferredWidth: 30
-                                                                Layout.preferredHeight: 18
-                                                                radius: 3
-                                                                color: isHexMode ? (isDark ? "#2a3a5a" : "#E0ECFF") : "transparent"
-                                                                border.color: isHexMode ? clHighlight : clBorder
-                                                                border.width: 1
-                                                                Text {
-                                                                    anchors.centerIn: parent
-                                                                    text: isHexMode ? "HEX" : "TXT"
-                                                                    font.pixelSize: 8
-                                                                    font.bold: true
-                                                                    color: isHexMode ? clHighlight : clText
-                                                                }
-                                                                MouseArea {
-                                                                    anchors.fill: parent
-                                                                    cursorShape: Qt.PointingHandCursor
-                                                                    onClicked: commandStore.setCommandHex(groupIdx, cmdIdx, !isHexMode)
-                                                                }
-                                                            }
-
-                                                            // Send
-                                                            Rectangle {
-                                                                Layout.preferredWidth: 30
-                                                                Layout.preferredHeight: 18
-                                                                radius: 3
-                                                                color: sendBadgeMouse.containsMouse ? (isDark ? "#2a3a5a" : "#E0ECFF") : "transparent"
-                                                                border.color: sendBadgeMouse.containsMouse ? clHighlight : clBorder
-                                                                border.width: 1
-                                                                Text {
-                                                                    anchors.centerIn: parent
-                                                                    text: "发送"
-                                                                    font.pixelSize: 8
-                                                                    font.bold: true
-                                                                    color: sendBadgeMouse.containsMouse ? clHighlight : clText
-                                                                }
-                                                                MouseArea {
-                                                                    id: sendBadgeMouse
-                                                                    anchors.fill: parent
-                                                                    cursorShape: Qt.PointingHandCursor
-                                                                    hoverEnabled: true
-                                                                    onClicked: window.sendCommand(modelData.payload, isHexMode)
-                                                                }
-                                                            }
-
-                                                            // Delete
-                                                            Button {
-                                                                text: "✕"
-                                                                flat: true
-                                                                font.pixelSize: 10
-                                                                Layout.preferredWidth: 20
-                                                                Layout.preferredHeight: 18
-                                                                padding: 0
-                                                                contentItem: Text {
-                                                                    text: parent.text
-                                                                    color: parent.hovered ? "#FF6B6B" : "#888"
-                                                                    font: parent.font
-                                                                    horizontalAlignment: Text.AlignHCenter
-                                                                    verticalAlignment: Text.AlignVCenter
-                                                                }
-                                                                background: Rectangle { radius: 4; color: "transparent" }
-                                                                onClicked: {
-                                                                    deleteType = "command"
-                                                                    targetGroupIdx = groupIdx
-                                                                    targetCmdIdx = cmdIdx
-                                                                    deleteConfirmOverlay.visible = true
-                                                                }
-                                                            }
-                                                        }
-
-                                                        // Row 2: payload (full width, bigger)
-                                                        TextField {
-                                                            Layout.fillWidth: true
-                                                            Layout.fillHeight: true
-                                                            text: modelData.payload || ""
-                                                            color: clText
-                                                            font.family: "Consolas"
-                                                            font.pixelSize: 11
-                                                            padding: 4
-                                                            placeholderText: "payload"
-                                                            placeholderTextColor: grayPlaceholder
-                                                            background: Rectangle {
-                                                                radius: 3
-                                                                color: parent.activeFocus ? clInput : (isDark ? "#2a2b2e" : "#F0F1F3")
-                                                                border.color: parent.activeFocus ? clHighlight : (isDark ? "#3a3d40" : "#DEE2E6")
-                                                                border.width: 1
-                                                            }
-                                                            selectByMouse: true
-                                                            onEditingFinished: commandStore.updateCommand(groupIdx, cmdIdx, modelData.name, text)
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // Empty state
-                                    Text {
-                                        anchors.centerIn: parent
-                                        visible: commandStore.groups.length === 0
-                                        text: "暂无指令分组\n点击「＋分组」添加"
-                                        color: grayPlaceholder
-                                        font.pixelSize: 12
-                                        horizontalAlignment: Text.AlignHCenter
-                                    }
-                                }
-
-                                // Bottom Bar
-                                RowLayout {
-                                    id: commandBottomBar
-                                    Layout.fillWidth: true
-                                    spacing: 3
-                                    clip: true
-                                    // 宽度足够时：循环按钮动态填充空白，把导入/导出顶到右边；不足171px时隐藏导入/导出
-                                    property bool showImportExport: width >= 171
-                                    property int importExportButtonWidth: showImportExport ? 30 : 0
-
-                                    Rectangle {
-                                        Layout.preferredWidth: 48
-                                        Layout.preferredHeight: 24
-                                        radius: 6
-                                        color: clInput
-                                        border.color: clBorder
-                                        border.width: 1
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 4
-                                            anchors.rightMargin: 4
-                                            spacing: 2
-                                            Text { text: "ms"; color: "#777"; font.pixelSize: 9 }
-                                            TextInput {
-                                                Layout.fillWidth: true
-                                                color: whiteText
-                                                font.pixelSize: 11
-                                                font.family: "Consolas"
-                                                text: loopInterval.toString()
-                                                validator: IntValidator { bottom: 50; top: 10000 }
-                                                horizontalAlignment: TextInput.AlignHCenter
-                                                onEditingFinished: {
-                                                    var v = parseInt(text)
-                                                    if (!isNaN(v) && v >= 50 && v <= 10000) loopInterval = v
-                                                    else text = loopInterval.toString()
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    Button {
-                                        Layout.fillWidth: true
-                                        Layout.minimumWidth: 54
-                                        Layout.preferredWidth: 80
-                                        Layout.preferredHeight: 24
-                                        clip: true
-                                        text: loopSending ? "停止" : "循环"
-                                        flat: true
-                                        font.pixelSize: 10
-                                        contentItem: Text {
-                                            text: parent.text
-                                            color: loopSending ? "#e53935" : clText
-                                            font.pixelSize: 10
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                            elide: Text.ElideRight
-                                            Behavior on color { ColorAnimation { duration: 200 } }
-                                        }
-                                        background: Rectangle {
-                                            color: loopSending ? (isDark ? "#3a2020" : "#FFEBEE") : (loopBtnMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent")
-                                            radius: 6
-                                            border.color: loopSending ? "#e53935" : clBorder
-                                            border.width: 1
-                                            Behavior on color { ColorAnimation { duration: 200 } }
-                                            MouseArea { id: loopBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                        }
-                                        onClicked: {
-                                            if (loopSending) {
-                                                loopSending = false
-                                                loopIndex = -1
-                                                loopTimer.stop()
-                                            } else {
-                                                startLoopSend()
-                                            }
-                                        }
-                                    }
-
-                                    Button {
-                                        Layout.preferredWidth: commandBottomBar.importExportButtonWidth
-                                        Layout.minimumWidth: 0
-                                        Layout.maximumWidth: 30
-                                        Layout.preferredHeight: 24
-                                        text: "导入"
-                                        flat: true
-                                        clip: true
-                                        visible: commandBottomBar.showImportExport
-                                        enabled: commandBottomBar.showImportExport
-                                        font.pixelSize: 11
-                                        contentItem: Text {
-                                            text: parent.text
-                                            color: clText
-                                            font.pixelSize: 10
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                            clip: true
-                                        }
-                                        background: Rectangle {
-                                            color: importBtnMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
-                                            radius: 6
-                                            border.color: clBorder
-                                            border.width: 1
-                                            MouseArea { id: importBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                        }
-                                        onClicked: importFileDialog.open()
-                                    }
-
-                                    Button {
-                                        Layout.preferredWidth: commandBottomBar.importExportButtonWidth
-                                        Layout.minimumWidth: 0
-                                        Layout.maximumWidth: 30
-                                        Layout.preferredHeight: 24
-                                        text: "导出"
-                                        flat: true
-                                        clip: true
-                                        visible: commandBottomBar.showImportExport
-                                        enabled: commandBottomBar.showImportExport
-                                        font.pixelSize: 11
-                                        contentItem: Text {
-                                            text: parent.text
-                                            color: clText
-                                            font.pixelSize: 10
-                                            horizontalAlignment: Text.AlignHCenter
-                                            verticalAlignment: Text.AlignVCenter
-                                            clip: true
-                                        }
-                                        background: Rectangle {
-                                            color: exportBtnMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : "transparent"
-                                            radius: 6
-                                            border.color: clBorder
-                                            border.width: 1
-                                            MouseArea { id: exportBtnMouse; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.NoButton }
-                                        }
-                                        onClicked: {
-                                            exportFileDialog.currentFile = defaultExportFileUrl(commandExportFileName())
-                                            exportFileDialog.open()
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Tab 1: 码表 (Code Table + Converter)
-                            Flickable {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                contentHeight: codeTableColumn.implicitHeight
-                                clip: true
-                                boundsBehavior: Flickable.StopAtBounds
-                                flickableDirection: Flickable.VerticalFlick
-
-                                ColumnLayout {
-                                    id: codeTableColumn
-                                    spacing: 8
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-
-                                Text {
-                                    text: "码表工具"
-                                    color: clHighlight
-                                    font.bold: true
-                                    font.pixelSize: 15
-                                }
-
-                                // 进制转换器
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    height: 180
-                                    radius: 10
-                                    color: clInput
-                                    border.color: clBorder
-                                    border.width: 1
-                                    ColumnLayout {
-                                        anchors.fill: parent
-                                        anchors.margins: 10
-                                        spacing: 6
-                                        Text { text: "进制转换"; color: clText; font.pixelSize: 11; font.bold: true }
-                                        TextField {
-                                            id: converterInput
-                                            Layout.fillWidth: true
-                                            placeholderText: "输入数值..."
-                                            placeholderTextColor: grayPlaceholder
-                                            color: whiteText
-                                            font.family: "Consolas"
-                                            font.pixelSize: 13
-                                            background: Rectangle { color: isDark ? "#2b2d30" : "#FFFFFF"; radius: 6; border.color: converterInput.activeFocus ? clHighlight : clBorder }
-                                            selectByMouse: true
-                                            onTextChanged: {
-                                                var val = parseInt(text)
-                                                if (!isNaN(val)) {
-                                                    hexOut.text = "0x" + val.toString(16).toUpperCase()
-                                                    decOut.text = val.toString()
-                                                    octOut.text = "0o" + val.toString(8)
-                                                    binOut.text = "0b" + val.toString(2)
-                                                } else {
-                                                    hexOut.text = "-"; decOut.text = "-"; octOut.text = "-"; binOut.text = "-"
-                                                }
-                                            }
-                                        }
-                                        GridLayout {
-                                            columns: 2; columnSpacing: 8; rowSpacing: 4
-                                            Layout.fillWidth: true
-                                            Text { text: "HEX"; color: clHighlight; font.pixelSize: 10; font.bold: true }
-                                            Text { id: hexOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
-                                            Text { text: "DEC"; color: clHighlight; font.pixelSize: 10; font.bold: true }
-                                            Text { id: decOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
-                                            Text { text: "OCT"; color: clHighlight; font.pixelSize: 10; font.bold: true }
-                                            Text { id: octOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
-                                            Text { text: "BIN"; color: clHighlight; font.pixelSize: 10; font.bold: true }
-                                            Text { id: binOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true; wrapMode: Text.Wrap }
-                                        }
-                                    }
-                                }
-
-                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
-
-                                // ASCII码表
-                                Text { text: "ASCII 码表"; color: clText; font.pixelSize: 11; font.bold: true }
-                                ListView {
-                                    Layout.fillWidth: true
-                                    height: 128 * 22
-                                    clip: true
-                                    spacing: 1
-                                    model: 128
-                                    delegate: Rectangle {
-                                        width: parent ? parent.width : 0
-                                        height: 22
-                                        color: index % 2 === 0 ? (isDark ? "#2b2d30" : "#F8F9FA") : (isDark ? "#323335" : "#FFFFFF")
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 8
-                                            anchors.rightMargin: 8
-                                            spacing: 10
-                                            Text { text: index; color: clHighlight; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 30 }
-                                            Text { text: "0x" + index.toString(16).toUpperCase().padStart(2, '0'); color: "#888"; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 35 }
-                                            Text {
-                                                text: {
-                                                    if (index < 32) return ["NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","HT","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"][index]
-                                                    if (index === 32) return "SPACE"
-                                                    if (index === 127) return "DEL"
-                                                    return String.fromCharCode(index)
-                                                }
-                                                color: whiteText; font.pixelSize: 10; font.family: "Consolas"
-                                            }
-                                            Item { Layout.fillWidth: true }
-                                            Text { text: index >= 32 && index < 127 ? String.fromCharCode(index) : ""; color: clText; font.pixelSize: 10 }
-                                        }
-                                    }
-                                }
-                            }
-                            }
-
-                            // Tab 2: 设置 (Settings)
-                            Flickable {
-                                Layout.fillWidth: true
-                                Layout.fillHeight: true
-                                contentHeight: settingsColumn.implicitHeight
-                                clip: true
-                                boundsBehavior: Flickable.StopAtBounds
-                                flickableDirection: Flickable.VerticalFlick
-
-                                ColumnLayout {
-                                    id: settingsColumn
-                                    spacing: 10
-                                    anchors.left: parent.left
-                                    anchors.right: parent.right
-
-                                Text {
-                                    text: "设置"
-                                    color: clHighlight
-                                    font.bold: true
-                                    font.pixelSize: 15
-                                }
-
-                                // 行尾模式
-                                ColumnLayout {
-                                    spacing: 6
-                                    Layout.fillWidth: true
-                                    Text { text: "行尾模式"; color: clText; font.pixelSize: 11; font.bold: true }
-                                    RowLayout {
-                                        spacing: 4
-                                        Layout.fillWidth: true
-                                        Repeater {
-                                            model: ["无", "LF", "CR", "CRLF"]
-                                            Rectangle {
-                                                Layout.fillWidth: true
-                                                height: 32
-                                                radius: 8
-                                                color: settingsStore.lineEndingMode === index ? clHighlight : (leMouse.containsMouse ? (isDark ? "#3a3d40" : "#E8EAED") : clInput)
-                                                border.color: settingsStore.lineEndingMode === index ? clHighlight : clBorder
-                                                border.width: settingsStore.lineEndingMode === index ? 1 : 0
-                                                Text {
-                                                    text: modelData
-                                                    anchors.centerIn: parent
-                                                    color: settingsStore.lineEndingMode === index ? "white" : clText
-                                                    font.pixelSize: 11
-                                                    font.bold: settingsStore.lineEndingMode === index
-                                                }
-                                                MouseArea {
-                                                    id: leMouse
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    onClicked: settingsStore.lineEndingMode = index
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
-
-                                // 数据编码
-                                ColumnLayout {
-                                    spacing: 6
-                                    Layout.fillWidth: true
-                                    Text { text: "数据编码"; color: clText; font.pixelSize: 11; font.bold: true }
-                                    ComboBox {
-                                        id: encodingCombo
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 36
-                                        model: ["UTF-8", "GBK", "GB2312", "ASCII", "ISO-8859-1"]
-                                        currentIndex: {
-                                            var idx = model.indexOf(settingsStore.dataEncoding)
-                                            return idx >= 0 ? idx : 0
-                                        }
-                                        onCurrentTextChanged: settingsStore.dataEncoding = currentText
-                                        background: Rectangle { color: clInput; radius: 8; border.color: encodingCombo.activeFocus ? clHighlight : clBorder }
-                                        contentItem: Text { text: encodingCombo.currentText; color: whiteText; font.pixelSize: 12; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
-                                        popup: Popup {
-                                            y: encodingCombo.height + 3; width: encodingCombo.width; implicitHeight: contentItem.implicitHeight; padding: 5
-                                            contentItem: ListView { clip: true; implicitHeight: contentHeight; model: encodingCombo.popup.visible ? encodingCombo.delegateModel : null }
-                                            background: Rectangle { color: clCard; radius: 10; border.color: clBorder; border.width: 1 }
-                                        }
-                                        delegate: ItemDelegate {
-                                            width: encodingCombo.width; height: 32
-                                            contentItem: Text { text: modelData; color: highlighted ? "white" : whiteText; font.pixelSize: 11; verticalAlignment: Text.AlignVCenter; leftPadding: 12 }
-                                            background: Rectangle { color: highlighted ? clHighlight : "transparent"; radius: 6 }
-                                        }
-                                    }
-                                }
-
-                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
-
-                                // 串口参数 (只读显示)
-                                ColumnLayout {
-                                    spacing: 6
-                                    Layout.fillWidth: true
-                                    Text { text: "串口参数"; color: clText; font.pixelSize: 11; font.bold: true }
-                                    GridLayout {
-                                        columns: 2
-                                        columnSpacing: 12
-                                        rowSpacing: 6
-                                        Layout.fillWidth: true
-                                        Text { text: "数据位"; color: "#888"; font.pixelSize: 11 }
-                                        Text { text: "8"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                        Text { text: "停止位"; color: "#888"; font.pixelSize: 11 }
-                                        Text { text: "1"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                        Text { text: "校验位"; color: "#888"; font.pixelSize: 11 }
-                                        Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                        Text { text: "流控"; color: "#888"; font.pixelSize: 11 }
-                                        Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                    }
-                                }
-
-                                Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
-
-                                // 十进制模式
-                                RowLayout {
-                                    Layout.fillWidth: true
-                                    Text { text: "启用十进制显示模式"; color: clText; font.pixelSize: 12; Layout.fillWidth: true }
-                                    Rectangle {
-                                        width: 44; height: 24; radius: 12
-                                        color: settingsStore.hasDecimalMode ? clHighlight : (isDark ? "#555" : "#CCC")
-                                        Rectangle {
-                                            width: 20; height: 20; radius: 10
-                                            color: "white"
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            x: settingsStore.hasDecimalMode ? parent.width - 22 : 2
-                                            Behavior on x { NumberAnimation { duration: 150 } }
-                                        }
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            onClicked: settingsStore.hasDecimalMode = !settingsStore.hasDecimalMode
-                                        }
-                                    }
-                                }
-
-                                Item { Layout.fillHeight: true }
-                            }
-                            }
-                        }
-                    }
-
-                    // Activity Bar (fixed on right edge)
-                    Rectangle {
-                        id: activityBar
-                        width: 50
-                        anchors.right: parent.right
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
-                        color: clCard
-                        radius: 12
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.topMargin: 8
-                            anchors.bottomMargin: 8
-                            spacing: 4
-
-                            Repeater {
-                                id: activityRepeater
-                                model: [
-                                    { icon: "📋", label: "指令" },
-                                    { icon: "📊", label: "码表" },
-                                    { icon: "⚙️", label: "设置" }
-                                ]
-                                Rectangle {
-                                    Layout.fillWidth: true
-                                    Layout.preferredHeight: 48
-                                    radius: 8
-                                    color: activePanel === index ? (isDark ? Qt.rgba(53/255, 116/255, 240/255, 0.2) : Qt.rgba(53/255, 116/255, 240/255, 0.15)) : (actDelegateMouseArea.containsMouse ? (isDark ? Qt.rgba(1,1,1,0.05) : Qt.rgba(0,0,0,0.05)) : "transparent")
-                                    border.color: activePanel === index ? clHighlight : "transparent"
-                                    border.width: activePanel === index ? 1 : 0
-
-                                    Column {
-                                        anchors.centerIn: parent
-                                        spacing: 2
-                                        Text {
-                                            text: modelData.icon
-                                            font.pixelSize: 18
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                        }
-                                        Text {
-                                            text: modelData.label
-                                            font.pixelSize: 9
-                                            color: activePanel === index ? clHighlight : clText
-                                            anchors.horizontalCenter: parent.horizontalCenter
-                                        }
-                                    }
-
-                                    MouseArea {
-                                        id: actDelegateMouseArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        onClicked: {
-                                            if (activePanel === index) {
-                                                activePanel = -1
-                                            } else {
-                                                activePanel = index
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Item { Layout.fillHeight: true }
-                        }
-                    }
-                }
             }
 
             Rectangle {
@@ -2246,7 +2363,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                             Layout.fillWidth: true
                             implicitHeight: 180
                             color: clCard
-                            radius: 15
+                            radius: 12
                             border.color: clBorder
                             ColumnLayout {
                                 anchors.fill: parent
@@ -2281,7 +2398,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                 Layout.fillWidth: true
                                 implicitHeight: 220
                                 color: clCard
-                                radius: 15
+                                radius: 12
                                 border.color: clBorder
                                 ColumnLayout {
                                     anchors.fill: parent; anchors.margins: 20; spacing: 12
@@ -2307,7 +2424,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                                 Layout.fillWidth: true
                                 implicitHeight: 220
                                 color: clCard
-                                radius: 15
+                                radius: 12
                                 border.color: clBorder
                                 ColumnLayout {
                                     anchors.fill: parent; anchors.margins: 20; spacing: 12
@@ -2365,7 +2482,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
             Rectangle {
                 width: 320
                  height: 180
-                 radius: 15
+                 radius: 12
                  anchors.centerIn: parent
                  color: clCard
                  border.color: clHighlight
@@ -2463,7 +2580,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
             RowLayout {
                 anchors.fill: parent
-                anchors.leftMargin: 15
+                anchors.leftMargin: 15 + leftRailWidth
                 anchors.rightMargin: 15
                 spacing: 15
 
@@ -2513,7 +2630,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                     }
                     Rectangle {
                         width: 42; height: 20; radius: 4
-                        color: exportMouse.containsMouse ? (isDark ? "#3e4043" : "#E8EAED") : "transparent"
+                        color: exportMouse.containsMouse ? clInput : "transparent"
                         Text {
                             text: "导出"
                             anchors.centerIn: parent
@@ -2532,7 +2649,7 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
                     }
                     Rectangle {
                         width: 42; height: 20; radius: 4
-                        color: clearRecMouse.containsMouse ? (isDark ? "#3e4043" : "#E8EAED") : "transparent"
+                        color: clearRecMouse.containsMouse ? clInput : "transparent"
                         Text {
                             text: "清空"
                             anchors.centerIn: parent
@@ -2650,7 +2767,95 @@ color: (highlighted || flowDelegateHover.containsMouse) ? clHighlight : "transpa
 
     // Initialize line ending mode on startup
     Component.onCompleted: {
+        layoutReady = true
+        acrylic.enable(window)
+        updateAcrylicTint()
         serialManager.lineEndingMode = settingsStore.lineEndingMode
         startupPortRefreshTimer.start()
     }
+
+    Popup {
+        id: themePopup
+        x: window.width - width - 145
+        y: titleBar.height + 2
+        width: 160
+        implicitHeight: themeColumn.implicitHeight + 16
+        padding: 8
+        modal: false
+        focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+        
+        background: Rectangle {
+            color: clCard
+            radius: 10
+            border.color: clBorder
+            border.width: 1
+            layer.enabled: true
+        }
+        
+        Column {
+            id: themeColumn
+            width: parent.width
+            spacing: 2
+            
+            Repeater {
+                model: themeNames
+                delegate: Rectangle {
+                    width: themeColumn.width
+                    height: 36
+                    radius: 6
+                    color: (themeMouse.containsMouse || themeMode === index)
+                           ? Qt.rgba(clHighlight.r, clHighlight.g, clHighlight.b, themeMode === index ? 0.25 : 0.12)
+                           : "transparent"
+                    border.color: themeMode === index ? clHighlight : "transparent"
+                    border.width: 1
+                    
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: 12
+                        anchors.rightMargin: 12
+                        spacing: 10
+                        
+                        Rectangle {
+                            width: 12
+                            height: 12
+                            radius: 6
+                            color: highlightColors[index]
+                            border.color: "#ffffff"
+                            border.width: 1
+                        }
+                        
+                        Text {
+                            text: modelData
+                            color: themeMode === index ? clHighlight : whiteText
+                            font.pixelSize: 12
+                            font.bold: themeMode === index
+                            Layout.fillWidth: true
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                        
+                        Text {
+                            text: "✓"
+                            color: clHighlight
+                            font.pixelSize: 12
+                            font.bold: true
+                            visible: themeMode === index
+                        }
+                    }
+                    
+                    MouseArea {
+                        id: themeMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            settingsStore.themeMode = index
+                            themePopup.close()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }
