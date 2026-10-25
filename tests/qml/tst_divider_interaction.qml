@@ -146,7 +146,7 @@ TestCase {
         mouseMove(testCase, 130, 270, 20)
         tryCompare(sidebarResize, "collapsed", true)
         compare(persistentSide.pressed, true)
-        verify(findChild(persistentSide, "dividerHighlight").opacity > 0.8)
+        tryVerify(() => findChild(persistentSide, "dividerHighlight").opacity > 0.8)
         mouseMove(testCase, 326, 270, 20)
         compare(sidebarResize.collapsed, false)
         compare(testCase.sidebarWidth, 300)

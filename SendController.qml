@@ -9,9 +9,12 @@ QtObject {
     property int interval: 500
     property bool running: false
     property string notice: ""
+    readonly property string encoding: backend.dataEncoding
+    readonly property string conversionNotice: "检测到非hex内容，该内容将转换为" + encoding + "的hex编码发送"
     readonly property bool needsConversion: hexMode && inputText.length > 0 && !backend.isHexInput(inputText)
     signal inputConverted(string hex)
     onInputTextChanged: notice = ""
+    onEncodingChanged: notice = ""
 
     function validate(): bool {
         if (!backend.isOpen) { notice = "请先连接串口。"; return false }
@@ -23,7 +26,7 @@ QtObject {
         if (!needsConversion) return inputText
         var hex = backend.textToHex(inputText)
         inputConverted(hex)
-        notice = "检测到非hex内容，该内容将转换为UTF-8的hex编码发送"
+        notice = conversionNotice
         return hex
     }
     function sendOnce(): bool {
@@ -39,7 +42,7 @@ QtObject {
         var hex = presetHex || hexMode
         if (hex && (!presetHex || !backend.isHexInput(payload))) {
             payload = backend.textToHex(payload)
-            notice = "检测到非hex内容，该内容将转换为UTF-8的hex编码发送"
+            notice = conversionNotice
         }
         backend.sendData(payload, hex)
         return true

@@ -15,6 +15,20 @@ int main(int argc, char **argv) {
     assert(PayloadCodec::decode("AT+RST", true) == QByteArray("AT+RST"));
     assert(PayloadCodec::decode("AA 55", false) == QByteArray("AA 55"));
     assert(PayloadCodec::decode(QString::fromUtf8("你好"), true).toHex() == "e4bda0e5a5bd");
+    const QString chinese = QString::fromUtf8("你好");
+    for (const QString &encoding : {QString("GBK"), QString("GB2312")}) {
+        assert(PayloadCodec::decode(chinese, true, encoding).toHex() == "c4e3bac3");
+        assert(PayloadCodec::decode(chinese, false, encoding).toHex() == "c4e3bac3");
+        assert(PayloadCodec::decode("AA 55 00", true, encoding) == raw);
+        assert(PayloadCodec::decodeText(QByteArray::fromHex("c4e3bac3"), encoding) == chinese);
+        assert(ChecksumHelper::hexChecksumPreview(chinese, true, 2, encoding)
+               == ChecksumHelper::calculate(QByteArray::fromHex("c4e3bac3"), ChecksumHelper::Sum8).toHex(' ').toUpper());
+    }
+    const QString latin = QString::fromUtf8("café");
+    assert(PayloadCodec::encodeText(latin, "ISO-8859-1").toHex() == "636166e9");
+    assert(PayloadCodec::decodeText(QByteArray::fromHex("636166e9"), "ISO-8859-1") == latin);
+    assert(PayloadCodec::encodeText(latin, "ASCII") == "caf?");
+    assert(PayloadCodec::encodeText(chinese, "ASCII") == "??");
     for (int ending = 0; ending <= 3; ++ending) {
         assert(PayloadCodec::frame(raw, true, ending) == raw);
         const QByteArray checksum = ChecksumHelper::calculate(raw, ChecksumHelper::Sum8);

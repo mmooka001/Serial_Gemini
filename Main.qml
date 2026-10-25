@@ -109,7 +109,7 @@ Window {
     property bool globalTimestamp: true
     property int currentPageIndex: 0
     property bool autoScroll: true
-    property string checksumValue: ChecksumHelper.hexChecksumPreview(sendInput.text, globalTxHex, checksumCombo.currentIndex)
+    property string checksumValue: ChecksumHelper.hexChecksumPreview(sendInput.text, globalTxHex, checksumCombo.currentIndex, settingsStore.dataEncoding)
 
     function exportTimestamp() {
         return Qt.formatDateTime(new Date(), "yyyyMMddhhmmss")
@@ -1773,7 +1773,7 @@ Window {
                                 Layout.fillWidth: true
                                 visible: text.length > 0
                                 text: inputSender.notice || (inputSender.needsConversion
-                                      ? "检测到非hex内容，该内容将转换为UTF-8的hex编码发送"
+                                      ? inputSender.conversionNotice
                                       : (!globalTxHex && settingsStore.lineEndingMode > 0
                                          ? "TXT 行尾：" + ["无", "LF (0A)", "CR (0D)", "CRLF (0D 0A)"][settingsStore.lineEndingMode] + "，可在设置中改为“无”。" : ""))
                                 color: inputSender.needsConversion ? appTheme.warning : clText

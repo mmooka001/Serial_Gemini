@@ -17,6 +17,7 @@ class SerialManager : public QObject
     Q_PROPERTY(QString currentPort READ currentPort NOTIFY currentPortChanged)
     Q_PROPERTY(int baudRate READ baudRate WRITE setBaudRate NOTIFY baudRateChanged)
     Q_PROPERTY(int lineEndingMode READ lineEndingMode WRITE setLineEndingMode NOTIFY lineEndingModeChanged)
+    Q_PROPERTY(QString dataEncoding READ dataEncoding WRITE setDataEncoding NOTIFY dataEncodingChanged)
 
 public:
     explicit SerialManager(QObject *parent = nullptr);
@@ -29,6 +30,12 @@ public:
         if (m_serialPort->setBaudRate(baud)) emit baudRateChanged();
     }
     int lineEndingMode() const { return m_lineEndingMode; }
+    QString dataEncoding() const { return m_dataEncoding; }
+    void setDataEncoding(const QString &encoding) {
+        if (m_dataEncoding == encoding) return;
+        m_dataEncoding = encoding;
+        emit dataEncodingChanged();
+    }
     void setLineEndingMode(int mode) {
         if (m_lineEndingMode != mode) {
             m_lineEndingMode = mode;
@@ -42,7 +49,7 @@ public:
     Q_INVOKABLE void sendData(const QString &data, bool isHex);
     Q_INVOKABLE void sendDataWithChecksum(const QString &data, bool isHex, int checksumType);
     Q_INVOKABLE bool isHexInput(const QString &text) const { return PayloadCodec::isHex(text); }
-    Q_INVOKABLE QString textToHex(const QString &text) const { return text.toUtf8().toHex(' ').toUpper(); }
+    Q_INVOKABLE QString textToHex(const QString &text) const { return PayloadCodec::encodeText(text, m_dataEncoding).toHex(' ').toUpper(); }
     Q_INVOKABLE void copyToClipboard(const QString &text);
 
 signals:
@@ -50,6 +57,7 @@ signals:
     void currentPortChanged();
     void baudRateChanged();
     void lineEndingModeChanged();
+    void dataEncodingChanged();
     void dataReceived(const QString &ascii, const QString &hex, bool isSent = false, bool isHex = false);
     void errorOccurred(const QString &error);
 
@@ -59,6 +67,7 @@ private slots:
 private:
     QSerialPort *m_serialPort;
     int m_lineEndingMode = 0;
+    QString m_dataEncoding = QStringLiteral("UTF-8");
 };
 
 #endif // SERIALMANAGER_H

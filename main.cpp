@@ -200,6 +200,10 @@ int main(int argc, char *argv[])
     ChecksumHelper checksumHelper;
     SettingsStore settingsStore;
     RecordStore recordStore;
+    serialManager.setDataEncoding(settingsStore.dataEncoding());
+    QObject::connect(&settingsStore, &SettingsStore::dataEncodingChanged, &serialManager, [&] {
+        serialManager.setDataEncoding(settingsStore.dataEncoding());
+    });
 #ifdef Q_OS_WIN
     AcrylicHelper acrylicHelper;
 #endif

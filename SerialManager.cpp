@@ -98,14 +98,14 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
         return;
     }
 
-    const QByteArray payload = PayloadCodec::decode(data, isHex);
+    const QByteArray payload = PayloadCodec::decode(data, isHex, m_dataEncoding);
     const QByteArray checksum = ChecksumHelper::calculate(payload, static_cast<ChecksumHelper::ChecksumType>(checksumType));
     const QByteArray bytes = PayloadCodec::frame(payload, isHex, m_lineEndingMode, checksum);
 
     m_serialPort->write(bytes);
     m_serialPort->flush();
 
-    emit dataReceived(QString::fromUtf8(bytes), bytes.toHex(' ').toUpper(), true, isHex);
+    emit dataReceived(PayloadCodec::decodeText(bytes, m_dataEncoding), bytes.toHex(' ').toUpper(), true, isHex);
 }
 
 void SerialManager::readData()
@@ -113,7 +113,7 @@ void SerialManager::readData()
     const QByteArray data = m_serialPort->readAll();
     if (data.isEmpty()) return;
 
-    emit dataReceived(QString::fromUtf8(data), data.toHex(' ').toUpper(), false);
+    emit dataReceived(PayloadCodec::decodeText(data, m_dataEncoding), data.toHex(' ').toUpper(), false);
 }
 
 void SerialManager::copyToClipboard(const QString &text)
