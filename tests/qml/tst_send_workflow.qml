@@ -61,7 +61,7 @@ TestCase {
         compare(backend.lastPayload, sender.inputText)
         compare(backend.lastHex, true)
         compare(sender.hexMode, true)
-        verify(sender.notice.length > 0)
+        compare(sender.notice, "检测到非hex内容，该内容将转换为UTF-8的hex编码发送")
         verify(sender.sendOnce())
         compare(backend.lastPayload, "41 54 2B 52 53 54")
     }

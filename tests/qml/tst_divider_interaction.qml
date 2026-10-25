@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import QtTest
 import "../.." as App
 
@@ -35,10 +36,41 @@ TestCase {
     }
     App.FocusDismissLayer { focusRoot: testCase }
 
+    App.SidebarResizeController {
+        id: sidebarResize
+        edgeHoldDuration: 60
+        onWidthRequested: (width) => testCase.sidebarWidth = width
+    }
+    property real sidebarWidth: 260
+    RowLayout {
+        x: 20; y: 220; width: 600; height: 100
+        spacing: 0
+        Item {
+            Layout.preferredWidth: sidebarResize.collapsed ? 0 : testCase.sidebarWidth
+            Layout.minimumWidth: Layout.preferredWidth
+            Layout.maximumWidth: Layout.preferredWidth
+            Layout.fillHeight: true
+        }
+        App.PanelDivider {
+            id: persistentSide
+            Layout.preferredWidth: sidebarResize.collapsed && !sidebarResize.active ? 0 : 12
+            Layout.fillHeight: true
+            visible: !sidebarResize.collapsed || sidebarResize.active
+            enabled: !sidebarResize.collapsed || sidebarResize.active
+            onResizeStarted: sidebarResize.begin(testCase.sidebarWidth)
+            onResizeMoved: (delta) => sidebarResize.move(delta)
+            onResizeFinished: sidebarResize.end()
+        }
+        Item { Layout.fillWidth: true }
+    }
+
     function init() { failOnWarning(/.*/) }
     function cleanup() {
         testCase.panelWidth = 260
         testCase.bottomHeight = 150
+        sidebarResize.end()
+        sidebarResize.collapsed = false
+        testCase.sidebarWidth = 260
         testCase.forceActiveFocus()
         mouseMove(testCase, 5, 5)
     }
@@ -86,5 +118,47 @@ TestCase {
         compare(editor.activeFocus, false)
         mouseClick(editor, 50, 16)
         verify(editor.activeFocus)
+    }
+    function test_sidebarMinimumNeedsHoldAndExtraTravel() {
+        sidebarResize.begin(260)
+        sidebarResize.move(-80)
+        compare(testCase.sidebarWidth, 180)
+        wait(90)
+        compare(sidebarResize.collapsed, false)
+        sidebarResize.move(-100)
+        compare(sidebarResize.collapsed, false)
+        sidebarResize.move(-130)
+        compare(sidebarResize.collapsed, true)
+    }
+    function test_fastLeftDragWaitsBeforeCollapseAndCanBeCancelled() {
+        sidebarResize.begin(260)
+        sidebarResize.move(-150)
+        compare(sidebarResize.collapsed, false)
+        sidebarResize.move(-50)
+        wait(90)
+        compare(sidebarResize.collapsed, false)
+        sidebarResize.move(-150)
+        tryCompare(sidebarResize, "collapsed", true)
+    }
+    function test_collapsedDividerKeepsGrabAndReopensInSameGesture() {
+        wait(20)
+        mousePress(persistentSide, 6, 50)
+        mouseMove(testCase, 130, 270, 20)
+        tryCompare(sidebarResize, "collapsed", true)
+        compare(persistentSide.pressed, true)
+        verify(findChild(persistentSide, "dividerHighlight").opacity > 0.8)
+        mouseMove(testCase, 326, 270, 20)
+        compare(sidebarResize.collapsed, false)
+        compare(testCase.sidebarWidth, 300)
+        compare(persistentSide.pressed, true)
+        mouseRelease(testCase, 326, 270)
+        compare(sidebarResize.active, false)
+    }
+    function test_releaseCancelsPendingCollapse() {
+        sidebarResize.begin(260)
+        sidebarResize.move(-150)
+        sidebarResize.end()
+        wait(90)
+        compare(sidebarResize.collapsed, false)
     }
 }

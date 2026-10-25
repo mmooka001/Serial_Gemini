@@ -23,7 +23,7 @@ QtObject {
         if (!needsConversion) return inputText
         var hex = backend.textToHex(inputText)
         inputConverted(hex)
-        notice = "已将文本按 UTF-8 转为 HEX，发送模式保持 HEX。"
+        notice = "检测到非hex内容，该内容将转换为UTF-8的hex编码发送"
         return hex
     }
     function sendOnce(): bool {
@@ -39,7 +39,7 @@ QtObject {
         var hex = presetHex || hexMode
         if (hex && (!presetHex || !backend.isHexInput(payload))) {
             payload = backend.textToHex(payload)
-            notice = "指令文本已按 UTF-8 转为 HEX，发送模式不变。"
+            notice = "检测到非hex内容，该内容将转换为UTF-8的hex编码发送"
         }
         backend.sendData(payload, hex)
         return true

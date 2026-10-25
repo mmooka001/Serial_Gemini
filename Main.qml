@@ -68,7 +68,7 @@ Window {
     // 左侧面板统一状态：-1=全关 0=连接 1=指令 2=码表 3=设置（互斥）
     property int sidePanel: 0
     property int sidePanelWidth: settingsStore.sidePanelWidth
-    property bool sidePanelDragActive: false
+    readonly property bool sidePanelDragActive: sidebarResize.active
     property int clickOffset: 0           // Click animation offset
 
     // Layout constants
@@ -81,6 +81,17 @@ Window {
     readonly property int maxSidePanelWidth: Math.max(200, bodyBg.width - panelGap * 3 - minimumCenterWidth)
     readonly property int collapsePanelWidth: 180
     readonly property int effectiveSidePanelWidth: Math.max(collapsePanelWidth, Math.min(sidePanelWidth, maxSidePanelWidth))
+    SidebarResizeController {
+        id: sidebarResize
+        minimumWidth: collapsePanelWidth
+        maximumWidth: maxSidePanelWidth
+        property int savedPanel: 0
+        property int savedWidth: 0
+        onWidthRequested: (width) => sidePanelWidth = width
+        onCollapsedChanged: {
+            if (active) sidePanel = collapsed ? -1 : savedPanel
+        }
+    }
     property int sendPanelHeight: 180
     readonly property int minSendPanelHeight: 160
     readonly property int minTerminalHeight: 160
@@ -470,18 +481,9 @@ Window {
                 Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    MouseArea {
+                    WindowDragArea {
                         anchors.fill: parent
-                        onPressed: {
-                            window.startSystemMove()
-                        }
-                        onDoubleClicked: {
-                            if (window.edgeToEdge) {
-                                window.showNormal()
-                            } else {
-                                window.showMaximized()
-                            }
-                        }
+                        targetWindow: window
                     }
                 }
 
@@ -1431,34 +1433,25 @@ Window {
 
                 // 整条模块间隙均可拖动，提示柄位于间隙中央。
                 Item {
-                    Layout.preferredWidth: sidePanel < 0 ? 0 : panelGap
+                    Layout.preferredWidth: sidePanel < 0 && !sidePanelDragActive ? 0 : panelGap
                     Behavior on Layout.preferredWidth { enabled: !sidePanelDragActive; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     Layout.fillHeight: true
-                    visible: sidePanel >= 0 || width > 1
+                    visible: sidePanel >= 0 || sidePanelDragActive || width > 1
 
                     PanelDivider {
                         id: sidePanelResizeHandle
                         anchors.fill: parent
-                        enabled: sidePanel >= 0
+                        enabled: sidePanel >= 0 || sidePanelDragActive
                         accentColor: clHighlight
-                        property int startWidth: 0
-                        property int savedWidth: 0
                         onResizeStarted: {
-                            startWidth = sidePanelCard.width
-                            savedWidth = sidePanelWidth
-                            sidePanelDragActive = true
+                            sidebarResize.savedPanel = sidePanel
+                            sidebarResize.savedWidth = sidePanelWidth
+                            sidebarResize.begin(sidePanelCard.width)
                         }
-                        onResizeMoved: (delta) => {
-                            var requestedWidth = startWidth + delta
-                            if (requestedWidth <= collapsePanelWidth) {
-                                sidePanel = -1
-                                sidePanelWidth = savedWidth
-                            } else {
-                                sidePanelWidth = Math.round(Math.min(maxSidePanelWidth, requestedWidth))
-                            }
-                        }
+                        onResizeMoved: (delta) => sidebarResize.move(delta)
                         onResizeFinished: {
-                            sidePanelDragActive = false
+                            sidebarResize.end()
+                            if (sidePanel < 0) sidePanelWidth = sidebarResize.savedWidth
                             if (sidePanel >= 0) settingsStore.sidePanelWidth = sidePanelWidth
                         }
                     }
@@ -1780,7 +1773,7 @@ Window {
                                 Layout.fillWidth: true
                                 visible: text.length > 0
                                 text: inputSender.notice || (inputSender.needsConversion
-                                      ? "检测到文本，发送时会转为 HEX（UTF-8），不会切换发送模式。"
+                                      ? "检测到非hex内容，该内容将转换为UTF-8的hex编码发送"
                                       : (!globalTxHex && settingsStore.lineEndingMode > 0
                                          ? "TXT 行尾：" + ["无", "LF (0A)", "CR (0D)", "CRLF (0D 0A)"][settingsStore.lineEndingMode] + "，可在设置中改为“无”。" : ""))
                                 color: inputSender.needsConversion ? appTheme.warning : clText
