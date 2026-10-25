@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QByteArray>
-#include <QRegularExpression>
+#include "PayloadCodec.h"
 
 class ChecksumHelper : public QObject
 {
@@ -29,26 +29,7 @@ public:
     }
 
     Q_INVOKABLE static QString hexChecksumPreview(const QString &data, bool isHex, int type) {
-        QByteArray bytes;
-        if (isHex) {
-            QString cleanData = data;
-            cleanData.remove("0x", Qt::CaseInsensitive);
-            cleanData.remove(QRegularExpression("\\s+"));
-            bool looksLikeHex = !cleanData.isEmpty() && cleanData.size() % 2 == 0;
-            if (looksLikeHex) {
-                for (const QChar &c : cleanData) {
-                    if (!c.isDigit()
-                        && !(c >= QChar('a') && c <= QChar('f'))
-                        && !(c >= QChar('A') && c <= QChar('F'))) {
-                        looksLikeHex = false;
-                        break;
-                    }
-                }
-            }
-            bytes = looksLikeHex ? QByteArray::fromHex(cleanData.toUtf8()) : data.toUtf8();
-        } else {
-            bytes = data.toUtf8();
-        }
+        const QByteArray bytes = PayloadCodec::decode(data, isHex);
         if (bytes.isEmpty()) return "";
         QByteArray result = calculate(bytes, (ChecksumType)type);
         return result.toHex(' ').toUpper();

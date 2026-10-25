@@ -5,6 +5,8 @@
 #include <QQuickWindow>
 #include <QPointer>
 #include <QAbstractNativeEventFilter>
+#include <QPlatformSurfaceEvent>
+#include <QTimer>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -52,26 +54,13 @@ public:
     Q_INVOKABLE void enable(QQuickWindow *w) {
         if (!w || m_window == w) return;
         m_window = w;
-        m_hwnd = reinterpret_cast<HWND>(w->winId());
+        w->installEventFilter(this);
         qGuiApp->installNativeEventFilter(this);
-
-        // 保留系统吸附能力，由 DWM 统一处理外轮廓与阴影。
-        LONG style = GetWindowLong(m_hwnd, GWL_STYLE);
-        style |= WS_THICKFRAME | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
-        SetWindowLong(m_hwnd, GWL_STYLE, style);
-        BOOL darkMode = TRUE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
-        int backdrop = DWMSBT_NONE;
-        DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
-        const COLORREF noBorder = 0xFFFFFFFE; // DWMWA_COLOR_NONE
-        DwmSetWindowAttribute(m_hwnd, DWMWA_BORDER_COLOR, &noBorder, sizeof(noBorder));
-        connect(w, &QWindow::visibilityChanged, this, [this](QWindow::Visibility) {
-            updateFrame();
+        connect(w, &QWindow::flagsChanged, this, [this] { queueNativeRefresh(); });
+        connect(w, &QWindow::visibilityChanged, this, [this] {
+            QTimer::singleShot(0, this, [this] { updateFrame(); });
         });
-        updateFrame();
-        SetWindowPos(m_hwnd, nullptr, 0, 0, 0, 0,
-                     SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
-        apply();
+        refreshNativeWindow();
     }
     Q_INVOKABLE void setTint(double r, double g, double b, double a) {
         UINT rr = UINT(qBound(0.0, r, 1.0) * 255.0);
@@ -95,16 +84,65 @@ public:
             return false;
         // 最大化窗口的外框可延伸到屏幕外，客户区必须限制在当前显示器工作区内。
         auto *params = reinterpret_cast<NCCALCSIZE_PARAMS *>(msg->lParam);
-        params->rgrc[0] = monitorInfo.rcWork;
+        const RECT &proposed = params->rgrc[0];
+        const RECT &work = monitorInfo.rcWork;
+        if (proposed.right - proposed.left < work.right - work.left
+            || proposed.bottom - proposed.top < work.bottom - work.top)
+            return false;
+        params->rgrc[0] = work;
         *result = 0;
         return true;
     }
+    bool eventFilter(QObject *object, QEvent *event) override {
+        if (object == m_window && event->type() == QEvent::PlatformSurface) {
+            const auto *surface = static_cast<QPlatformSurfaceEvent *>(event);
+            if (surface->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed)
+                m_hwnd = nullptr;
+            else
+                queueNativeRefresh();
+        }
+        return QObject::eventFilter(object, event);
+    }
 private:
+    void queueNativeRefresh() {
+        if (m_refreshPending) return;
+        m_refreshPending = true;
+        QTimer::singleShot(0, this, [this] {
+            m_refreshPending = false;
+            refreshNativeWindow();
+        });
+    }
+    void refreshNativeWindow() {
+        if (!m_window) return;
+        HWND hwnd = reinterpret_cast<HWND>(m_window->winId());
+        if (m_hwnd != hwnd) {
+            m_hwnd = hwnd;
+            m_cornerPreference = -1;
+            BOOL darkMode = TRUE;
+            DwmSetWindowAttribute(m_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &darkMode, sizeof(darkMode));
+            int backdrop = DWMSBT_NONE;
+            DwmSetWindowAttribute(m_hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &backdrop, sizeof(backdrop));
+            const COLORREF noBorder = 0xFFFFFFFE;
+            DwmSetWindowAttribute(m_hwnd, DWMWA_BORDER_COLOR, &noBorder, sizeof(noBorder));
+        }
+        const LONG style = GetWindowLongW(m_hwnd, GWL_STYLE);
+        const LONG wanted = style | WS_THICKFRAME | WS_CAPTION | WS_MAXIMIZEBOX | WS_MINIMIZEBOX;
+        if (style != wanted) {
+            SetWindowLongW(m_hwnd, GWL_STYLE, wanted);
+            SetWindowPos(m_hwnd, nullptr, 0, 0, 0, 0,
+                         SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+        }
+        updateFrame();
+        apply();
+        m_window->requestUpdate();
+    }
     void updateFrame() {
         if (!m_window || !m_hwnd) return;
         const bool edgeToEdge = m_window->visibility() == QWindow::Maximized
                             || m_window->visibility() == QWindow::FullScreen;
         const int cornerPreference = edgeToEdge ? 1 : 2; // DWMWCP_DONOTROUND / DWMWCP_ROUND
+        if (cornerPreference == m_cornerPreference) return;
+        m_cornerPreference = cornerPreference;
         DwmSetWindowAttribute(m_hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
                               &cornerPreference, sizeof(cornerPreference));
         const int inset = edgeToEdge ? 0 : 1;
@@ -131,6 +169,8 @@ private:
         data.SizeOfData  = sizeof(policy);
         fn(m_hwnd, &data);
     }
+    bool m_refreshPending = false;
+    int m_cornerPreference = -1;
     HWND m_hwnd = nullptr;
     QPointer<QQuickWindow> m_window;
     UINT m_gradient = 0x80101014;            // 默认深色 tint (黑 50%)

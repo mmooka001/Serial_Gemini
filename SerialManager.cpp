@@ -1,11 +1,5 @@
 #include "SerialManager.h"
 #include "ChecksumHelper.h"
-#include <QDebug>
-#include <QRegularExpression>
-
-#ifdef Q_OS_WIN
-#include <windows.h>
-#endif
 
 SerialManager::SerialManager(QObject *parent)
     : QObject(parent), m_serialPort(new QSerialPort(this))
@@ -14,44 +8,6 @@ SerialManager::SerialManager(QObject *parent)
 }
 
 
-
-namespace {
-
-bool parseHexOrText(const QString &data, QByteArray &bytes)
-{
-    QString cleanData = data;
-    cleanData.remove("0x", Qt::CaseInsensitive);
-    cleanData.remove(QRegularExpression("\\s+"));
-
-    bool looksLikeHex = !cleanData.isEmpty() && cleanData.size() % 2 == 0;
-    if (looksLikeHex) {
-        for (const QChar &c : cleanData) {
-            if (!c.isDigit()
-                && !(c >= QChar('a') && c <= QChar('f'))
-                && !(c >= QChar('A') && c <= QChar('F'))) {
-                looksLikeHex = false;
-                break;
-            }
-        }
-    }
-
-    if (looksLikeHex) {
-        bytes = QByteArray::fromHex(cleanData.toUtf8());
-        return true;
-    }
-
-    bytes = data.toUtf8();
-    return false;
-}
-
-void appendLineEnding(QByteArray &bytes, int lineEndingMode)
-{
-    if (lineEndingMode == 1) bytes.append("\n");        // LF
-    else if (lineEndingMode == 2) bytes.append("\r");   // CR
-    else if (lineEndingMode == 3) bytes.append("\r\n"); // CRLF
-}
-
-} // namespace
 
 SerialManager::~SerialManager()
 {
@@ -132,26 +88,7 @@ void SerialManager::closePort()
 
 void SerialManager::sendData(const QString &data, bool isHex)
 {
-    if (!m_serialPort->isOpen()) {
-        emit errorOccurred("Serial port is not open!");
-        return;
-    }
-
-    QByteArray bytes;
-    if (isHex) {
-        parseHexOrText(data, bytes);
-    } else {
-        bytes = data.toUtf8();
-    }
-
-    // Append line ending based on mode (applies to both TXT and HEX)
-    appendLineEnding(bytes, m_lineEndingMode);
-
-    m_serialPort->write(bytes);
-    m_serialPort->flush();
-
-    // 同时发送两种格式（显示用原始数据，不含行尾符）
-    emit dataReceived(data, bytes.toHex(' ').toUpper(), true, isHex);
+    sendDataWithChecksum(data, isHex, 0);
 }
 
 void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int checksumType)
@@ -161,25 +98,14 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
         return;
     }
 
-    QByteArray bytes;
-    if (isHex) {
-        parseHexOrText(data, bytes);
-    } else {
-        bytes = data.toUtf8();
-    }
-
-    if (checksumType > 0) {
-        QByteArray checksum = ChecksumHelper::calculate(bytes, (ChecksumHelper::ChecksumType)checksumType);
-        bytes.append(checksum);
-    }
-
-    // Append line ending based on mode (applies to both TXT and HEX)
-    appendLineEnding(bytes, m_lineEndingMode);
+    const QByteArray payload = PayloadCodec::decode(data, isHex);
+    const QByteArray checksum = ChecksumHelper::calculate(payload, static_cast<ChecksumHelper::ChecksumType>(checksumType));
+    const QByteArray bytes = PayloadCodec::frame(payload, isHex, m_lineEndingMode, checksum);
 
     m_serialPort->write(bytes);
     m_serialPort->flush();
 
-    emit dataReceived(data, bytes.toHex(' ').toUpper(), true, isHex);
+    emit dataReceived(QString::fromUtf8(bytes), bytes.toHex(' ').toUpper(), true, isHex);
 }
 
 void SerialManager::readData()
@@ -188,26 +114,6 @@ void SerialManager::readData()
     if (data.isEmpty()) return;
 
     emit dataReceived(QString::fromUtf8(data), data.toHex(' ').toUpper(), false);
-}
-
-void SerialManager::setStayOnTop(QQuickWindow *window, bool onTop)
-{
-    if (!window) return;
-
-#ifdef Q_OS_WIN
-    HWND hwnd = (HWND)window->winId();
-    if (onTop) {
-        SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    } else {
-        SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-    }
-#else
-    if (onTop) {
-        window->setFlags(window->flags() | Qt::WindowStaysOnTopHint);
-    } else {
-        window->setFlags(window->flags() & ~Qt::WindowStaysOnTopHint);
-    }
-#endif
 }
 
 void SerialManager::copyToClipboard(const QString &text)

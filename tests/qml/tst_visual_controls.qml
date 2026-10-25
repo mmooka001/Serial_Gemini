@@ -164,4 +164,16 @@ TestCase {
         mouseClick(toggle, toggle.width / 2, toggle.height / 2)
         compare(toggle.selected, false)
     }
+    function test_selectedSegmentCannotToggleItselfOff() {
+        var first = findChild(modes, "segment0")
+        var second = findChild(modes, "segment1")
+        mouseClick(modes, 40, 16)
+        mouseClick(modes, 40, 16)
+        compare(modes.currentIndex, 0)
+        compare(first.selected, true)
+        compare(second.selected, false)
+        modes.currentIndex = 1
+        compare(first.selected, false)
+        compare(second.selected, true)
+    }
 }

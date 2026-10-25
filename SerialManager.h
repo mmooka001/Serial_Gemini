@@ -8,7 +8,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 
-#include <QQuickWindow>
+#include "PayloadCodec.h"
 
 class SerialManager : public QObject
 {
@@ -41,7 +41,8 @@ public:
     Q_INVOKABLE void closePort();
     Q_INVOKABLE void sendData(const QString &data, bool isHex);
     Q_INVOKABLE void sendDataWithChecksum(const QString &data, bool isHex, int checksumType);
-    Q_INVOKABLE void setStayOnTop(QQuickWindow *window, bool onTop);
+    Q_INVOKABLE bool isHexInput(const QString &text) const { return PayloadCodec::isHex(text); }
+    Q_INVOKABLE QString textToHex(const QString &text) const { return text.toUtf8().toHex(' ').toUpper(); }
     Q_INVOKABLE void copyToClipboard(const QString &text);
 
 signals:

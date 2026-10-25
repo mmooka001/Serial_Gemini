@@ -23,7 +23,8 @@ Window {
     }
     title: qsTr("MySerial Gemini")
     color: "transparent"
-    flags: Qt.Window | Qt.FramelessWindowHint
+    property bool stayOnTop: false
+    flags: Qt.Window | Qt.FramelessWindowHint | (stayOnTop ? Qt.WindowStaysOnTopHint : 0)
 
     readonly property bool isNarrow: width < 1100
     readonly property bool isUltraNarrow: width < 900
@@ -79,19 +80,19 @@ Window {
     readonly property int maxSidePanelWidth: Math.max(200, bodyBg.width - panelGap * 3 - minimumCenterWidth)
     readonly property int effectiveSidePanelWidth: Math.max(200, Math.min(500, Math.min(sidePanelWidth, maxSidePanelWidth)))
     property int sendPanelHeight: 180
-    readonly property int minSendPanelHeight: 130
+    readonly property int minSendPanelHeight: 160
     readonly property int minTerminalHeight: 160
     readonly property int terminalSendGap: 15
     readonly property int maxSendPanelHeight: Math.max(minSendPanelHeight, centerColumn.height - minTerminalHeight - terminalSendResizeHandle.height)
 
     // 阈值包含控件实际宽度、左右内边距和行间距，避免窄窗口把控件裁成半截。
-    readonly property bool showChecksumControl: sendCard.width >= 500
-    readonly property bool showAutoControl: sendCard.width >= 410
-    readonly property bool showTimeControl: sendCard.width >= 355
-    readonly property bool showTxModeControl: sendCard.width >= 310
-    readonly property bool showRxModeControl: sendCard.width >= 200
+    readonly property bool showChecksumControl: sendCard.width >= 550
+    readonly property bool showAutoControl: sendCard.width >= 450 || autoSending
+    readonly property bool showTimeControl: sendCard.width >= (autoSending ? 449 : 385)
+    readonly property bool showTxModeControl: sendCard.width >= (autoSending ? 374 : 310)
+    readonly property bool showRxModeControl: sendCard.width >= (autoSending ? 264 : 200)
     property bool globalRxHex: true 
-    property bool globalTxHex: true 
+    property alias globalTxHex: inputSender.hexMode
     property bool globalTimestamp: true
     property int currentPageIndex: 0
     property bool autoScroll: true
@@ -126,10 +127,10 @@ Window {
     property var sendHistory: []
     property int historyIndex: -1  // -1 = current input, 0+ = history position
 
-    // Auto-send
-    property bool autoSending: false
+    readonly property bool autoSending: inputSender.running
+    property alias sendInterval: inputSender.interval
 
-    // Loop send / shared interval for command loop and auto-send
+    // 指令循环持有自己的队列、间隔和运行状态。
     property var loopCmds: []
     property int loopIndex: -1
     property bool loopSending: false
@@ -140,19 +141,12 @@ Window {
         portList = serialManager.availablePorts()
     }
 
-    Timer {
-        id: autoSendTimer
-        interval: loopInterval
-        repeat: true
-        onTriggered: {
-            if (sendInput.text.length > 0) {
-                if (checksumCombo.currentIndex > 0) {
-                    serialManager.sendDataWithChecksum(sendInput.text, globalTxHex, checksumCombo.currentIndex)
-                } else {
-                    serialManager.sendData(sendInput.text, globalTxHex)
-                }
-            }
-        }
+    SendController {
+        id: inputSender
+        backend: serialManager
+        inputText: sendInput.text
+        checksumType: checksumCombo.currentIndex
+        onInputConverted: (hex) => sendInput.text = hex
     }
 
     Timer {
@@ -182,6 +176,7 @@ Window {
 
     function startLoopSend() {
         if (loopSending) return
+        if (!serialManager.isOpen) { inputSender.notice = "请先连接串口。"; return }
         var cmds = []
         for (var key in checkedMap) {
             var parts = key.split(":")
@@ -192,7 +187,8 @@ Window {
                 cmds.push({ payload: cmd.payload, isHex: cmd.isHex || false })
             }
         }
-        if (cmds.length === 0) return
+        if (cmds.length === 0) { inputSender.notice = "请先勾选要循环发送的指令。"; return }
+        inputSender.notice = ""
         loopCmds = cmds
         loopIndex = 0
         loopSending = true
@@ -205,12 +201,11 @@ Window {
     property var checkedMap: ({})
 
     function sendCommand(payload, isHex) {
-        if (!serialManager.isOpen) return
-        serialManager.sendData(payload, isHex)
+        return inputSender.sendPreset(payload, isHex)
     }
 
     function doSend() {
-        if (sendInput.text.length === 0) return
+        if (!inputSender.sendOnce()) return
         // Record to history
         var h = sendHistory.slice()
         h.unshift(sendInput.text)
@@ -218,11 +213,6 @@ Window {
         sendHistory = h
         historyIndex = -1
 
-        if (checksumCombo.currentIndex > 0) {
-            serialManager.sendDataWithChecksum(sendInput.text, globalTxHex, checksumCombo.currentIndex)
-        } else {
-            serialManager.sendData(sendInput.text, globalTxHex)
-        }
     }
 
     function navigateHistory(direction) {
@@ -261,6 +251,8 @@ Window {
         theme: appTheme
     }
 
+    component IntervalControl: IntervalButton { theme: appTheme }
+
     component ConfigComboBox: GlassComboBox {
         backdropItem: sidePanelCard
         dark: window.isDark
@@ -285,6 +277,23 @@ Window {
         id: rootRect
         anchors.fill: parent
         clip: true
+
+        MouseArea {
+            anchors.fill: parent
+            z: 10000
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onPressed: (mouse) => {
+                var editor = window.activeFocusItem
+                if (editor && editor !== rootRect) {
+                    var local = editor.mapFromItem(rootRect, mouse.x, mouse.y)
+                    if (!editor.contains(local)) {
+                        if (typeof editor.deselect === "function") editor.deselect()
+                        rootRect.forceActiveFocus()
+                    }
+                }
+                mouse.accepted = false
+            }
+        }
 
         Rectangle {
             id: leftRail
@@ -507,7 +516,7 @@ Window {
                         width: 40
                         height: 42
                         flat: true
-                        property bool isTop: false
+                        readonly property bool isTop: window.stayOnTop
                         contentItem: Text { 
                             text: "\uE718"
                             font.family: "Segoe Fluent Icons"
@@ -524,8 +533,7 @@ Window {
                             radius: 8
                         }
                         onClicked: {
-                            pinBtn.isTop = !pinBtn.isTop
-                            serialManager.setStayOnTop(window, pinBtn.isTop)
+                            window.stayOnTop = !window.stayOnTop
                         }
                     }
 
@@ -550,7 +558,7 @@ Window {
                             radius: 10
                         }
                         onClicked: {
-                            themePopup.open()
+                            themePopup.opened ? themePopup.close() : themePopup.open()
                         }
                     }
 
@@ -918,7 +926,7 @@ Window {
                                                     selectByMouse: true
                                                     readOnly: true
                                                     onEditingFinished: {
-                                                        commandStore.updateGroupName(index, text)
+                                                        if (text !== group.name) commandStore.updateGroupName(index, text)
                                                         readOnly = true
                                                     }
                                                     MouseArea {
@@ -1066,7 +1074,7 @@ Window {
                                                                     border.width: parent.activeFocus ? 1 : 0
                                                                 }
                                                                 selectByMouse: true
-                                                                onEditingFinished: commandStore.updateCommand(groupIdx, cmdIdx, text, modelData.payload)
+                                                                onEditingFinished: if (text !== modelData.name) commandStore.updateCommand(groupIdx, cmdIdx, text, modelData.payload)
                                                             }
 
                                                             // HEX/TXT badge
@@ -1129,7 +1137,7 @@ Window {
                                                                 border.width: 1
                                                             }
                                                             selectByMouse: true
-                                                            onEditingFinished: commandStore.updateCommand(groupIdx, cmdIdx, modelData.name, text)
+                                                            onEditingFinished: if (text !== modelData.payload) commandStore.updateCommand(groupIdx, cmdIdx, modelData.name, text)
                                                         }
                                                     }
                                                 }
@@ -1154,38 +1162,14 @@ Window {
                                     Layout.fillWidth: true
                                     spacing: 3
                                     clip: true
-                                    // 宽度足够时：循环按钮动态填充空白，把导入/导出顶到右边；不足171px时隐藏导入/导出
-                                    property bool showImportExport: width >= 171
+                                    property bool showImportExport: width >= 230
                                     property int importExportButtonWidth: showImportExport ? 30 : 0
 
-                                    Rectangle {
-                                        Layout.preferredWidth: 48
-                                        Layout.preferredHeight: 24
-                                        radius: 6
-                                        color: clInput
-                                        border.color: clBorder
-                                        border.width: 1
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            anchors.leftMargin: 4
-                                            anchors.rightMargin: 4
-                                            spacing: 2
-                                            Text { text: "ms"; color: appTheme.muted; font.pixelSize: 9 }
-                                            TextInput {
-                                                Layout.fillWidth: true
-                                                color: whiteText
-                                                font.pixelSize: 11
-                                                font.family: "Consolas"
-                                                text: loopInterval.toString()
-                                                validator: IntValidator { bottom: 50; top: 10000 }
-                                                horizontalAlignment: TextInput.AlignHCenter
-                                                onEditingFinished: {
-                                                    var v = parseInt(text)
-                                                    if (!isNaN(v) && v >= 50 && v <= 10000) loopInterval = v
-                                                    else text = loopInterval.toString()
-                                                }
-                                            }
-                                        }
+                                    IntervalControl {
+                                        Layout.preferredWidth: 88
+                                        Layout.preferredHeight: 28
+                                        interval: loopInterval
+                                        onIntervalEdited: (milliseconds) => loopInterval = milliseconds
                                     }
 
                                     UiButton {
@@ -1527,15 +1511,22 @@ Window {
                                 
                                 // 自动滚动开关
                                 UiButton {
+                                    visible: terminalCard.width >= 450
+                                    text: "时间戳"
+                                    selected: globalTimestamp
+                                    hint: "显示消息时间戳"
+                                    onClicked: globalTimestamp = !globalTimestamp
+                                }
+                                UiButton {
                                     id: scrollToggle
-                                    text: autoScroll ? "跟随" : "已锁定"
+                                    text: terminalCard.width >= 350 ? (autoScroll ? "跟随" : "已锁定") : ""
                                     glyph: autoScroll ? "\uE74B" : "\uE72E"
                                     selected: !autoScroll
                                     hint: autoScroll ? "自动跟随新数据，点击锁定位置" : "滚动已锁定，点击恢复跟随"
                                     onClicked: autoScroll = !autoScroll
                                 }
 
-                                UiButton { text: "清除"
+                                UiButton { text: terminalCard.width >= 350 ? "清除" : ""
                                  glyph: "\uE74D"
                                  hint: "清空终端显示"
                                  onClicked: { terminalModel.clear() } }
@@ -1750,7 +1741,7 @@ Window {
 
                                 Item {
                                     id: timeControl
-                                    Layout.preferredWidth: showTimeControl ? 45 : 0
+                                    Layout.preferredWidth: showTimeControl ? 88 : 0
                                     Layout.minimumWidth: 0
                                     Layout.preferredHeight: 30
                                     opacity: showTimeControl ? 1 : 0
@@ -1758,18 +1749,16 @@ Window {
                                     clip: true
                                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-                                    UiButton {
+                                    IntervalControl {
                                         anchors.fill: parent
-                                        text: "时间"
-                                        selected: globalTimestamp
-                                        hint: "显示消息时间戳"
-                                        onClicked: globalTimestamp = !globalTimestamp
+                                        interval: sendInterval
+                                        onIntervalEdited: (milliseconds) => sendInterval = milliseconds
                                     }
                                 }
 
                                 Item {
                                     id: autoControl
-                                    Layout.preferredWidth: showAutoControl ? 54 : 0
+                                    Layout.preferredWidth: showAutoControl ? 64 : 0
                                     Layout.minimumWidth: 0
                                     Layout.preferredHeight: 30
                                     opacity: showAutoControl ? 1 : 0
@@ -1779,13 +1768,12 @@ Window {
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                     UiButton {
                                         anchors.fill: parent
-                                        text: autoSending ? "停止" : "定时"
+                                        text: autoSending ? "停止" : "循环"
                                         kind: autoSending ? "danger" : "tonal"
                                         selected: autoSending
                                         hint: autoSending ? "停止定时发送" : "按设定间隔重复发送"
                                         onClicked: {
-                                            if (autoSending) { autoSendTimer.stop(); autoSending = false }
-                                            else { autoSendTimer.start(); autoSending = true }
+                                            inputSender.toggleRepeat()
                                         }
                                     }
                                 }
@@ -1810,6 +1798,19 @@ Window {
                                         font.pixelSize: 11
                                     }
                                 }
+                            }
+                            Text {
+                                Layout.fillWidth: true
+                                visible: text.length > 0
+                                text: inputSender.notice || (inputSender.needsConversion
+                                      ? "检测到文本，发送时会转为 HEX（UTF-8），不会切换发送模式。"
+                                      : (!globalTxHex && settingsStore.lineEndingMode > 0
+                                         ? "TXT 行尾：" + ["无", "LF (0A)", "CR (0D)", "CRLF (0D 0A)"][settingsStore.lineEndingMode] + "，可在设置中改为“无”。" : ""))
+                                color: inputSender.needsConversion ? appTheme.warning : clText
+                                font.pixelSize: 11
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
                             }
                             Rectangle {
                                 Layout.fillWidth: true
@@ -2266,6 +2267,13 @@ Window {
 
     Connections {
         target: serialManager
+        function onIsOpenChanged() {
+            if (!serialManager.isOpen) {
+                loopSending = false
+                loopIndex = -1
+                loopTimer.stop()
+            }
+        }
         function onDataReceived(ascii, hex, isSent, isHex) {
             terminalModel.append({ "contentAscii": ascii, "contentHex": hex, "isHexMode": isSent ? isHex : globalRxHex, "isSent": isSent, "timestamp": Qt.formatDateTime(new Date(), "hh:mm:ss.zzz") })
             if (autoScroll) {
@@ -2309,7 +2317,7 @@ Window {
         padding: 12
         modal: false
         focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
         background: Rectangle {
             color: appTheme.raised
             radius: 14
