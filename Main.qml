@@ -68,6 +68,7 @@ Window {
     // 左侧面板统一状态：-1=全关 0=连接 1=指令 2=码表 3=设置（互斥）
     property int sidePanel: 0
     property int sidePanelWidth: settingsStore.sidePanelWidth
+    property bool sidePanelDragActive: false
     property int clickOffset: 0           // Click animation offset
 
     // Layout constants
@@ -78,7 +79,8 @@ Window {
 
     // Clamp panels so center never collapses
     readonly property int maxSidePanelWidth: Math.max(200, bodyBg.width - panelGap * 3 - minimumCenterWidth)
-    readonly property int effectiveSidePanelWidth: Math.max(200, Math.min(500, Math.min(sidePanelWidth, maxSidePanelWidth)))
+    readonly property int collapsePanelWidth: 180
+    readonly property int effectiveSidePanelWidth: Math.max(collapsePanelWidth, Math.min(sidePanelWidth, maxSidePanelWidth))
     property int sendPanelHeight: 180
     readonly property int minSendPanelHeight: 160
     readonly property int minTerminalHeight: 160
@@ -251,7 +253,7 @@ Window {
         theme: appTheme
     }
 
-    component IntervalControl: IntervalButton { theme: appTheme }
+    component IntervalControl: IntervalField { theme: appTheme }
 
     component ConfigComboBox: GlassComboBox {
         backdropItem: sidePanelCard
@@ -278,22 +280,7 @@ Window {
         anchors.fill: parent
         clip: true
 
-        MouseArea {
-            anchors.fill: parent
-            z: 10000
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onPressed: (mouse) => {
-                var editor = window.activeFocusItem
-                if (editor && editor !== rootRect) {
-                    var local = editor.mapFromItem(rootRect, mouse.x, mouse.y)
-                    if (!editor.contains(local)) {
-                        if (typeof editor.deselect === "function") editor.deselect()
-                        rootRect.forceActiveFocus()
-                    }
-                }
-                mouse.accepted = false
-            }
-        }
+        FocusDismissLayer { focusRoot: rootRect }
 
         Rectangle {
             id: leftRail
@@ -645,7 +632,7 @@ Window {
                     Layout.preferredWidth: sidePanel < 0 ? 0 : effectiveSidePanelWidth
                     Layout.minimumWidth: Layout.preferredWidth
                     Layout.maximumWidth: Layout.preferredWidth
-                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                    Behavior on Layout.preferredWidth { enabled: !sidePanelDragActive; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     Layout.fillHeight: true
                     visible: sidePanel >= 0 || width > 1
                     color: clToolSurface
@@ -1445,38 +1432,34 @@ Window {
                 // 整条模块间隙均可拖动，提示柄位于间隙中央。
                 Item {
                     Layout.preferredWidth: sidePanel < 0 ? 0 : panelGap
-                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                    Behavior on Layout.preferredWidth { enabled: !sidePanelDragActive; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     Layout.fillHeight: true
                     visible: sidePanel >= 0 || width > 1
 
-                    MouseArea {
+                    PanelDivider {
                         id: sidePanelResizeHandle
                         anchors.fill: parent
                         enabled: sidePanel >= 0
-                        cursorShape: Qt.SizeHorCursor
-                        hoverEnabled: true
-                        property real dragStartX: 0
+                        accentColor: clHighlight
                         property int startWidth: 0
-                        onPressed: (mouse) => {
-                            dragStartX = mapToItem(null, mouse.x, mouse.y).x
-                            startWidth = effectiveSidePanelWidth
+                        property int savedWidth: 0
+                        onResizeStarted: {
+                            startWidth = sidePanelCard.width
+                            savedWidth = sidePanelWidth
+                            sidePanelDragActive = true
                         }
-                        onPositionChanged: (mouse) => {
-                            if (pressed) {
-                                var delta = mapToItem(null, mouse.x, mouse.y).x - dragStartX
-                                sidePanelWidth = Math.max(200, Math.min(maxSidePanelWidth, Math.min(500, startWidth + delta)))
-                                settingsStore.sidePanelWidth = sidePanelWidth
+                        onResizeMoved: (delta) => {
+                            var requestedWidth = startWidth + delta
+                            if (requestedWidth <= collapsePanelWidth) {
+                                sidePanel = -1
+                                sidePanelWidth = savedWidth
+                            } else {
+                                sidePanelWidth = Math.round(Math.min(maxSidePanelWidth, requestedWidth))
                             }
                         }
-
-                        Rectangle {
-                            anchors.centerIn: parent
-                            width: 3
-                            height: Math.min(64, parent.height * 0.25)
-                            radius: 1.5
-                            color: clHighlight
-                            opacity: sidePanelResizeHandle.pressed ? 0.9 : (sidePanelResizeHandle.containsMouse ? 0.5 : 0)
-                            Behavior on opacity { NumberAnimation { duration: 120 } }
+                        onResizeFinished: {
+                            sidePanelDragActive = false
+                            if (sidePanel >= 0) settingsStore.sidePanelWidth = sidePanelWidth
                         }
                     }
                 }
@@ -1651,21 +1634,15 @@ Window {
                         Layout.fillWidth: true
                         Layout.preferredHeight: terminalSendGap
 
-                        MouseArea {
+                        PanelDivider {
                             id: terminalSendResizeMouse
                             anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.SizeVerCursor
-                            property real pressY: 0
+                            vertical: false
+                            accentColor: clHighlight
                             property int startHeight: 0
-                            onPressed: {
-                                pressY = mouseY
-                                startHeight = sendPanelHeight
-                            }
-                            onPositionChanged: {
-                                if (pressed) {
-                                    sendPanelHeight = Math.max(minSendPanelHeight, Math.min(maxSendPanelHeight, startHeight - (mouseY - pressY)))
-                                }
+                            onResizeStarted: startHeight = sendCard.height
+                            onResizeMoved: (delta) => {
+                                sendPanelHeight = Math.max(minSendPanelHeight, Math.min(maxSendPanelHeight, startHeight - delta))
                             }
                         }
                     }

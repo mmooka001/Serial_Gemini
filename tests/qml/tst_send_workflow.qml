@@ -27,14 +27,14 @@ TestCase {
         onInputConverted: (hex) => inputText = hex
     }
     property int commandInterval: 500
-    App.IntervalButton {
+    App.IntervalField {
         id: manualInterval
         theme: theme
         x: 20; y: 300
         interval: sender.interval
         onIntervalEdited: (milliseconds) => sender.interval = milliseconds
     }
-    App.IntervalButton {
+    App.IntervalField {
         id: commandIntervalButton
         theme: theme
         x: 180; y: 300
@@ -52,8 +52,6 @@ TestCase {
         backend.count = 0
         backend.lastPayload = ""
         testCase.commandInterval = 500
-        findChild(manualInterval, "intervalPopup").close()
-        findChild(commandIntervalButton, "intervalPopup").close()
     }
     function test_asciiConvertsOnceWithoutChangingHexMode() {
         sender.inputText = "AT+RST"
@@ -125,11 +123,9 @@ TestCase {
         compare(backend.count, count)
     }
     function test_intervalEntryCommitsAndIsIndependent() {
-        mouseClick(manualInterval, 30, 12)
-        var popup = findChild(manualInterval, "intervalPopup")
-        tryCompare(popup, "opened", true)
         var field = findChild(manualInterval, "millisecondsInput")
-        compare(field.selectedText, "500")
+        mouseClick(field, field.width / 2, field.height / 2)
+        tryCompare(field, "selectedText", "500")
         field.remove(0, field.length)
         field.insert(0, "1250")
         keyClick(Qt.Key_Return)
@@ -138,16 +134,29 @@ TestCase {
         commandIntervalButton.intervalEdited(900)
         compare(sender.interval, 1250)
         compare(testCase.commandInterval, 900)
+        compare(findChild(manualInterval, "intervalPopup"), null)
     }
-    function test_intervalDismissOutsideKeepsValue() {
-        mouseClick(manualInterval, 30, 12)
-        var popup = findChild(manualInterval, "intervalPopup")
-        tryCompare(popup, "opened", true)
+    function test_intervalBlurCommitsAndInvalidValueReverts() {
         var field = findChild(manualInterval, "millisecondsInput")
+        field.forceActiveFocus()
         field.remove(0, field.length)
         field.insert(0, "800")
-        mouseClick(testCase, 490, 390)
-        tryCompare(popup, "opened", false)
+        commandIntervalButton.forceActiveFocus()
+        compare(sender.interval, 800)
+        field.forceActiveFocus()
+        field.remove(0, field.length)
+        field.insert(0, "9")
+        commandIntervalButton.forceActiveFocus()
+        compare(sender.interval, 800)
+        compare(field.text, "800")
+    }
+    function test_intervalEscapeCancelsEdit() {
+        var field = findChild(manualInterval, "millisecondsInput")
+        field.forceActiveFocus()
+        field.remove(0, field.length)
+        field.insert(0, "900")
+        keyClick(Qt.Key_Escape)
         compare(sender.interval, 500)
+        compare(field.text, "500")
     }
 }
