@@ -37,6 +37,25 @@ Rectangle {
     Item {
         anchors.fill: parent
         z: 10
+        // 名称和正文的滚轮统一交给指令列表，避免内层 ScrollView 吞掉事件。
+        WheelHandler {
+            target: null
+            enabled: card.scrollContainer !== null && card.scrollContainer.interactive && !card.reorderHeld
+            onWheel: (event) => {
+                var delta = event.pixelDelta.y
+                if (delta === 0) delta = event.angleDelta.y / 120 * 48
+                if (delta === 0) {
+                    event.accepted = false
+                    return
+                }
+                var view = card.scrollContainer
+                view.cancelFlick()
+                var minimum = view.originY
+                var maximum = minimum + Math.max(0, view.contentHeight - view.height)
+                view.contentY = Math.max(minimum, Math.min(maximum, view.contentY - delta))
+                event.accepted = true
+            }
+        }
         PointHandler {
             id: pointer
             target: null

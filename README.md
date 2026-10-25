@@ -11,13 +11,13 @@ Gemini Serial 是一款使用 **Qt 6、QML 和 C++17** 开发的现代化串口�
 
 ## 界面预览
 
-### 浅色主题
+### 最大化布局
 
-![Gemini Serial 浅色主题](docs/images/gemini-serial-light.png)
+![Gemini Serial v0.2.1 最大化布局](docs/images/gemini-serial-v0.2.1-maximized.png)
 
-### 深色主题
+### 窗口布局
 
-![Gemini Serial 深色主题](docs/images/gemini-serial-dark.png)
+![Gemini Serial v0.2.1 窗口布局](docs/images/gemini-serial-v0.2.1-windowed.png)
 
 ## 功能亮点
 
@@ -132,7 +132,7 @@ powershell -ExecutionPolicy Bypass -File .\tests\send_toolbar_layout_test.ps1
 ./scripts/package-windows.ps1 -QtRoot D:/Qt/6.11.0/mingw_64 -CompilerBin D:/Qt/Tools/mingw1310_64/bin -NinjaExecutable E:/DevTools/ninja-win/ninja.exe
 ```
 
-脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。打包说明见 [v0.2.0 更新记录](docs/RELEASE_NOTES_v0.2.0.md)。
+脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。最新发布说明见 [v0.2.1 更新记录](docs/RELEASE_NOTES_v0.2.1.md)。
 
 ## 参与贡献
 
