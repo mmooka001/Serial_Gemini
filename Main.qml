@@ -957,177 +957,37 @@ Window {
                                         ColumnLayout {
                                             Layout.fillWidth: true
                                             visible: groupExpanded
-                                            spacing: 2
+                                            spacing: 6
 
                                             Repeater {
                                                 model: group.commands
 
-                                                delegate: Rectangle {
+                                                delegate: CommandCard {
+                                                    required property var modelData
+                                                    required property int index
                                                     Layout.fillWidth: true
-                                                    height: 50
-                                                    radius: 8
-                                                    color: cmdMouse.containsMouse ? clInput : "transparent"
-                                                    border.color: cmdMouse.containsMouse ? clHighlight : clBorder
-                                                    border.width: 1
-
+                                                    theme: appTheme
+                                                    commandName: modelData.name
+                                                    payload: modelData.payload || ""
+                                                    hexMode: modelData.isHex || false
+                                                    loopSelected: checkedMap[mapKey] === true
                                                     property int groupIdx: parent.parent.groupIndex
                                                     property int cmdIdx: index
                                                     property string mapKey: groupIdx + ":" + cmdIdx
-                                                    property bool isHexMode: {
-                                                        var g = commandStore.groups
-                                                        if (groupIdx >= 0 && groupIdx < g.length) {
-                                                            var cmds = g[groupIdx].commands || []
-                                                            if (cmdIdx >= 0 && cmdIdx < cmds.length)
-                                                                return cmds[cmdIdx].isHex || false
-                                                        }
-                                                        return false
+                                                    onEdited: (name, payload) => commandStore.updateCommand(groupIdx, cmdIdx, name, payload)
+                                                    onSendRequested: (payload, hex) => window.sendCommand(payload, hex)
+                                                    onFormatToggled: (name, payload) => commandStore.updateCommand(groupIdx, cmdIdx, name, payload, !hexMode)
+                                                    onLoopToggled: {
+                                                        var selected = Object.assign({}, checkedMap)
+                                                        if (loopSelected) delete selected[mapKey]
+                                                        else selected[mapKey] = true
+                                                        checkedMap = selected
                                                     }
-
-                                                    MouseArea {
-                                                        id: cmdMouse
-                                                        anchors.fill: parent
-                                                        hoverEnabled: true
-                                                        acceptedButtons: Qt.NoButton
-                                                    }
-
-                                                    // Checkbox: vertically centered in the whole card
-                                                    Item {
-                                                        id: checkboxArea
-                                                        width: 28
-                                                        anchors.left: parent.left
-                                                        anchors.top: parent.top
-                                                        anchors.bottom: parent.bottom
-                                                        anchors.leftMargin: 4
-
-                                                        Rectangle {
-                                                            width: 16
-                                                            height: 16
-                                                            radius: 4
-                                                            anchors.centerIn: parent
-                                                            color: cmdCheckbox.checked ? clHighlight : clInput
-                                                            border.color: cmdCheckbox.checked ? clHighlight : clBorder
-                                                            border.width: 1
-
-                                                            Text {
-                                                                visible: cmdCheckbox.checked
-                                                                anchors.centerIn: parent
-                                                                text: "✓"
-                                                                color: "white"
-                                                                font.pixelSize: 11
-                                                                font.bold: true
-                                                            }
-
-                                                            MouseArea {
-                                                                id: cmdCheckbox
-                                                                property bool checked: checkedMap[mapKey] === true
-                                                                anchors.fill: parent
-                                                                cursorShape: Qt.PointingHandCursor
-                                                                onClicked: {
-                                                                    var m = Object.assign({}, checkedMap)
-                                                                    if (!checked) m[mapKey] = true
-                                                                    else delete m[mapKey]
-                                                                    checkedMap = m
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-
-                                                    ColumnLayout {
-                                                        anchors.left: checkboxArea.right
-                                                        anchors.right: parent.right
-                                                        anchors.top: parent.top
-                                                        anchors.bottom: parent.bottom
-                                                        anchors.leftMargin: 2
-                                                        anchors.rightMargin: 4
-                                                        anchors.topMargin: 4
-                                                        anchors.bottomMargin: 4
-                                                        spacing: 2
-
-                                                        // Row 1: name + HEX/TXT + send + delete
-                                                        RowLayout {
-                                                            Layout.fillWidth: true
-                                                            spacing: 4
-
-                                                            TextField {
-                                                                Layout.preferredWidth: parent.width * 0.35
-                                                                Layout.fillWidth: true
-                                                                text: modelData.name
-                                                                color: whiteText
-                                                                font.pixelSize: 10
-                                                                font.bold: true
-                                                                padding: 2
-                                                                background: Rectangle {
-                                                                    radius: 3
-                                                                    color: parent.activeFocus ? clInput : "transparent"
-                                                                    border.color: parent.activeFocus ? clHighlight : "transparent"
-                                                                    border.width: parent.activeFocus ? 1 : 0
-                                                                }
-                                                                selectByMouse: true
-                                                                onEditingFinished: if (text !== modelData.name) commandStore.updateCommand(groupIdx, cmdIdx, text, modelData.payload)
-                                                            }
-
-                                                            // HEX/TXT badge
-                                                            UiButton {
-                                                                Layout.preferredWidth: 32
-                                                                Layout.preferredHeight: 22
-                                                                leftPadding: 4
-                                                                rightPadding: 4
-                                                                text: isHexMode ? "HEX" : "TXT"
-                                                                font.pixelSize: 8
-                                                                kind: "tonal"
-                                                                hint: "切换 TXT / HEX"
-                                                                onClicked: commandStore.setCommandHex(groupIdx, cmdIdx, !isHexMode)
-                                                            }
-
-                                                            // Send
-                                                            UiButton {
-                                                                Layout.preferredWidth: 32
-                                                                Layout.preferredHeight: 22
-                                                                leftPadding: 4
-                                                                rightPadding: 4
-                                                                text: "发送"
-                                                                font.pixelSize: 8
-                                                                onClicked: window.sendCommand(modelData.payload, isHexMode)
-                                                            }
-
-                                                            // Delete
-                                                            UiButton {
-                                                                glyph: "\uE74D"
-                                                                kind: "danger"
-                                                                hint: "删除指令"
-                                                                Layout.preferredWidth: 22
-                                                                Layout.preferredHeight: 22
-                                                                leftPadding: 3
-                                                                rightPadding: 3
-                                                                onClicked: {
-                                                                    deleteType = "command"
-                                                                    targetGroupIdx = groupIdx
-                                                                    targetCmdIdx = cmdIdx
-                                                                    deleteConfirmOverlay.visible = true
-                                                                }
-                                                            }
-                                                        }
-
-                                                        // Row 2: payload (full width, bigger)
-                                                        TextField {
-                                                            Layout.fillWidth: true
-                                                            Layout.fillHeight: true
-                                                            text: modelData.payload || ""
-                                                            color: clText
-                                                            font.family: "Consolas"
-                                                            font.pixelSize: 11
-                                                            padding: 4
-                                                            placeholderText: "payload"
-                                                            placeholderTextColor: grayPlaceholder
-                                                            background: Rectangle {
-                                                                radius: 3
-                                                                color: parent.activeFocus ? clInput : clCard
-                                                                border.color: parent.activeFocus ? clHighlight : clBorder
-                                                                border.width: 1
-                                                            }
-                                                            selectByMouse: true
-                                                            onEditingFinished: if (text !== modelData.payload) commandStore.updateCommand(groupIdx, cmdIdx, modelData.name, text)
-                                                        }
+                                                    onDeleteRequested: {
+                                                        deleteType = "command"
+                                                        targetGroupIdx = groupIdx
+                                                        targetCmdIdx = cmdIdx
+                                                        deleteConfirmOverlay.visible = true
                                                     }
                                                 }
                                             }

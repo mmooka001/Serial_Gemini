@@ -59,7 +59,8 @@ public:
         }
     }
 
-    Q_INVOKABLE void updateCommand(int groupIndex, int cmdIndex, const QString &name, const QString &payload) {
+    Q_INVOKABLE void updateCommand(int groupIndex, int cmdIndex, const QString &name, const QString &payload,
+                                   const QVariant &isHex = QVariant()) {
         if (groupIndex < 0 || groupIndex >= m_groups.size()) return;
         QVariantMap group = m_groups[groupIndex].toMap();
         QVariantList commands = group["commands"].toList();
@@ -67,6 +68,7 @@ public:
             QVariantMap cmd = commands[cmdIndex].toMap();
             cmd["name"] = name;
             cmd["payload"] = payload;
+            if (isHex.isValid()) cmd["isHex"] = isHex.toBool();
             commands[cmdIndex] = cmd;
             group["commands"] = commands;
             m_groups[groupIndex] = group;
