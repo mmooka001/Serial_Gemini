@@ -65,7 +65,7 @@ Window {
     // Layout constants
     readonly property int panelGap: 12
     readonly property int moduleRadius: 14
-    readonly property int leftRailWidth: 52
+    readonly property int leftRailWidth: 56
     readonly property int minimumCenterWidth: 200
 
     // Clamp panels so center never collapses
@@ -277,7 +277,6 @@ Window {
     Item {
         id: rootRect
         anchors.fill: parent
-        anchors.margins: window.edgeToEdge ? 8 : 0
         clip: true
 
         Rectangle {
@@ -292,7 +291,7 @@ Window {
             // 软件图标的单色轮廓版，按可见图形的光学中心对齐。
             Item {
                 width: parent.width
-                height: 48
+                height: titleBar.height
                 SerialLogo {
                     anchors.centerIn: parent
                     width: 32
@@ -409,12 +408,12 @@ Window {
             anchors.top: titleBar.bottom
             anchors.bottom: statusBar.top
             anchors.right: parent.right
-            anchors.leftMargin: window.edgeToEdge ? 0 : 4
-            anchors.rightMargin: window.edgeToEdge ? 0 : 8
-            anchors.topMargin: window.edgeToEdge ? 0 : 6
-            anchors.bottomMargin: window.edgeToEdge ? 0 : 4
+            anchors.leftMargin: 0
+            anchors.rightMargin: 8
+            anchors.topMargin: 6
+            anchors.bottomMargin: 4
             color: clWorkspace
-            radius: window.edgeToEdge ? 0 : 20
+            radius: 20
         }
 
         Rectangle {
