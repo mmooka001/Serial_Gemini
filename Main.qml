@@ -30,19 +30,26 @@ Window {
     readonly property bool edgeToEdge: visibility === Window.Maximized || visibility === Window.FullScreen
 
     property int themeMode: settingsStore.themeMode
-    readonly property bool isDark: themeMode !== 5
+    readonly property bool isDark: appTheme.dark
 
     // 磨砂层染色随主题切换（深色=暗 tint，浅色=白 tint）
     function updateAcrylicTint() {
-        if (themeMode === 5) acrylic.setTint(1.0, 1.0, 1.0, 0.5)
-        else acrylic.setTint(0.06, 0.06, 0.08, 0.5)
+        var tint = isDark ? appTheme.workspace : appTheme.surface
+        acrylic.setTint(tint.r, tint.g, tint.b, isDark ? 0.55 : 0.65)
     }
-    onThemeModeChanged: updateAcrylicTint()
+    onIsDarkChanged: if (layoutReady) updateAcrylicTint()
 
     AppTheme {
         id: appTheme
         mode: window.themeMode
         style: settingsStore.colorStyle
+        appearance: settingsStore.appearanceMode
+        customAccent: settingsStore.customAccent
+        customAccentEnabled: settingsStore.useCustomAccent
+    }
+    Connections {
+        target: appTheme
+        function onSurfaceChanged() { if (layoutReady) updateAcrylicTint() }
     }
     readonly property var themeNames: appTheme.names
     readonly property color clCard: appTheme.surface
@@ -2295,88 +2302,113 @@ Window {
 
     Popup {
         id: themePopup
-        x: window.width - width - 145
+        x: Math.max(8, window.width - width - 145)
         y: rootRect.y + titleBar.height + 2
-        width: 248
-        implicitHeight: themeColumn.implicitHeight + 24
+        width: 312
+        implicitHeight: Math.min(themeColumn.implicitHeight + 24, window.height - y - 12)
         padding: 12
         modal: false
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
-        
         background: Rectangle {
             color: appTheme.raised
             radius: 14
             border.color: appTheme.line
         }
-        
-        Column {
-            id: themeColumn
-            width: parent.width
-            spacing: 4
-
-            Text { text: "外观"; color: whiteText; font.pixelSize: 13; font.weight: Font.DemiBold; height: 28 }
-            ModeSwitch {
+        contentItem: Flickable {
+            contentHeight: themeColumn.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollIndicator.vertical: ScrollIndicator { }
+            ColumnLayout {
+                id: themeColumn
                 width: parent.width
-                height: 30
-                model: appTheme.styleNames
-                currentIndex: settingsStore.colorStyle
-                onActivated: (index) => settingsStore.colorStyle = index
-            }
-            Text { text: "配色方案"; color: appTheme.muted; font.pixelSize: 10; height: 26; verticalAlignment: Text.AlignBottom }
-            
-            Repeater {
-                model: themeNames
-                delegate: Rectangle {
-                    width: themeColumn.width
-                    height: 36
-                    radius: 6
-                    color: themeMouse.containsMouse ? appTheme.hover : "transparent"
-                    
-                    RowLayout {
-                        anchors.fill: parent
-                        anchors.leftMargin: 12
-                        anchors.rightMargin: 12
-                        spacing: 10
-                        
-                        Rectangle {
-                            width: 12
-                            height: 12
-                            radius: 6
-                            color: appTheme.seeds[index]
-                        }
-                        
-                        Text {
-                            text: modelData
-                            color: whiteText
-                            font.pixelSize: 12
-                            font.bold: themeMode === index
+                spacing: 10
+                Text { text: "外观"; color: whiteText; font.pixelSize: 14; font.weight: Font.DemiBold }
+                ModeSwitch {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 32
+                    model: ["深色", "浅色", "系统"]
+                    currentIndex: settingsStore.appearanceMode
+                    onActivated: (index) => settingsStore.appearanceMode = index
+                }
+                Text { text: "配色风格"; color: appTheme.secondary; font.pixelSize: 11 }
+                ModeSwitch {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 30
+                    model: appTheme.styleNames
+                    currentIndex: settingsStore.colorStyle
+                    onActivated: (index) => settingsStore.colorStyle = index
+                }
+                Text { text: "预设强调色"; color: appTheme.secondary; font.pixelSize: 11 }
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+                    Repeater {
+                        model: themeNames
+                        delegate: Button {
+                            id: preset
+                            required property int index
+                            required property var modelData
                             Layout.fillWidth: true
-                            verticalAlignment: Text.AlignVCenter
-                        }
-                        
-                        Text {
-                            text: "✓"
-                            color: clHighlight
-                            font.pixelSize: 12
-                            font.bold: true
-                            visible: themeMode === index
+                            Layout.preferredHeight: 32
+                            padding: 0
+                            hoverEnabled: true
+                            Accessible.name: String(modelData)
+                            ToolTip.visible: hovered
+                            ToolTip.text: String(modelData)
+                            ToolTip.delay: 500
+                            background: Rectangle { radius: 9; color: preset.hovered ? appTheme.hover : "transparent" }
+                            contentItem: Item {
+                                Rectangle {
+                                    anchors.centerIn: parent
+                                    width: 24; height: 24; radius: 8
+                                    color: appTheme.seeds[preset.index]
+                                    Text {
+                                        anchors.centerIn: parent
+                                        text: "\uE73E"
+                                        font.family: "Segoe Fluent Icons"
+                                        font.pixelSize: 11
+                                        color: "#151920"
+                                        visible: !settingsStore.useCustomAccent && window.themeMode === preset.index
+                                    }
+                                }
+                            }
+                            onClicked: {
+                                settingsStore.themeMode = index
+                                settingsStore.useCustomAccent = false
+                            }
                         }
                     }
-                    
-                    MouseArea {
-                        id: themeMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            settingsStore.themeMode = index
-                            themePopup.close()
-                        }
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    Text { text: "自定义强调色"; color: appTheme.secondary; font.pixelSize: 11; Layout.fillWidth: true }
+                    UiButton {
+                        text: settingsStore.useCustomAccent ? "恢复预设" : "使用自定义"
+                        Layout.preferredHeight: 24
+                        onClicked: settingsStore.useCustomAccent = !settingsStore.useCustomAccent
                     }
+                }
+                AccentColorPicker {
+                    id: accentPicker
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: implicitHeight
+                    theme: appTheme
+                    selectedColor: appTheme.seed
+                    onColorEdited: (color) => {
+                        settingsStore.customAccent = color.toString()
+                        settingsStore.useCustomAccent = true
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: settingsStore.colorStyle === 3 ? "单色风格保留灰阶，其他风格会显示强调色。" : "拖动色谱，或输入 HEX 后回车。"
+                    color: appTheme.muted
+                    font.pixelSize: 10
+                    wrapMode: Text.Wrap
                 }
             }
         }
     }
-
 }

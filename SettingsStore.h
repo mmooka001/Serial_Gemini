@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QSettings>
+#include <QColor>
+#include <QRegularExpression>
 
 class SettingsStore : public QObject
 {
@@ -13,6 +15,9 @@ class SettingsStore : public QObject
     Q_PROPERTY(int sidePanelWidth READ sidePanelWidth WRITE setSidePanelWidth NOTIFY sidePanelWidthChanged)
     Q_PROPERTY(int themeMode READ themeMode WRITE setThemeMode NOTIFY themeModeChanged)
     Q_PROPERTY(int colorStyle READ colorStyle WRITE setColorStyle NOTIFY colorStyleChanged)
+    Q_PROPERTY(int appearanceMode READ appearanceMode WRITE setAppearanceMode NOTIFY appearanceModeChanged)
+    Q_PROPERTY(QString customAccent READ customAccent WRITE setCustomAccent NOTIFY customAccentChanged)
+    Q_PROPERTY(bool useCustomAccent READ useCustomAccent WRITE setUseCustomAccent NOTIFY useCustomAccentChanged)
 
 public:
     explicit SettingsStore(QObject *parent = nullptr) : QObject(parent) {
@@ -23,6 +28,10 @@ public:
         m_sidePanelWidth = s.value("settings/sidePanelWidth", 300).toInt();
         m_themeMode = s.value("settings/themeMode", 4).toInt(); // Default to 4 (Classic Dark)
         m_colorStyle = qBound(0, s.value("settings/colorStyle", 2).toInt(), 3);
+        m_appearanceMode = qBound(0, s.value("settings/appearanceMode", 2).toInt(), 2);
+        const QColor accent(s.value("settings/customAccent", "#82aaff").toString());
+        m_customAccent = accent.isValid() ? accent.name(QColor::HexRgb).toUpper() : "#82AAFF";
+        m_useCustomAccent = s.value("settings/useCustomAccent", false).toBool();
     }
 
     int lineEndingMode() const { return m_lineEndingMode; }
@@ -61,6 +70,36 @@ public:
         }
     }
 
+    int appearanceMode() const { return m_appearanceMode; }
+    void setAppearanceMode(int mode) {
+        mode = qBound(0, mode, 2);
+        if (m_appearanceMode == mode) return;
+        m_appearanceMode = mode;
+        QSettings s; s.setValue("settings/appearanceMode", mode);
+        emit appearanceModeChanged();
+    }
+
+    QString customAccent() const { return m_customAccent; }
+    void setCustomAccent(const QString &value) {
+        QString text = value.trimmed();
+        static const QRegularExpression hex("^#?(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$");
+        if (!hex.match(text).hasMatch()) return;
+        if (!text.startsWith('#')) text.prepend('#');
+        const QString normalized = QColor(text).name(QColor::HexRgb).toUpper();
+        if (m_customAccent == normalized) return;
+        m_customAccent = normalized;
+        QSettings s; s.setValue("settings/customAccent", normalized);
+        emit customAccentChanged();
+    }
+
+    bool useCustomAccent() const { return m_useCustomAccent; }
+    void setUseCustomAccent(bool enabled) {
+        if (m_useCustomAccent == enabled) return;
+        m_useCustomAccent = enabled;
+        QSettings s; s.setValue("settings/useCustomAccent", enabled);
+        emit useCustomAccentChanged();
+    }
+
     int colorStyle() const { return m_colorStyle; }
     void setColorStyle(int style) {
         style = qBound(0, style, 3);
@@ -81,6 +120,9 @@ public:
     }
 
 signals:
+    void appearanceModeChanged();
+    void customAccentChanged();
+    void useCustomAccentChanged();
     void colorStyleChanged();
     void lineEndingModeChanged();
     void dataEncodingChanged();
@@ -89,6 +131,9 @@ signals:
     void themeModeChanged();
 
 private:
+    int m_appearanceMode;
+    QString m_customAccent;
+    bool m_useCustomAccent;
     int m_colorStyle;
     int m_lineEndingMode;
     QString m_dataEncoding;

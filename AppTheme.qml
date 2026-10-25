@@ -3,21 +3,25 @@ import QtQuick
 QtObject {
     property int mode: 4
     property int style: 2
-    readonly property bool dark: mode !== 5
-    readonly property var names: ["微光紫", "深海蓝", "松石绿", "暖陶橙", "石墨灰", "云雾白"]
+    property int appearance: 0
+    property bool systemDark: Application.styleHints.colorScheme === Qt.Dark
+    property bool customAccentEnabled: false
+    property color customAccent: "#82aaff"
+    readonly property bool dark: appearance === 2 ? systemDark : appearance === 0
+    readonly property var names: ["微光紫", "深海蓝", "松石绿", "暖陶橙", "石墨蓝", "靛青"]
     readonly property var styleNames: ["鲜明", "染色", "柔和", "单色"]
     readonly property var seeds: ["#ba91f4", "#6cc7f2", "#73d8b2", "#f5af7b", "#82aaff", "#3768cf"]
-    readonly property color seed: seeds[Math.max(0, Math.min(5, mode))]
+    readonly property color seed: customAccentEnabled ? customAccent : seeds[Math.max(0, Math.min(5, mode))]
     readonly property color primary: style === 3 ? (dark ? "#e6e8ed" : "#292d35")
-                                               : (style === 2 ? blend(seed, dark ? "#c6cad3" : "#747c8c", 0.28) : seed)
-    readonly property color primaryText: luminance(primary) > 0.179 ? "#151920" : "#ffffff"
+                                               : readableAccent(style === 2 ? blend(seed, dark ? "#c6cad3" : "#747c8c", 0.28) : seed)
+    readonly property color primaryText: contrast(primary, "#000000") >= contrast(primary, "#ffffff") ? "#000000" : "#ffffff"
     readonly property real surfaceTint: style === 1 ? 0.11 : 0
     readonly property color workspace: blend(dark ? "#14161a" : "#eceef2", seed, surfaceTint)
     readonly property color surface: blend(dark ? "#22252b" : "#fafbfd", seed, surfaceTint)
     readonly property color block: blend(dark ? "#2c3037" : "#eef0f4", seed, surfaceTint)
     readonly property color raised: blend(dark ? "#363b44" : "#ffffff", seed, surfaceTint)
     readonly property color text: dark ? "#eef0f5" : "#232730"
-    readonly property color secondary: dark ? "#adb4c1" : "#5d6675"
+    readonly property color secondary: dark ? "#adb4c1" : "#535d6c"
     readonly property color muted: dark ? "#8992a2" : "#737d8d"
     readonly property color line: alpha(text, dark ? 0.075 : 0.09)
     readonly property color hover: alpha(text, dark ? 0.07 : 0.045)
@@ -39,5 +43,16 @@ QtObject {
     function luminance(color: color): real {
         function linear(value) { return value <= 0.04045 ? value / 12.92 : Math.pow((value + 0.055) / 1.055, 2.4) }
         return linear(color.r) * 0.2126 + linear(color.g) * 0.7152 + linear(color.b) * 0.0722
+    }
+    function contrast(first: color, second: color): real {
+        var a = luminance(first)
+        var b = luminance(second)
+        return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+    }
+    function readableAccent(color: color): color {
+        var candidate = color
+        for (var step = 1; step <= 16 && contrast(candidate, surface) < 3.2; ++step)
+            candidate = blend(color, dark ? "#ffffff" : "#151920", step / 16)
+        return candidate
     }
 }

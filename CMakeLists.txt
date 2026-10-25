@@ -33,7 +33,7 @@ qt_add_executable(MySerial_Gemini
 qt_add_qml_module(MySerial_Gemini
     URI MySerial_Gemini
     VERSION 1.0
-    QML_FILES Main.qml AppTheme.qml ActionButton.qml SegmentedControl.qml LiquidGlassSelection.qml GlassComboBox.qml SerialLogo.qml
+    QML_FILES Main.qml AppTheme.qml ActionButton.qml SegmentedControl.qml AccentColorPicker.qml LiquidGlassSelection.qml GlassComboBox.qml SerialLogo.qml
 )
 
 qt_add_shaders(MySerial_Gemini "liquid_glass_shaders"
