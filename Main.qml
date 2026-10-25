@@ -191,13 +191,13 @@ Window {
         if (loopSending) return
         if (!serialManager.isOpen) { inputSender.notice = "请先连接串口。"; return }
         var cmds = []
-        for (var key in checkedMap) {
-            var parts = key.split(":")
-            var gIdx = parseInt(parts[0])
-            var cIdx = parseInt(parts[1])
-            if (commandStore.groups[gIdx] && commandStore.groups[gIdx].commands[cIdx]) {
-                var cmd = commandStore.groups[gIdx].commands[cIdx]
-                cmds.push({ payload: cmd.payload, isHex: cmd.isHex || false })
+        for (var gIdx = 0; gIdx < commandStore.groups.length; ++gIdx) {
+            var commands = commandStore.groups[gIdx].commands || []
+            for (var cIdx = 0; cIdx < commands.length; ++cIdx) {
+                if (checkedMap[gIdx + ":" + cIdx] === true) {
+                    var cmd = commands[cIdx]
+                    cmds.push({ payload: cmd.payload, isHex: cmd.isHex || false })
+                }
             }
         }
         if (cmds.length === 0) { inputSender.notice = "请先勾选要循环发送的指令。"; return }
@@ -212,6 +212,19 @@ Window {
     property int targetGroupIdx: -1
     property int targetCmdIdx: -1
     property var checkedMap: ({})
+    CommandReorderController {
+        id: commandReorder
+        surface: rootRect
+        view: cmdListView
+        onMoveRequested: (group, from, to, name, payload) => {
+            var selection = remapSelection(checkedMap, group, from, to)
+            var scrollY = cmdListView.contentY
+            if (commandStore.moveCommand(group, from, to, {name: name, payload: payload})) {
+                checkedMap = selection
+                Qt.callLater(() => cmdListView.contentY = Math.max(0, Math.min(scrollY, cmdListView.contentHeight - cmdListView.height)))
+            }
+        }
+    }
 
     function sendCommand(payload, isHex) {
         return inputSender.sendPreset(payload, isHex)
@@ -292,6 +305,46 @@ Window {
         clip: true
 
         FocusDismissLayer { focusRoot: rootRect }
+
+        Rectangle {
+            z: 11000
+            visible: commandReorder.active
+            x: commandReorder.ghostX
+            y: commandReorder.ghostY
+            width: commandReorder.ghostWidth
+            height: commandReorder.ghostHeight
+            radius: 10
+            color: appTheme.raised
+            border.color: clHighlight
+            opacity: 0.94
+            Column {
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 6
+                Text { text: commandReorder.name; color: clText; font.pixelSize: 11; width: parent.width; elide: Text.ElideRight }
+                Text {
+                    text: commandReorder.payload
+                    textFormat: Text.PlainText
+                    color: whiteText
+                    font.family: "Consolas"
+                    font.pixelSize: 13
+                    width: parent.width
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 4
+                    elide: Text.ElideRight
+                }
+            }
+        }
+        Rectangle {
+            z: 11001
+            visible: commandReorder.active
+            x: commandReorder.ghostX
+            y: commandReorder.markerY
+            width: commandReorder.ghostWidth
+            height: 3
+            radius: 1.5
+            color: clHighlight
+        }
 
         Rectangle {
             id: leftRail
@@ -600,7 +653,8 @@ Window {
                         height: 42
                         flat: true
                         contentItem: Text { 
-                            text: "✕"
+                            text: "\uE8BB"
+                            font.family: "Segoe Fluent Icons"
                             color: clText
                             font.pixelSize: 14
                             horizontalAlignment: Text.AlignHCenter
@@ -814,7 +868,8 @@ Window {
                                     }
                                     Item { Layout.fillWidth: true }
                                     UiButton {
-                                        text: "＋分组"
+                                        glyph: "\uE710"
+                                        text: "分组"
                                         Layout.preferredHeight: 32
                                         font.pixelSize: 12
                                         onClicked: commandStore.addGroup("新分组")
@@ -837,7 +892,8 @@ Window {
                                         spacing: 0
 
                                         Text {
-                                            text: "🔍"
+                                            text: "\uE721"
+                                            font.family: "Segoe Fluent Icons"
                                             font.pixelSize: 13
                                             color: grayPlaceholder
                                         }
@@ -859,6 +915,7 @@ Window {
                                 // Command List
                                 ListView {
                                     id: cmdListView
+                                    interactive: !commandReorder.active
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     clip: true
@@ -867,7 +924,7 @@ Window {
 
                                     delegate: ColumnLayout {
                                         width: cmdListView.width
-                                        spacing: 4
+                                        spacing: 6
 
                                         property var group: modelData
                                         property bool groupExpanded: true
@@ -877,12 +934,22 @@ Window {
                                         Rectangle {
                                             id: groupHeaderRect
                                             Layout.fillWidth: true
-                                            height: 38
+                                            height: 40
                                             radius: 10
-                                            color: groupHeaderMouse.containsMouse ? clInput : clHeader
-                                            border.color: clBorder
+                                            color: groupHeaderMouse.containsMouse ? appTheme.raised : appTheme.alpha(appTheme.raised, 0.72)
+                                            border.color: appTheme.alpha(clHighlight, 0.18)
                                             border.width: 1
                                             clip: true
+                                            Rectangle {
+                                                width: 3
+                                                anchors.left: parent.left
+                                                anchors.top: parent.top
+                                                anchors.bottom: parent.bottom
+                                                anchors.topMargin: 10
+                                                anchors.bottomMargin: 10
+                                                radius: 1.5
+                                                color: clHighlight
+                                            }
 
                                             MouseArea {
                                                 id: groupHeaderMouse
@@ -899,7 +966,7 @@ Window {
 
                                                 Text {
                                                     text: groupExpanded ? "\uE838" : "\uE8B7"
-                                                    color: clText
+                                                    color: clHighlight
                                                     font.family: "Segoe Fluent Icons"
                                                     font.pixelSize: 14
                                                 }
@@ -907,6 +974,7 @@ Window {
                                                 TextField {
                                                     id: groupNameField
                                                     Layout.fillWidth: true
+                                                    Layout.minimumWidth: 0
                                                     text: group.name
                                                     color: whiteText
                                                     font.bold: true
@@ -927,6 +995,20 @@ Window {
                                                             groupNameField.selectAll()
                                                         }
                                                     }
+                                                }
+
+                                                Text {
+                                                    text: (group.commands || []).length
+                                                    visible: groupHeaderRect.width >= 210
+                                                    color: clText
+                                                    font.family: "Consolas"
+                                                    font.pixelSize: 10
+                                                }
+                                                Text {
+                                                    text: groupExpanded ? "\uE70D" : "\uE76C"
+                                                    color: clText
+                                                    font.family: "Segoe Fluent Icons"
+                                                    font.pixelSize: 10
                                                 }
 
                                                 UiButton {
@@ -955,14 +1037,18 @@ Window {
 
                                         // Commands under this group
                                         ColumnLayout {
+                                            id: commandsColumn
                                             Layout.fillWidth: true
+                                            Layout.leftMargin: 6
                                             visible: groupExpanded
                                             spacing: 6
 
                                             Repeater {
+                                                id: commandsRepeater
                                                 model: group.commands
 
                                                 delegate: CommandCard {
+                                                    id: commandCard
                                                     required property var modelData
                                                     required property int index
                                                     Layout.fillWidth: true
@@ -983,6 +1069,10 @@ Window {
                                                         else selected[mapKey] = true
                                                         checkedMap = selected
                                                     }
+                                                    onReorderStarted: (position) => commandReorder.begin(groupIdx, cmdIdx, commandsColumn, commandsRepeater, commandCard, position)
+                                                    onReorderMoved: (position) => commandReorder.move(position)
+                                                    onReorderFinished: (position, name, payload) => commandReorder.finish(position, name, payload)
+                                                    onReorderCanceled: commandReorder.cancel()
                                                     onDeleteRequested: {
                                                         deleteType = "command"
                                                         targetGroupIdx = groupIdx
@@ -998,7 +1088,7 @@ Window {
                                     Text {
                                         anchors.centerIn: parent
                                         visible: commandStore.groups.length === 0
-                                        text: "暂无指令分组\n点击「＋分组」添加"
+                                        text: "暂无指令分组\n点击「分组」添加"
                                         color: grayPlaceholder
                                         font.pixelSize: 12
                                         horizontalAlignment: Text.AlignHCenter
@@ -1822,7 +1912,7 @@ Window {
                                         Layout.fillWidth: true; height: 45; radius: 10; color: clInput
                                         RowLayout {
                                             anchors.fill: parent; anchors.leftMargin: 15; anchors.rightMargin: 15
-                                            Text { text: "📧"; font.pixelSize: 16 }
+                                            Text { text: "\uE715"; font.family: "Segoe Fluent Icons"; font.pixelSize: 16; color: clText }
                                             Text { text: "mmooka001@gmail.com"; color: whiteText; font.pixelSize: 13; font.bold: true }
                                             Item { Layout.fillWidth: true }
                                             Rectangle {

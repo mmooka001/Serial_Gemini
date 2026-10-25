@@ -100,6 +100,23 @@ public:
         }
     }
 
+    Q_INVOKABLE bool moveCommand(int groupIndex, int from, int to, const QVariantMap &edits = QVariantMap()) {
+        if (groupIndex < 0 || groupIndex >= m_groups.size()) return false;
+        QVariantMap group = m_groups[groupIndex].toMap();
+        QVariantList commands = group["commands"].toList();
+        if (from < 0 || from >= commands.size() || to < 0 || to >= commands.size()) return false;
+        QVariantMap command = commands[from].toMap();
+        if (edits.contains("name")) command["name"] = edits["name"];
+        if (edits.contains("payload")) command["payload"] = edits["payload"];
+        commands[from] = command;
+        commands.move(from, to);
+        group["commands"] = commands;
+        m_groups[groupIndex] = group;
+        emit groupsChanged();
+        save();
+        return true;
+    }
+
     Q_INVOKABLE void deleteCommand(int groupIndex, int cmdIndex) {
         if (groupIndex < 0 || groupIndex >= m_groups.size()) return;
         QVariantMap group = m_groups[groupIndex].toMap();

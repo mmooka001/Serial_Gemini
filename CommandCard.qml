@@ -10,22 +10,113 @@ Rectangle {
     property string payload: ""
     property bool hexMode: false
     property bool loopSelected: false
+    property bool reorderHeld: false
+    property point pressScenePosition
+    property point latestScenePosition
     readonly property bool editing: nameEditor.activeFocus || payloadEditor.activeFocus
+    readonly property string draftName: nameEditor.text
+    readonly property string draftPayload: payloadEditor.text
     property bool commitPending: false
     signal edited(string name, string payload)
     signal sendRequested(string payload, bool hex)
     signal formatToggled(string name, string payload)
     signal loopToggled()
     signal deleteRequested()
+    signal reorderStarted(point scenePosition)
+    signal reorderMoved(point scenePosition)
+    signal reorderFinished(point scenePosition, string name, string payload)
+    signal reorderCanceled()
     implicitHeight: content.implicitHeight + 16
     radius: 10
     color: editing ? theme.block : hover.hovered ? theme.alpha(theme.block, 0.7) : theme.alpha(theme.block, 0.35)
-    border.color: editing ? theme.primary : loopSelected ? theme.alpha(theme.primary, 0.4) : "transparent"
+    border.color: payloadEditor.activeFocus || reorderHeld ? theme.primary : loopSelected ? theme.alpha(theme.primary, 0.4) : "transparent"
+    opacity: reorderHeld ? 0.4 : 1
     HoverHandler { id: hover }
-    PointHandler {
-        id: pointer
-        target: null
-        onActiveChanged: if (!active) Qt.callLater(card.flushCommit)
+    Item {
+        anchors.fill: parent
+        z: 10
+        PointHandler {
+            id: pointer
+            target: null
+            acceptedButtons: Qt.LeftButton
+            cursorShape: card.reorderHeld ? Qt.ClosedHandCursor : undefined
+            onActiveChanged: {
+                if (active) {
+                    card.pressScenePosition = point.scenePosition
+                    card.latestScenePosition = point.scenePosition
+                    if (card.canStartReorder(point.position)) holdTimer.start()
+                } else {
+                    holdTimer.stop()
+                    if (card.reorderHeld) {
+                        card.reorderHeld = false
+                        card.reorderFinished(card.latestScenePosition, nameEditor.text, payloadEditor.text)
+                        return
+                    }
+                    Qt.callLater(card.flushCommit)
+                }
+            }
+            onPointChanged: {
+                if (!active) return
+                card.latestScenePosition = point.scenePosition
+                if (card.reorderHeld) card.reorderMoved(point.scenePosition)
+                else if (Math.abs(point.scenePosition.x - card.pressScenePosition.x)
+                         + Math.abs(point.scenePosition.y - card.pressScenePosition.y) > Qt.styleHints.startDragDistance)
+                    holdTimer.stop()
+            }
+        }
+        Timer {
+            id: holdTimer
+            interval: 450
+            onTriggered: {
+                if (!pointer.active) return
+                card.reorderHeld = true
+                nameEditor.deselect()
+                payloadEditor.deselect()
+                card.forceActiveFocus()
+                card.reorderStarted(card.latestScenePosition)
+            }
+        }
+        TapHandler {
+            acceptedButtons: Qt.RightButton
+            gesturePolicy: TapHandler.WithinBounds
+            onTapped: (eventPoint) => card.openActions(eventPoint.position)
+        }
+    }
+    Connections {
+        target: card.Window.window
+        function onActiveChanged() {
+            if (target && !target.active) {
+                holdTimer.stop()
+                if (card.reorderHeld) {
+                    card.reorderHeld = false
+                    card.reorderCanceled()
+                }
+            }
+        }
+    }
+    Keys.onPressed: (event) => {
+        if (event.key === Qt.Key_Escape && reorderHeld) {
+            reorderHeld = false
+            reorderCanceled()
+            event.accepted = true
+        } else if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && event.modifiers & Qt.ShiftModifier)) {
+            openActions(Qt.point(width - 160, 30))
+            event.accepted = true
+        }
+    }
+
+    function canStartReorder(position: point): bool {
+        for (var button of [loopButton, formatButton, moreButton, sendButton]) {
+            var local = button.mapFromItem(card, position.x, position.y)
+            if (button.contains(local)) return false
+        }
+        return true
+    }
+    function openActions(position: point) {
+        if (reorderHeld) return
+        actionsPopup.x = Math.max(0, Math.min(width - actionsPopup.width, position.x))
+        actionsPopup.y = position.y
+        actionsPopup.open()
     }
 
     function requestCommit() {
@@ -34,7 +125,7 @@ Rectangle {
         Qt.callLater(flushCommit)
     }
     function flushCommit() {
-        if (!commitPending || pointer.active || actionsPopup.visible) return
+        if (!commitPending || pointer.active || reorderHeld || actionsPopup.visible) return
         commitPending = false
         commit()
     }
@@ -54,13 +145,14 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 24
+            Layout.preferredHeight: 26
             spacing: 2
             Button {
                 id: loopButton
                 objectName: "loopSelection"
                 Layout.preferredWidth: 22
-                Layout.preferredHeight: 24
+                Layout.preferredHeight: 26
+                Layout.alignment: Qt.AlignVCenter
                 padding: 0
                 checkable: false
                 hoverEnabled: true
@@ -94,7 +186,8 @@ Rectangle {
                 objectName: "commandNameEditor"
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
-                Layout.preferredHeight: 24
+                Layout.preferredHeight: 26
+                Layout.alignment: Qt.AlignVCenter
                 text: card.commandName
                 placeholderText: "指令名称"
                 placeholderTextColor: card.theme.muted
@@ -105,20 +198,35 @@ Rectangle {
                 ToolTip.text: card.commandName
                 ToolTip.delay: 650
                 padding: 0
-                leftPadding: 0; rightPadding: 0; topPadding: 0; bottomPadding: 0
-                background: null
-                selectByMouse: true
+                leftPadding: 6; rightPadding: 6; topPadding: 0; bottomPadding: 0
+                verticalAlignment: TextInput.AlignVCenter
+                background: Rectangle {
+                    radius: 8
+                    color: nameEditor.activeFocus ? card.theme.raised : "transparent"
+                    border.color: nameEditor.activeFocus ? card.theme.alpha(card.theme.primary, 0.65) : "transparent"
+                }
+                selectByMouse: !card.reorderHeld
+                readOnly: card.reorderHeld
                 selectionColor: card.theme.primary
                 selectedTextColor: card.theme.primaryText
                 Accessible.name: "指令名称"
+                ContextMenu.menu: null
+                ContextMenu.onRequested: (position) => card.openActions(nameEditor.mapToItem(card, position.x, position.y))
                 onEditingFinished: card.requestCommit()
             }
-            Text {
+            ActionButton {
+                id: formatButton
+                objectName: "commandFormatToggle"
+                theme: card.theme
                 text: card.hexMode ? "HEX" : "TXT"
-                color: card.theme.muted
-                font.family: "Consolas"
+                hint: "切换 TXT / HEX"
+                kind: "tonal"
+                selected: card.hexMode
+                Layout.preferredWidth: 34
+                Layout.preferredHeight: 24
+                leftPadding: 3; rightPadding: 3
                 font.pixelSize: 9
-                Layout.rightMargin: 3
+                onClicked: card.formatToggled(nameEditor.text, payloadEditor.text)
             }
             ActionButton {
                 id: moreButton
@@ -129,9 +237,10 @@ Rectangle {
                 Layout.preferredWidth: 24
                 Layout.preferredHeight: 24
                 leftPadding: 0; rightPadding: 0
-                onClicked: actionsPopup.open()
+                onClicked: card.openActions(Qt.point(card.width - 164, 34))
             }
             ActionButton {
+                id: sendButton
                 objectName: "commandSend"
                 theme: card.theme
                 glyph: "\uE724"
@@ -192,11 +301,14 @@ Rectangle {
                 background: null
                 placeholderText: "输入指令内容"
                 placeholderTextColor: card.theme.muted
-                selectByMouse: true
+                selectByMouse: !card.reorderHeld
+                readOnly: card.reorderHeld
                 selectionColor: card.theme.primary
                 selectedTextColor: card.theme.primaryText
                 persistentSelection: false
                 Accessible.name: "指令内容"
+                ContextMenu.menu: null
+                ContextMenu.onRequested: (position) => card.openActions(payloadEditor.mapToItem(card, position.x, position.y))
                 onActiveFocusChanged: if (!activeFocus) card.requestCommit()
             }
         }
@@ -221,6 +333,14 @@ Rectangle {
             id: actions
             spacing: 2
             ActionButton {
+                objectName: "commandMenuSend"
+                theme: card.theme
+                width: parent.width
+                glyph: "\uE724"
+                text: "发送指令"
+                onClicked: { actionsPopup.close(); card.sendRequested(payloadEditor.text, card.hexMode) }
+            }
+            ActionButton {
                 objectName: "commandFormat"
                 theme: card.theme
                 width: parent.width
@@ -229,6 +349,14 @@ Rectangle {
                     actionsPopup.close()
                     card.formatToggled(nameEditor.text, payloadEditor.text)
                 }
+            }
+            ActionButton {
+                objectName: "commandMenuSelect"
+                theme: card.theme
+                width: parent.width
+                glyph: card.loopSelected ? "\uE73A" : "\uE739"
+                text: card.loopSelected ? "取消勾选" : "勾选指令"
+                onClicked: { actionsPopup.close(); card.loopToggled() }
             }
             ActionButton {
                 objectName: "commandDelete"
