@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import QtQuick.Templates as T
 
 Rectangle {
     id: card
@@ -152,7 +153,30 @@ Rectangle {
             contentWidth: availableWidth
             clip: true
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-            ScrollBar.vertical.policy: ScrollBar.AsNeeded
+            ScrollBar.vertical: T.ScrollBar {
+                id: payloadScrollBar
+                width: 8
+                padding: 1
+                policy: ScrollBar.AsNeeded
+                hoverEnabled: true
+                minimumSize: Math.min(1, 18 / Math.max(1, height))
+                opacity: size < 1 && (active || hovered || hover.hovered) ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 160 } }
+                background: Item {}
+                contentItem: Item {
+                    implicitWidth: 6
+                    implicitHeight: 6
+                    Rectangle {
+                        anchors.centerIn: parent
+                        width: payloadScrollBar.hovered || payloadScrollBar.pressed ? 4 : 3
+                        height: parent.height
+                        radius: width / 2
+                        color: payloadScrollBar.pressed ? card.theme.primary : card.theme.secondary
+                        opacity: payloadScrollBar.pressed ? 0.8 : 0.4
+                        Behavior on width { NumberAnimation { duration: 100 } }
+                    }
+                }
+            }
             TextArea {
                 id: payloadEditor
                 objectName: "commandPayloadEditor"
