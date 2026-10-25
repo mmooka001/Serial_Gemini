@@ -1776,7 +1776,7 @@ Window {
                                       ? inputSender.conversionNotice
                                       : (!globalTxHex && settingsStore.lineEndingMode > 0
                                          ? "TXT 行尾：" + ["无", "LF (0A)", "CR (0D)", "CRLF (0D 0A)"][settingsStore.lineEndingMode] + "，可在设置中改为“无”。" : ""))
-                                color: inputSender.needsConversion ? appTheme.warning : clText
+                                color: inputSender.needsConversion || inputSender.notice === "请先连接串口。" ? appTheme.warning : clText
                                 font.pixelSize: 11
                                 wrapMode: Text.Wrap
                                 maximumLineCount: 2
