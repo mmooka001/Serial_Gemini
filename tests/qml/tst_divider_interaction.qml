@@ -38,7 +38,6 @@ TestCase {
 
     App.SidebarResizeController {
         id: sidebarResize
-        edgeHoldDuration: 60
         onWidthRequested: (width) => testCase.sidebarWidth = width
     }
     property real sidebarWidth: 260
@@ -70,6 +69,7 @@ TestCase {
         testCase.bottomHeight = 150
         sidebarResize.end()
         sidebarResize.collapsed = false
+        sidebarResize.minimumWidth = 180
         testCase.sidebarWidth = 260
         testCase.forceActiveFocus()
         mouseMove(testCase, 5, 5)
@@ -119,31 +119,39 @@ TestCase {
         mouseClick(editor, 50, 16)
         verify(editor.activeFocus)
     }
-    function test_sidebarMinimumNeedsHoldAndExtraTravel() {
+    function test_sidebarOnlyClosesBeyondHalfMinimumWidth() {
         sidebarResize.begin(260)
         sidebarResize.move(-80)
         compare(testCase.sidebarWidth, 180)
-        wait(90)
+        wait(500)
         compare(sidebarResize.collapsed, false)
         sidebarResize.move(-100)
         compare(sidebarResize.collapsed, false)
-        sidebarResize.move(-130)
+        sidebarResize.move(-170)
+        compare(sidebarResize.collapsed, false)
+        sidebarResize.move(-171)
         compare(sidebarResize.collapsed, true)
     }
-    function test_fastLeftDragWaitsBeforeCollapseAndCanBeCancelled() {
+    function test_fastLeftDragClosesImmediatelyAndCanReopen() {
         sidebarResize.begin(260)
-        sidebarResize.move(-150)
-        compare(sidebarResize.collapsed, false)
+        sidebarResize.move(-171)
+        compare(sidebarResize.collapsed, true)
         sidebarResize.move(-50)
-        wait(90)
         compare(sidebarResize.collapsed, false)
-        sidebarResize.move(-150)
-        tryCompare(sidebarResize, "collapsed", true)
+        compare(testCase.sidebarWidth, 210)
+    }
+    function test_collapseDistanceScalesWithMinimumWidth() {
+        sidebarResize.minimumWidth = 360
+        sidebarResize.begin(400)
+        sidebarResize.move(-220)
+        compare(sidebarResize.collapsed, false)
+        sidebarResize.move(-221)
+        compare(sidebarResize.collapsed, true)
     }
     function test_collapsedDividerKeepsGrabAndReopensInSameGesture() {
         wait(20)
         mousePress(persistentSide, 6, 50)
-        mouseMove(testCase, 130, 270, 20)
+        mouseMove(testCase, 110, 270, 20)
         tryCompare(sidebarResize, "collapsed", true)
         compare(persistentSide.pressed, true)
         tryVerify(() => findChild(persistentSide, "dividerHighlight").opacity > 0.8)
@@ -154,11 +162,11 @@ TestCase {
         mouseRelease(testCase, 326, 270)
         compare(sidebarResize.active, false)
     }
-    function test_releaseCancelsPendingCollapse() {
+    function test_releaseBelowDistanceThresholdKeepsPanelOpen() {
         sidebarResize.begin(260)
         sidebarResize.move(-150)
         sidebarResize.end()
-        wait(90)
+        sidebarResize.move(-171)
         compare(sidebarResize.collapsed, false)
     }
 }
