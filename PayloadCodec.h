@@ -56,6 +56,46 @@ inline QString decodeText(const QByteArray &bytes, const QString &encoding) {
 #endif
 }
 
+class StreamDecoder {
+public:
+    void reset(const QString &encoding) {
+        m_encoding = encoding;
+        m_utf8.resetState();
+        m_pending.clear();
+    }
+
+    QString decode(const QByteArray &bytes) {
+        if (m_encoding == "UTF-8") return m_utf8(bytes);
+        if (m_encoding != "GBK" && m_encoding != "GB2312")
+            return decodeText(bytes, m_encoding);
+
+        const QByteArray input = m_pending + bytes;
+        m_pending.clear();
+        int complete = input.size();
+        for (int i = 0; i < input.size(); ++i) {
+            const auto lead = static_cast<unsigned char>(input[i]);
+            const bool isLead = m_encoding == "GBK" ? lead >= 0x81 && lead <= 0xFE
+                                                     : lead >= 0xA1 && lead <= 0xF7;
+            if (!isLead) continue;
+            if (i + 1 == input.size()) {
+                complete = i;
+                m_pending = input.mid(i);
+                break;
+            }
+            const auto trail = static_cast<unsigned char>(input[i + 1]);
+            const bool isTrail = m_encoding == "GBK" ? trail >= 0x40 && trail <= 0xFE && trail != 0x7F
+                                                      : trail >= 0xA1 && trail <= 0xFE;
+            if (isTrail) ++i;
+        }
+        return decodeText(input.left(complete), m_encoding);
+    }
+
+private:
+    QString m_encoding = QStringLiteral("UTF-8");
+    QStringDecoder m_utf8{QStringConverter::Utf8};
+    QByteArray m_pending;
+};
+
 inline QString compactHex(QString text) {
     text.remove("0x", Qt::CaseInsensitive);
     text.remove(QRegularExpression("\\s+"));

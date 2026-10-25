@@ -29,6 +29,20 @@ int main(int argc, char **argv) {
     assert(PayloadCodec::decodeText(QByteArray::fromHex("636166e9"), "ISO-8859-1") == latin);
     assert(PayloadCodec::encodeText(latin, "ASCII") == "caf?");
     assert(PayloadCodec::encodeText(chinese, "ASCII") == "??");
+    for (const QString &encoding : {QString("UTF-8"), QString("GBK"), QString("GB2312")}) {
+        const QByteArray bytes = PayloadCodec::encodeText(chinese, encoding);
+        for (int split = 1; split < bytes.size(); ++split) {
+            PayloadCodec::StreamDecoder decoder;
+            decoder.reset(encoding);
+            const QString first = decoder.decode(bytes.left(split));
+            const QString text = first + decoder.decode(bytes.mid(split));
+            assert(text == chinese);
+        }
+    }
+    PayloadCodec::StreamDecoder decoder;
+    assert(decoder.decode(QByteArray::fromHex("e4")).isEmpty());
+    decoder.reset("UTF-8");
+    assert(decoder.decode("OK") == "OK");
     for (int ending = 0; ending <= 3; ++ending) {
         assert(PayloadCodec::frame(raw, true, ending) == raw);
         const QByteArray checksum = ChecksumHelper::calculate(raw, ChecksumHelper::Sum8);

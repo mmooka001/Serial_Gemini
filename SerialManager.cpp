@@ -5,6 +5,13 @@ SerialManager::SerialManager(QObject *parent)
     : QObject(parent), m_serialPort(new QSerialPort(this))
 {
     connect(m_serialPort, &QSerialPort::readyRead, this, &SerialManager::readData);
+    connect(m_serialPort, &QSerialPort::bytesWritten, this, &SerialManager::handleBytesWritten);
+    connect(m_serialPort, &QSerialPort::errorOccurred, this, [this](QSerialPort::SerialPortError error) {
+        if (error == QSerialPort::NoError || error == QSerialPort::TimeoutError || !m_serialPort->isOpen()) return;
+        emit errorOccurred(m_serialPort->errorString());
+        if (error == QSerialPort::ResourceError || error == QSerialPort::WriteError || error == QSerialPort::ReadError)
+            closePort();
+    });
 }
 
 
@@ -31,6 +38,9 @@ QVariantList SerialManager::availablePorts()
 
 bool SerialManager::openPort(const QString &portName, int baudRate, int dataBits, int stopBits, int parity, int flowControl)
 {
+    m_rxDecoder.reset(m_dataEncoding);
+    m_pendingWrites.clear();
+    m_writeInFlight = 0;
     if (m_serialPort->isOpen())
         m_serialPort->close();
 
@@ -80,6 +90,9 @@ bool SerialManager::openPort(const QString &portName, int baudRate, int dataBits
 
 void SerialManager::closePort()
 {
+    m_rxDecoder.reset(m_dataEncoding);
+    m_pendingWrites.clear();
+    m_writeInFlight = 0;
     if (m_serialPort->isOpen()) {
         m_serialPort->close();
         emit isOpenChanged();
@@ -102,10 +115,38 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
     const QByteArray checksum = ChecksumHelper::calculate(payload, static_cast<ChecksumHelper::ChecksumType>(checksumType));
     const QByteArray bytes = PayloadCodec::frame(payload, isHex, m_lineEndingMode, checksum);
 
-    m_serialPort->write(bytes);
-    m_serialPort->flush();
+    if (bytes.isEmpty()) return;
+    m_pendingWrites.enqueue({bytes, 0, isHex, m_dataEncoding});
+    writeNextChunk();
+}
 
-    emit dataReceived(PayloadCodec::decodeText(bytes, m_dataEncoding), bytes.toHex(' ').toUpper(), true, isHex);
+void SerialManager::writeNextChunk()
+{
+    if (!m_serialPort->isOpen() || m_writeInFlight || m_pendingWrites.isEmpty()) return;
+    const auto &frame = m_pendingWrites.head();
+    // 限制每次交给驱动的数据量，并由 bytesWritten 推进，避免大包超过驱动缓冲。
+    const QByteArray chunk = frame.bytes.mid(frame.written, qMin<qint64>(4096, frame.bytes.size() - frame.written));
+    const qint64 accepted = m_serialPort->write(chunk);
+    if (accepted <= 0) {
+        m_pendingWrites.clear();
+        emit errorOccurred("串口发送失败：" + m_serialPort->errorString());
+        return;
+    }
+    m_writeInFlight = accepted;
+}
+
+void SerialManager::handleBytesWritten(qint64 count)
+{
+    if (m_pendingWrites.isEmpty() || m_writeInFlight <= 0) return;
+    const qint64 completed = qMin(count, m_writeInFlight);
+    m_pendingWrites.head().written += completed;
+    m_writeInFlight -= completed;
+    if (m_pendingWrites.head().written == m_pendingWrites.head().bytes.size()) {
+        const auto frame = m_pendingWrites.dequeue();
+        emit dataReceived(PayloadCodec::decodeText(frame.bytes, frame.encoding),
+                          frame.bytes.toHex(' ').toUpper(), true, frame.isHex);
+    }
+    writeNextChunk();
 }
 
 void SerialManager::readData()
@@ -113,7 +154,7 @@ void SerialManager::readData()
     const QByteArray data = m_serialPort->readAll();
     if (data.isEmpty()) return;
 
-    emit dataReceived(PayloadCodec::decodeText(data, m_dataEncoding), data.toHex(' ').toUpper(), false);
+    emit dataReceived(m_rxDecoder.decode(data), data.toHex(' ').toUpper(), false);
 }
 
 void SerialManager::copyToClipboard(const QString &text)

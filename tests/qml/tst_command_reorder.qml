@@ -33,6 +33,7 @@ TestCase {
                     required property int index
                     Layout.fillWidth: true
                     theme: testTheme
+                    scrollContainer: view
                     commandName: modelData.name
                     payload: modelData.payload
                     hexMode: modelData.hex || false
@@ -96,7 +97,7 @@ TestCase {
         compare(entry.hexMode, true)
         compare(findChild(entry, "commandActionsPopup").opened, false)
     }
-    function test_rightClickPayloadHasSendSelectAndDeleteActions() {
+    function test_rightClickPayloadHasSendModeAndDeleteActions() {
         var entry = entries.itemAt(0)
         var editor = findChild(entry, "commandPayloadEditor")
         var popup = findChild(entry, "commandActionsPopup")
@@ -105,11 +106,7 @@ TestCase {
         var send = findChild(entry, "commandMenuSend")
         mouseClick(send, send.width / 2, send.height / 2)
         compare(testCase.sentCount, 1)
-        mouseClick(editor, 15, 12, Qt.RightButton)
-        tryCompare(popup, "opened", true)
-        var select = findChild(entry, "commandMenuSelect")
-        mouseClick(select, select.width / 2, select.height / 2)
-        compare(entry.loopSelected, false)
+        compare(findChild(entry, "commandMenuSelect"), null)
         mouseClick(editor, 15, 12, Qt.RightButton)
         tryCompare(popup, "opened", true)
         var remove = findChild(entry, "commandDelete")
@@ -169,5 +166,18 @@ TestCase {
         tryVerify(() => view.contentY > 0)
         keyClick(Qt.Key_Escape)
         mouseRelease(testCase, 100, 195)
+    }
+    function test_scrollingDismissesMenuWithoutMovingItsAnchor() {
+        view.height = 160
+        var first = entries.itemAt(0)
+        var editor = findChild(first, "commandPayloadEditor")
+        mouseClick(editor, 15, 12, Qt.RightButton)
+        var popup = findChild(first, "commandActionsPopup")
+        tryCompare(popup, "opened", true)
+        var origin = Qt.point(popup.x, popup.y)
+        mouseWheel(view, 150, 100, 0, -120)
+        tryCompare(popup, "visible", false)
+        view.contentY = 40
+        compare(Qt.point(popup.x, popup.y), origin)
     }
 }

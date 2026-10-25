@@ -6,6 +6,8 @@ import QtQuick.Templates as T
 Rectangle {
     id: card
     required property AppTheme theme
+    property Item backdropItem: null
+    property Item scrollContainer: null
     property string commandName: ""
     property string payload: ""
     property bool hexMode: false
@@ -86,6 +88,7 @@ Rectangle {
         target: card.Window.window
         function onActiveChanged() {
             if (target && !target.active) {
+                actionsPopup.close()
                 holdTimer.stop()
                 if (card.reorderHeld) {
                     card.reorderHeld = false
@@ -93,6 +96,14 @@ Rectangle {
                 }
             }
         }
+        function onWidthChanged() { actionsPopup.close() }
+        function onHeightChanged() { actionsPopup.close() }
+    }
+    Connections {
+        target: card.scrollContainer
+        ignoreUnknownSignals: true
+        function onContentYChanged() { actionsPopup.close() }
+        function onContentXChanged() { actionsPopup.close() }
     }
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_Escape && reorderHeld) {
@@ -114,8 +125,9 @@ Rectangle {
     }
     function openActions(position: point) {
         if (reorderHeld) return
-        actionsPopup.x = Math.max(0, Math.min(width - actionsPopup.width, position.x))
-        actionsPopup.y = position.y
+        var origin = card.mapToItem(actionsPopup.parent, Math.max(0, Math.min(width - actionsPopup.width, position.x)), position.y)
+        actionsPopup.x = origin.x
+        actionsPopup.y = origin.y
         actionsPopup.open()
     }
 
@@ -237,7 +249,10 @@ Rectangle {
                 Layout.preferredWidth: 24
                 Layout.preferredHeight: 24
                 leftPadding: 0; rightPadding: 0
-                onClicked: card.openActions(Qt.point(card.width - 164, 34))
+                onClicked: {
+                    if (actionsPopup.visible) actionsPopup.close()
+                    else card.openActions(Qt.point(card.width - actionsPopup.width - 8, 34))
+                }
             }
             ActionButton {
                 id: sendButton
@@ -314,36 +329,79 @@ Rectangle {
         }
     }
 
+    Loader {
+        active: actionsPopup.visible
+        sourceComponent: PopupInputGuard {
+            popup: actionsPopup
+            ownerItem: moreButton
+            closeOnWheel: true
+        }
+    }
     Popup {
         id: actionsPopup
         objectName: "commandActionsPopup"
-        x: Math.max(0, card.width - width - 8)
-        y: 34
-        width: 156
+        parent: card.Window.window ? card.Window.window.contentItem : card
+        implicitWidth: Math.max(sendAction.implicitWidth, formatAction.implicitWidth, deleteAction.implicitWidth) + leftPadding + rightPadding
+        width: implicitWidth
         padding: 5
         implicitHeight: actions.implicitHeight + 10
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        focus: true
+        closePolicy: Popup.CloseOnEscape
         onClosed: Qt.callLater(card.flushCommit)
-        background: Rectangle {
-            radius: 10
-            color: card.theme.raised
-            border.color: card.theme.line
+        background: Item {
+            Rectangle {
+                anchors.fill: parent
+                radius: 12
+                color: card.theme.raised
+                border.color: card.theme.line
+                visible: !card.backdropItem
+            }
+            Loader {
+                anchors.fill: parent
+                active: actionsPopup.visible && card.backdropItem !== null
+                sourceComponent: LiquidGlassSelection {
+                    sourceItem: card.backdropItem
+                    sourceRect: {
+                        if (!actionsPopup.visible || !card.backdropItem) return Qt.rect(0, 0, width, height)
+                        var origin = actionsPopup.contentItem.mapToItem(card.backdropItem, -actionsPopup.leftPadding, -actionsPopup.topPadding)
+                        return Qt.rect(origin.x, origin.y, width, height)
+                    }
+                    fixedRect: Qt.rect(0, 0, width, height)
+                    dark: card.theme.dark
+                    baseColor: card.theme.raised
+                    materialMix: card.theme.dark ? 0.68 : 0.76
+                    blurRadius: 14
+                    glassDepth: 10
+                    bevelWidth: 7
+                    cornerRadius: 12
+                    edgeStrength: 0.45
+                    saturation: 1.35
+                    brightness: 1.04
+                    dispersion: 0.6
+                    animationsEnabled: false
+                }
+            }
         }
         contentItem: Column {
             id: actions
             spacing: 2
             ActionButton {
+                id: sendAction
                 objectName: "commandMenuSend"
                 theme: card.theme
                 width: parent.width
+                leftAligned: true
                 glyph: "\uE724"
                 text: "发送指令"
                 onClicked: { actionsPopup.close(); card.sendRequested(payloadEditor.text, card.hexMode) }
             }
             ActionButton {
+                id: formatAction
                 objectName: "commandFormat"
                 theme: card.theme
                 width: parent.width
+                leftAligned: true
+                glyph: "\uE8AB"
                 text: card.hexMode ? "切换为 TXT" : "切换为 HEX"
                 onClicked: {
                     actionsPopup.close()
@@ -351,17 +409,11 @@ Rectangle {
                 }
             }
             ActionButton {
-                objectName: "commandMenuSelect"
-                theme: card.theme
-                width: parent.width
-                glyph: card.loopSelected ? "\uE73A" : "\uE739"
-                text: card.loopSelected ? "取消勾选" : "勾选指令"
-                onClicked: { actionsPopup.close(); card.loopToggled() }
-            }
-            ActionButton {
+                id: deleteAction
                 objectName: "commandDelete"
                 theme: card.theme
                 width: parent.width
+                leftAligned: true
                 glyph: "\uE74D"
                 text: "删除指令"
                 kind: "danger"

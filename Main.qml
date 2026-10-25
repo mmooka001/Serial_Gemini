@@ -581,6 +581,8 @@ Window {
 
                     Button {
                         id: themeBtn
+                        objectName: "themeToggleButton"
+                        Accessible.name: "主题外观"
                         width: 40
                         height: 42
                         flat: true
@@ -600,7 +602,7 @@ Window {
                             radius: 10
                         }
                         onClicked: {
-                            themePopup.opened ? themePopup.close() : themePopup.open()
+                            themePopup.visible ? themePopup.close() : themePopup.open()
                         }
                     }
 
@@ -836,7 +838,7 @@ Window {
                                         portCombo.currentText,
                                         parseInt(baudCombo.currentText),
                                         parseInt(dataBitsCombo.currentText),
-                                        stopBitsCombo.currentIndex + 1,  // 1=OneStop, 2=OneAndHalf, 3=TwoStop
+                                        [1, 3, 2][stopBitsCombo.currentIndex],  // 对应 1、1.5、2 个停止位
                                         parityCombo.currentIndex,        // 0=None, 1=Odd, 2=Even, 3=Mark, 4=Space
                                         flowCombo.currentIndex           // 0=None, 1=HW, 2=SW
                                     )
@@ -1053,6 +1055,8 @@ Window {
                                                     required property int index
                                                     Layout.fillWidth: true
                                                     theme: appTheme
+                                                    backdropItem: rootRect
+                                                    scrollContainer: cmdListView
                                                     commandName: modelData.name
                                                     payload: modelData.payload || ""
                                                     hexMode: modelData.isHex || false
@@ -1475,9 +1479,9 @@ Window {
                                      clip: true
                                      boundsBehavior: Flickable.StopAtBounds
                                     delegate: Column {
+                                        id: terminalMessageDelegate
                                         width: terminalView.width
                                          spacing: 3
-                                         property bool delegateHover: false
                                          property bool expanded: false
                                          property bool wasTruncated: false
                                         RowLayout {
@@ -1520,37 +1524,18 @@ Window {
                                                  height: Math.max(msgCol.height + 12, 24)
                                                  radius: 16
                                                  color: model.isSent ? appTheme.selection : appTheme.block
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    cursorShape: Qt.IBeamCursor
-                                                    onDoubleClicked: {
-                                                        var raw = model.isHexMode ? model.contentHex : model.contentAscii
-                                                        serialManager.copyToClipboard(raw)
-                                                    }
-                                                    onContainsMouseChanged: delegateHover = containsMouse
-                                                }
                                                 Column {
                                                     id: msgCol
                                                     anchors.centerIn: parent
                                                     spacing: 3
-                                                    Text { id: msgText
-                                                     text: {
-                                                         var raw = model.isHexMode ? model.contentHex : model.contentAscii
-                                                         while (raw.length > 0 && (raw.charAt(raw.length-1) === '\r' || raw.charAt(raw.length-1) === '\n' || raw.charAt(raw.length-1) === ' '))
-                                                             raw = raw.slice(0, -1)
-                                                         return raw
-                                                     }
-                                                     width: Math.min(implicitWidth, terminalView.width * 0.75)
-                                                     topPadding: 2; bottomPadding: 2
-                                                     color: whiteText
-                                                     font.family: "Consolas"
-                                                     font.pixelSize: 13
-                                                     wrapMode: Text.Wrap
-                                                     maximumLineCount: expanded ? 2147483647 : 3
-                                                     elide: Text.ElideRight
-                                                     onTruncatedChanged: if (!expanded) wasTruncated = truncated
-                                                     Component.onCompleted: if (!expanded) wasTruncated = truncated
+                                                    TerminalMessageText {
+                                                        id: msgText
+                                                        theme: appTheme
+                                                        text: model.isHexMode ? model.contentHex : model.contentAscii
+                                                        maximumWidth: terminalView.width * 0.75
+                                                        expanded: terminalMessageDelegate.expanded
+                                                        onTruncatedChanged: if (!terminalMessageDelegate.expanded) terminalMessageDelegate.wasTruncated = truncated
+                                                        Component.onCompleted: if (!terminalMessageDelegate.expanded) terminalMessageDelegate.wasTruncated = truncated
                                                     }
                                                     Text { id: msgToggle
                                                      visible: expanded ? wasTruncated : msgText.truncated
@@ -1714,7 +1699,7 @@ Window {
                                         id: checksumCombo
                                         backdropItem: sendCard
                                         anchors.fill: parent
-                                        model: ["无校验", "BCC", "Sum8", "CRC16"]
+                                        model: ["无校验", "异或 BCC", "Sum8", "CRC16"]
                                         font.pixelSize: 11
                                     }
                                 }
@@ -1741,6 +1726,8 @@ Window {
                                     spacing: 8
                                     clip: true
                                     TextArea { id: sendInput
+                                     objectName: "sendMessageInput"
+                                     Accessible.name: "发送内容"
                                      Layout.fillWidth: true
                                      Layout.minimumWidth: 0
                                      Layout.fillHeight: true
@@ -2228,8 +2215,17 @@ Window {
         startupPortRefreshTimer.start()
     }
 
+    Loader {
+        active: themePopup.visible
+        sourceComponent: PopupInputGuard {
+            popup: themePopup
+            ownerItem: themeBtn
+        }
+    }
     Popup {
         id: themePopup
+        objectName: "themeAppearancePopup"
+        parent: window.contentItem
         x: Math.max(8, window.width - width - 145)
         y: rootRect.y + titleBar.height + 2
         width: 312
@@ -2237,7 +2233,7 @@ Window {
         padding: 12
         modal: false
         focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnEscape
         background: Rectangle {
             color: appTheme.raised
             radius: 14

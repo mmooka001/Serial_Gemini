@@ -109,6 +109,24 @@ TestCase {
         tryCompare(card, "payload", "AT+RST")
         compare(editSpy.count, 1)
     }
+    function test_moreTogglesAndMenuFitsItsContent() {
+        var more = findChild(card, "commandMore")
+        var popup = findChild(card, "commandActionsPopup")
+        mouseClick(more, more.width / 2, more.height / 2)
+        tryCompare(popup, "opened", true)
+        var send = findChild(card, "commandMenuSend")
+        var format = findChild(card, "commandFormat")
+        var remove = findChild(card, "commandDelete")
+        compare(popup.width, Math.max(send.implicitWidth, format.implicitWidth, remove.implicitWidth) + popup.leftPadding + popup.rightPadding)
+        verify(popup.width < 156)
+        compare(findChild(card, "commandMenuSelect"), null)
+        mouseClick(more, more.width / 2, more.height / 2)
+        tryCompare(popup, "opened", false)
+        mouseClick(more, more.width / 2, more.height / 2)
+        tryCompare(popup, "opened", true)
+        mouseClick(testCase, 480, 420)
+        tryCompare(popup, "opened", false)
+    }
     function test_editThenSendSurvivesStoreRefresh() {
         var fixture = createTemporaryObject(refreshingStoreFixture, testCase)
         verify(fixture)

@@ -8,6 +8,7 @@ Button {
     property string glyph: ""
     property bool selected: false
     property string hint: ""
+    property bool leftAligned: false
     readonly property color foreground: !enabled ? theme.muted
         : kind === "primary" ? theme.primaryText
         : kind === "danger" ? theme.danger
@@ -35,7 +36,9 @@ Button {
         implicitHeight: buttonRow.implicitHeight
         Row {
             id: buttonRow
-            anchors.centerIn: parent
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.horizontalCenter: control.leftAligned ? undefined : parent.horizontalCenter
+            anchors.left: control.leftAligned ? parent.left : undefined
             spacing: 6
             Text {
                 visible: control.glyph.length > 0

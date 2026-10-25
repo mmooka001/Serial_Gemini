@@ -38,6 +38,7 @@ QtObject {
     }
     function sendPreset(payload: string, presetHex: bool): bool {
         if (!backend.isOpen) { notice = "请先连接串口。"; return false }
+        if (!payload.length) { notice = "指令内容为空，请先填写。"; return false }
         notice = ""
         var hex = presetHex || hexMode
         if (hex && (!presetHex || !backend.isHexInput(payload))) {

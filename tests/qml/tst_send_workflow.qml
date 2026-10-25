@@ -124,6 +124,11 @@ TestCase {
         sender.toggleRepeat()
         compare(sender.running, false)
     }
+    function test_emptyPresetDoesNotWriteToPort() {
+        verify(!sender.sendPreset("", false))
+        compare(backend.count, 0)
+        compare(sender.notice, "指令内容为空，请先填写。")
+    }
     function test_repeatStopsOnDisconnectAndUsesOwnInterval() {
         sender.inputText = "41"
         sender.interval = 60

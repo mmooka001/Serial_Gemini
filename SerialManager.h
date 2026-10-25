@@ -7,6 +7,7 @@
 #include <QVariantList>
 #include <QClipboard>
 #include <QGuiApplication>
+#include <QQueue>
 
 #include "PayloadCodec.h"
 
@@ -34,6 +35,7 @@ public:
     void setDataEncoding(const QString &encoding) {
         if (m_dataEncoding == encoding) return;
         m_dataEncoding = encoding;
+        m_rxDecoder.reset(encoding);
         emit dataEncodingChanged();
     }
     void setLineEndingMode(int mode) {
@@ -63,11 +65,22 @@ signals:
 
 private slots:
     void readData();
+    void handleBytesWritten(qint64 count);
 
 private:
+    struct PendingWrite {
+        QByteArray bytes;
+        qint64 written = 0;
+        bool isHex = false;
+        QString encoding;
+    };
+    void writeNextChunk();
     QSerialPort *m_serialPort;
+    QQueue<PendingWrite> m_pendingWrites;
+    qint64 m_writeInFlight = 0;
     int m_lineEndingMode = 0;
     QString m_dataEncoding = QStringLiteral("UTF-8");
+    PayloadCodec::StreamDecoder m_rxDecoder;
 };
 
 #endif // SERIALMANAGER_H
