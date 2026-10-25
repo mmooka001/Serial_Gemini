@@ -23,6 +23,8 @@ layout(std140, binding = 0) uniform buf {
     float saturation;
     float brightness;
     float dispersion;
+    float refractionScale;
+    vec2 deformation;
 } ubuf;
 layout(binding = 1) uniform sampler2D source;
 
@@ -77,11 +79,14 @@ void main()
     vec2 halfSize = max(vec2(ubuf.lensWidth, ubuf.lensHeight) * 0.5, vec2(1.0));
     vec2 center = vec2(ubuf.lensX, ubuf.lensY) + halfSize;
     vec2 local = pixel - center;
+    // Bend the capsule slightly under spring tension without moving its sampling plane.
+    vec2 normalizedLocal = clamp(local / halfSize, vec2(-1.5), vec2(1.5));
+    vec2 curvedLocal = local - ubuf.deformation * halfSize * (vec2(1.0) - normalizedLocal.yx * normalizedLocal.yx);
     float radius = min(ubuf.cornerRadius, min(halfSize.x, halfSize.y));
-    float sd = roundedBox(local, halfSize, radius);
+    float sd = roundedBox(curvedLocal, halfSize, radius);
     float aa = max(0.35, ubuf.pixelSize);
     float coverage = 1.0 - smoothstep(-aa * 0.5, aa * 0.5, sd);
-    float shadowDistance = roundedBox(local - vec2(0.0, 2.0), halfSize, radius);
+    float shadowDistance = roundedBox(curvedLocal - vec2(0.0, 2.0), halfSize, radius);
     float shadow = exp(-max(shadowDistance, 0.0) / 3.0)
                  * mix(0.10, 0.16, ubuf.darkMode) * ubuf.presence;
     if (coverage <= 0.0) {
@@ -95,11 +100,15 @@ void main()
     float a = 1.0 - u;
     float profile = pow(max(1.0 - pow(a, 4.0), 0.0001), 0.25);
     float slope = 2.5 * pow(a, 3.0) / max(bezel * pow(profile, 3.0), 0.001);
-    vec2 edgeNormal = roundedBoxNormal(local, halfSize, radius);
+    vec2 shapeNormal = roundedBoxNormal(curvedLocal, halfSize, radius);
+    vec2 bentNormal = shapeNormal + vec2(
+        shapeNormal.y * 2.0 * ubuf.deformation.y * halfSize.y * local.x / (halfSize.x * halfSize.x),
+        shapeNormal.x * 2.0 * ubuf.deformation.x * halfSize.x * local.y / (halfSize.y * halfSize.y));
+    vec2 edgeNormal = dot(bentNormal, bentNormal) > 0.00001 ? normalize(bentNormal) : vec2(0.0);
     vec3 normal = normalize(vec3(edgeNormal * slope, 1.0));
     const float ior = 1.46;
     vec3 ray = refract(vec3(0.0, 0.0, -1.0), normal, 1.0 / ior);
-    vec2 displacement = ray.xy / max(-ray.z, 0.1) * (ubuf.glassDepth + 2.5 * profile);
+    vec2 displacement = ray.xy / max(-ray.z, 0.1) * (ubuf.glassDepth + 2.5 * profile) * ubuf.refractionScale;
     vec2 uv = (pixel + displacement * ubuf.presence) / size;
 
     vec3 backdrop = frostedBackdrop(uv, ubuf.blurRadius);

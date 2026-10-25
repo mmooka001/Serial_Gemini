@@ -192,6 +192,7 @@ int main(int argc, char *argv[])
     // 设置组织和应用名称，方便 CommandStore 定位存储路径
     app.setOrganizationName("Gemini");
     app.setApplicationName("MySerial_Gemini");
+    app.setApplicationVersion(QStringLiteral(GEMINI_SERIAL_VERSION));
 
     QQmlApplicationEngine engine;
 

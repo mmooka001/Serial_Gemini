@@ -22,6 +22,8 @@ Item {
     property real saturation: 1.2
     property real brightness: dark ? 1.12 : 1
     property real dispersion: 1.4
+    property real refractionScale: 1
+    property vector2d deformation: Qt.vector2d(0, 0)
     property real contentOffsetY: 0
     property rect fixedRect: Qt.rect(0, 0, 0, 0)
     property bool animationsEnabled: true
@@ -114,6 +116,8 @@ Item {
         property real saturation: root.saturation
         property real brightness: root.brightness
         property real dispersion: root.dispersion
+        property real refractionScale: root.refractionScale
+        property vector2d deformation: root.deformation
         fragmentShader: "qrc:/shaders/liquidglass.frag.qsb"
 
         Behavior on lensY {

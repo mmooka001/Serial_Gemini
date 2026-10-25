@@ -30,3 +30,10 @@ Makefile
 # Local logs and generated process documents
 *.log
 /docs/superpowers/
+
+# Local instructions, scratch output and private command examples
+/AGENTS.md
+/stdout.txt
+/stderr.txt
+/bemfa_yuntai_commands.json
+/trae-contest/

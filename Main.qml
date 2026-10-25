@@ -394,7 +394,7 @@ Window {
                             required property var modelData
                             width: railButtons.width
                             height: 48
-                            readonly property bool selected: sidePanel === index
+                            readonly property bool selected: railGlass.previewIndex === index
 
                             Rectangle {
                                 anchors.fill: parent
@@ -404,7 +404,7 @@ Window {
                                 anchors.bottomMargin: 2
                                 radius: 14
                                 color: isDark ? "#ffffff" : "#000000"
-                                opacity: railMouse.containsMouse && !railButton.selected ? 0.055 : 0
+                                opacity: railGlass.hoveredIndex === railButton.index && !railButton.selected ? 0.055 : 0
                                 Behavior on opacity { NumberAnimation { duration: 140 } }
                             }
 
@@ -412,7 +412,7 @@ Window {
                                 anchors.centerIn: parent
                                 width: parent.width
                                 height: 34
-                                scale: railMouse.pressed ? 0.94 : 1
+                                scale: railGlass.pressedIndex === railButton.index && !railGlass.dragging ? 0.94 : 1
                                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                                 Text {
                                     width: parent.width
@@ -438,22 +438,12 @@ Window {
                                 }
                             }
 
-                            MouseArea {
-                                id: railMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    sidePanel = railButton.selected ? -1 : railButton.index
-                                    if (sidePanel >= 0 && currentPageIndex !== 0)
-                                        currentPageIndex = 0
-                                }
-                            }
                         }
                     }
                 }
 
-                LiquidGlassSelection {
+                LiquidGlassToolbar {
+                    id: railGlass
                     anchors.fill: parent
                     sourceItem: shellBackdrop
                     sourceRect: {
@@ -461,10 +451,14 @@ Window {
                         return Qt.rect(origin.x, origin.y, width, height)
                     }
                     baseColor: window.clToolSurface
-                    selectedIndex: sidePanel
-                    selectedItem: sidePanel >= 0 && railRepeater.count > sidePanel
-                                  ? railRepeater.itemAt(sidePanel) : null
+                    currentIndex: sidePanel
+                    count: railRepeater.count
                     dark: isDark
+                    onActivated: (index, toggle) => {
+                        sidePanel = toggle && sidePanel === index ? -1 : index
+                        if (sidePanel >= 0 && currentPageIndex !== 0)
+                            currentPageIndex = 0
+                    }
                 }
             }
         }
@@ -698,6 +692,27 @@ Window {
                     border.color: clSurfaceLine
                     clip: true
 
+                    // 空白和模块内边距也接收滚轮，指令编辑区仍优先处理自身滚动。
+                    MouseArea {
+                        anchors.fill: parent
+                        z: -1
+                        enabled: sidePanel === 1 && !commandReorder.active
+                        acceptedButtons: Qt.NoButton
+                        onWheel: (wheel) => {
+                            var delta = wheel.pixelDelta.y
+                            if (delta === 0) delta = wheel.angleDelta.y / 120 * 48
+                            if (delta === 0) {
+                                wheel.accepted = false
+                                return
+                            }
+                            cmdListView.cancelFlick()
+                            var minimum = cmdListView.originY
+                            var maximum = minimum + Math.max(0, cmdListView.contentHeight - cmdListView.height)
+                            cmdListView.contentY = Math.max(minimum, Math.min(maximum, cmdListView.contentY - delta))
+                            wheel.accepted = true
+                        }
+                    }
+
                     StackLayout {
                         id: sidePanelStack
                         anchors.fill: parent
@@ -921,6 +936,8 @@ Window {
                                     Layout.fillWidth: true
                                     Layout.fillHeight: true
                                     clip: true
+                                    flickableDirection: Flickable.VerticalFlick
+                                    boundsBehavior: Flickable.StopAtBounds
                                     spacing: 6
                                     model: commandStore.groups
 

@@ -31,6 +31,9 @@ Gemini Serial 是一款使用 **Qt 6、QML 和 C++17** 开发的现代化串口�
 - 明暗主题切换、窗口置顶和 Windows 原生窗口吸附
 - 响应式界面，在不同窗口宽度下自动收纳发送工具栏
 - 指令与界面设置持久化保存
+- 统一模块布局、液态玻璃导航选框及长按滑动切换
+- 深色、浅色、跟随系统，以及配色风格、色谱和 HEX 自定义强调色
+- 可拖选复制的终端消息、指令长按排序和右键操作菜单
 
 ## 技术栈
 
@@ -82,7 +85,7 @@ build/MySerial_Gemini.exe
 1. 在左侧选择串口并配置通信参数。
 2. 点击“建立串口连接”。
 3. 在底部选择 TXT 或 HEX 发送模式，输入数据后发送。
-4. 使用右侧指令预设库保存常用命令，并可按分组循环发送。
+4. 在左侧切换到指令预设库，保存常用命令并按列表顺序循环发送已勾选指令；发送框拥有独立的循环开关和间隔。
 5. 在底部状态栏查看 RX/TX 字节统计，按需导出通信记录。
 
 HEX 输入支持空格分隔格式，例如：
@@ -120,6 +123,16 @@ HEX 输入支持空格分隔格式，例如：
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tests\send_toolbar_layout_test.ps1
 ```
+
+## Windows 发布包
+
+使用已安装的 Qt 6 MinGW 工具链生成独立运行的便携 ZIP：
+
+```powershell
+./scripts/package-windows.ps1 -QtRoot D:/Qt/6.11.0/mingw_64 -CompilerBin D:/Qt/Tools/mingw1310_64/bin -NinjaExecutable E:/DevTools/ninja-win/ninja.exe
+```
+
+脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。打包说明见 [v0.2.0 更新记录](docs/RELEASE_NOTES_v0.2.0.md)。
 
 ## 参与贡献
 

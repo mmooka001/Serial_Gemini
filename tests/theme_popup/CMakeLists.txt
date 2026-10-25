@@ -10,7 +10,7 @@ set(APP_QML
     Main.qml AppTheme.qml ActionButton.qml CommandCard.qml CommandReorderController.qml
     TerminalMessageText.qml IntervalField.qml PanelDivider.qml SidebarResizeController.qml
     WindowDragArea.qml FocusDismissLayer.qml SendController.qml SegmentedControl.qml
-    AccentColorPicker.qml LiquidGlassSelection.qml GlassComboBox.qml SerialLogo.qml PopupInputGuard.qml
+    AccentColorPicker.qml LiquidGlassSelection.qml LiquidGlassToolbar.qml GlassComboBox.qml SerialLogo.qml PopupInputGuard.qml
 )
 set(QML_FILES)
 foreach(name IN LISTS APP_QML)
