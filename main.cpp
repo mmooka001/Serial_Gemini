@@ -4,6 +4,7 @@
 #include <QUrl>
 #include <QQuickWindow>
 #include <QPointer>
+#include <QAbstractNativeEventFilter>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -45,13 +46,14 @@ typedef struct _WINDOWCOMPOSITIONATTRIBDATA {
 typedef BOOL (WINAPI *SetWindowCompositionAttributeFn)(HWND, WINDOWCOMPOSITIONATTRIBDATA *);
 
 // QML 可调用的磨砂开关：enable 绑定窗口，setTint 按主题切染色
-class AcrylicHelper : public QObject {
+class AcrylicHelper : public QObject, public QAbstractNativeEventFilter {
     Q_OBJECT
 public:
     Q_INVOKABLE void enable(QQuickWindow *w) {
         if (!w || m_window == w) return;
         m_window = w;
         m_hwnd = reinterpret_cast<HWND>(w->winId());
+        qGuiApp->installNativeEventFilter(this);
 
         // 保留系统吸附能力，由 DWM 统一处理外轮廓与阴影。
         LONG style = GetWindowLong(m_hwnd, GWL_STYLE);
@@ -78,6 +80,24 @@ public:
         UINT aa = UINT(qBound(0.0, a, 1.0) * 255.0);
         m_gradient = (aa << 24) | (bb << 16) | (gg << 8) | rr;
         apply();
+    }
+    bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override {
+        if (eventType != "windows_generic_MSG" || !m_window)
+            return false;
+        const auto *msg = static_cast<MSG *>(message);
+        if (msg->hwnd != m_hwnd || msg->message != WM_NCCALCSIZE || !msg->wParam
+            || !IsZoomed(m_hwnd) || m_window->visibility() == QWindow::FullScreen)
+            return false;
+
+        MONITORINFO monitorInfo = {};
+        monitorInfo.cbSize = sizeof(monitorInfo);
+        if (!GetMonitorInfoW(MonitorFromWindow(m_hwnd, MONITOR_DEFAULTTONEAREST), &monitorInfo))
+            return false;
+        // 最大化窗口的外框可延伸到屏幕外，客户区必须限制在当前显示器工作区内。
+        auto *params = reinterpret_cast<NCCALCSIZE_PARAMS *>(msg->lParam);
+        params->rgrc[0] = monitorInfo.rcWork;
+        *result = 0;
+        return true;
     }
 private:
     void updateFrame() {

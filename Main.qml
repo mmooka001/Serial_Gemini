@@ -265,20 +265,20 @@ Window {
         accentColor: window.clHighlight
     }
 
+    Rectangle {
+        id: shellBackdrop
+        anchors.fill: parent
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: appTheme.shellStart }
+            GradientStop { position: 1.0; color: appTheme.shellEnd }
+        }
+    }
+
     Item {
         id: rootRect
         anchors.fill: parent
-        // 外轮廓由系统统一裁切；内容铺满，避免与系统圆角形成双层边框。
+        anchors.margins: window.edgeToEdge ? 8 : 0
         clip: true
-
-        Rectangle {
-            id: shellBackdrop
-            anchors.fill: parent
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: appTheme.shellStart }
-                GradientStop { position: 1.0; color: appTheme.shellEnd }
-            }
-        }
 
         Rectangle {
             id: leftRail
@@ -390,7 +390,10 @@ Window {
                 LiquidGlassSelection {
                     anchors.fill: parent
                     sourceItem: shellBackdrop
-                    sourceRect: Qt.rect(0, railNavigation.y, width, height)
+                    sourceRect: {
+                        var origin = railNavigation.mapToItem(shellBackdrop, 0, 0)
+                        return Qt.rect(origin.x, origin.y, width, height)
+                    }
                     baseColor: window.clToolSurface
                     selectedIndex: sidePanel
                     selectedItem: sidePanel >= 0 && railRepeater.count > sidePanel
@@ -2294,7 +2297,7 @@ Window {
     Popup {
         id: themePopup
         x: window.width - width - 145
-        y: titleBar.height + 2
+        y: rootRect.y + titleBar.height + 2
         width: 248
         implicitHeight: themeColumn.implicitHeight + 24
         padding: 12
