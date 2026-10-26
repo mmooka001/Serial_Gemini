@@ -34,6 +34,8 @@ Gemini Serial 是一款使用 **Qt 6、QML 和 C++17** 开发的现代化串口�
 - 统一模块布局、液态玻璃导航选框及长按滑动切换
 - 深色、浅色、跟随系统，以及配色风格、色谱和 HEX 自定义强调色
 - 可拖选复制的终端消息、指令长按排序和右键操作菜单
+- 文件夹长按排序时自动收起指令，完成或取消后恢复展开状态
+- 终端与指令列表的细滚动条，以及收发模式、窗口状态等偏好记忆
 
 ## 技术栈
 
@@ -94,6 +96,10 @@ HEX 输入支持空格分隔格式，例如：
 01 03 00 00 00 02
 ```
 
+HEX 模式中，文字需要加英文双引号，可与字节混合，例如 `01 "AT" 0D` 会发送 `01 41 54 0D`。只转换引号内的文字，使用设置中选择的编码；引号本身不发送。未加引号的非 HEX 内容会提示错误，避免误判。引号内支持 `\n`、`\r`、`\t`、`\"` 和 `\\` 转义。
+
+终端时间戳取自 C++ 收发回调，精确显示到毫秒，并与导出记录共用同一时刻。接收时间表示软件收到这一批数据的时间，受系统调度与驱动缓冲影响，不表示每个字节在串口线上到达的硬件时间。
+
 ## 项目结构
 
 ```text
@@ -132,7 +138,7 @@ powershell -ExecutionPolicy Bypass -File .\tests\send_toolbar_layout_test.ps1
 ./scripts/package-windows.ps1 -QtRoot D:/Qt/6.11.0/mingw_64 -CompilerBin D:/Qt/Tools/mingw1310_64/bin -NinjaExecutable E:/DevTools/ninja-win/ninja.exe
 ```
 
-脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。最新发布说明见 [v0.2.1 更新记录](docs/RELEASE_NOTES_v0.2.1.md)。
+脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。最新发布说明见 [v0.3.0 更新记录](docs/RELEASE_NOTES_v0.3.0.md)。
 
 ## 参与贡献
 

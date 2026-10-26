@@ -168,7 +168,7 @@ private:
 
     void testHexConversionWriteback() {
         const int offset = rxB.size();
-        flowA->setProperty("inputText", QStringLiteral("QML中文"));
+        flowA->setProperty("inputText", QStringLiteral("\"QML中文\""));
         flowA->setProperty("hexMode", true);
         flowA->setProperty("checksumType", 0);
         const bool sent = invokeBool(controllerA, "sendOnce");

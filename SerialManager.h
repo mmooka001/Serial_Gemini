@@ -51,6 +51,11 @@ public:
     Q_INVOKABLE void sendData(const QString &data, bool isHex);
     Q_INVOKABLE void sendDataWithChecksum(const QString &data, bool isHex, int checksumType);
     Q_INVOKABLE bool isHexInput(const QString &text) const { return PayloadCodec::isHex(text); }
+    Q_INVOKABLE QVariantMap prepareHexInput(const QString &text) const {
+        const auto parsed = PayloadCodec::parseHex(text, m_dataEncoding);
+        return {{"valid", parsed.valid()}, {"containsText", parsed.containsText},
+                {"hex", parsed.bytes.toHex(' ').toUpper()}, {"error", parsed.error}};
+    }
     Q_INVOKABLE QString textToHex(const QString &text) const { return PayloadCodec::encodeText(text, m_dataEncoding).toHex(' ').toUpper(); }
     Q_INVOKABLE void copyToClipboard(const QString &text);
 
@@ -60,7 +65,7 @@ signals:
     void baudRateChanged();
     void lineEndingModeChanged();
     void dataEncodingChanged();
-    void dataReceived(const QString &ascii, const QString &hex, bool isSent = false, bool isHex = false);
+    void dataReceived(const QString &ascii, const QString &hex, bool isSent = false, bool isHex = false, qint64 timestampMs = 0);
     void errorOccurred(const QString &error);
 
 private slots:

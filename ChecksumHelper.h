@@ -30,7 +30,9 @@ public:
 
     Q_INVOKABLE static QString hexChecksumPreview(const QString &data, bool isHex, int type,
                                                  const QString &encoding = QStringLiteral("UTF-8")) {
-        const QByteArray bytes = PayloadCodec::decode(data, isHex, encoding);
+        const auto parsed = isHex ? PayloadCodec::parseHex(data, encoding) : PayloadCodec::HexInput();
+        if (isHex && !parsed.valid()) return "";
+        const QByteArray bytes = isHex ? parsed.bytes : PayloadCodec::encodeText(data, encoding);
         if (bytes.isEmpty()) return "";
         QByteArray result = calculate(bytes, (ChecksumType)type);
         return result.toHex(' ').toUpper();

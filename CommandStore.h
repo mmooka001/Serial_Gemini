@@ -52,9 +52,10 @@ public:
     Q_INVOKABLE void updateGroupName(int index, const QString &name) {
         if (index >= 0 && index < m_groups.size()) {
             QVariantMap group = m_groups[index].toMap();
+            if (group["name"].toString() == name) return;
             group["name"] = name;
             m_groups[index] = group;
-            emit groupsChanged();
+            emit groupRenamed(index, name);
             save();
         }
     }
@@ -66,13 +67,15 @@ public:
         QVariantList commands = group["commands"].toList();
         if (cmdIndex >= 0 && cmdIndex < commands.size()) {
             QVariantMap cmd = commands[cmdIndex].toMap();
+            const QVariantMap previous = cmd;
             cmd["name"] = name;
             cmd["payload"] = payload;
             if (isHex.isValid()) cmd["isHex"] = isHex.toBool();
+            if (cmd == previous) return;
             commands[cmdIndex] = cmd;
             group["commands"] = commands;
             m_groups[groupIndex] = group;
-            emit groupsChanged();
+            emit commandChanged(groupIndex, cmdIndex, cmd);
             save();
         }
     }
@@ -83,11 +86,12 @@ public:
         QVariantList commands = group["commands"].toList();
         if (cmdIndex >= 0 && cmdIndex < commands.size()) {
             QVariantMap cmd = commands[cmdIndex].toMap();
+            if (cmd["isHex"].toBool() == isHex) return;
             cmd["isHex"] = isHex;
             commands[cmdIndex] = cmd;
             group["commands"] = commands;
             m_groups[groupIndex] = group;
-            emit groupsChanged();
+            emit commandChanged(groupIndex, cmdIndex, cmd);
             save();
         }
     }
@@ -117,6 +121,17 @@ public:
         return true;
     }
 
+    Q_INVOKABLE bool moveGroup(int from, int to, const QString &name) {
+        if (from < 0 || from >= m_groups.size() || to < 0 || to >= m_groups.size()) return false;
+        QVariantMap group = m_groups[from].toMap();
+        group["name"] = name;
+        m_groups[from] = group;
+        m_groups.move(from, to);
+        emit groupsChanged();
+        save();
+        return true;
+    }
+
     Q_INVOKABLE void deleteCommand(int groupIndex, int cmdIndex) {
         if (groupIndex < 0 || groupIndex >= m_groups.size()) return;
         QVariantMap group = m_groups[groupIndex].toMap();
@@ -140,6 +155,8 @@ public:
 
 signals:
     void groupsChanged();
+    void groupRenamed(int index, const QString &name);
+    void commandChanged(int groupIndex, int commandIndex, const QVariantMap &command);
 
 private:
     void save(QString path = "") {

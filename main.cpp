@@ -138,6 +138,8 @@ private:
     }
     void updateFrame() {
         if (!m_window || !m_hwnd) return;
+        // 最小化时保留最大化/全屏的原生框架，避免还原时得到屏幕大小的普通窗口。
+        if (m_window->visibility() == QWindow::Minimized || IsIconic(m_hwnd)) return;
         const bool edgeToEdge = m_window->visibility() == QWindow::Maximized
                             || m_window->visibility() == QWindow::FullScreen;
         const int cornerPreference = edgeToEdge ? 1 : 2; // DWMWCP_DONOTROUND / DWMWCP_ROUND
@@ -219,8 +221,10 @@ int main(int argc, char *argv[])
 #endif
 
     // Connect SerialManager data to RecordStore
-    QObject::connect(&serialManager, SIGNAL(dataReceived(QString,QString,bool,bool)),
-                     &recordStore, SLOT(onDataReceived(QString,QString,bool)));
+    QObject::connect(&serialManager, &SerialManager::dataReceived, &recordStore,
+                     [&recordStore](const QString &ascii, const QString &hex, bool isSent, bool, qint64 timestampMs) {
+        recordStore.addRecord(isSent ? "write" : "read", ascii, hex, 0, timestampMs);
+    });
 
     // 注册 Checksum 类型
     qmlRegisterUncreatableType<ChecksumHelper>("com.gemini.serial", 1, 0, "Checksum", "Enum only");

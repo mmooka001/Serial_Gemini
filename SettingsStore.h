@@ -5,6 +5,8 @@
 #include <QSettings>
 #include <QColor>
 #include <QRegularExpression>
+#include <QGuiApplication>
+#include <QScreen>
 
 class SettingsStore : public QObject
 {
@@ -32,6 +34,39 @@ public:
         const QColor accent(s.value("settings/customAccent", "#82aaff").toString());
         m_customAccent = accent.isValid() ? accent.name(QColor::HexRgb).toUpper() : "#82AAFF";
         m_useCustomAccent = s.value("settings/useCustomAccent", false).toBool();
+        m_uiPreferences = s.value("settings/uiPreferences").toMap();
+    }
+
+    Q_INVOKABLE QVariant uiPreference(const QString &key, const QVariant &fallback) const {
+        return m_uiPreferences.value(key, fallback);
+    }
+    Q_INVOKABLE void setUiPreference(const QString &key, const QVariant &value) {
+        if (m_uiPreferences.value(key) == value) return;
+        m_uiPreferences.insert(key, value);
+        QSettings s;
+        s.setValue("settings/uiPreferences", m_uiPreferences);
+    }
+    Q_INVOKABLE QRect restoredWindowGeometry() const {
+        QRect geometry = m_uiPreferences.value("windowGeometry", QRect(0, 0, 1250, 850)).toRect();
+        QScreen *screen = QGuiApplication::primaryScreen();
+        if (!screen) return geometry;
+        bool located = false;
+        if (m_uiPreferences.contains("windowGeometry")) {
+            for (QScreen *candidate : QGuiApplication::screens()) {
+                if (candidate->availableGeometry().contains(geometry.center())) {
+                    screen = candidate;
+                    located = true;
+                    break;
+                }
+            }
+        }
+        const QRect available = screen->availableGeometry();
+        geometry.setWidth(qBound(700, geometry.width(), qMax(700, available.width())));
+        geometry.setHeight(qBound(550, geometry.height(), qMax(550, available.height())));
+        if (!located) geometry.moveCenter(available.center());
+        geometry.moveLeft(qBound(available.left(), geometry.left(), qMax(available.left(), available.right() - geometry.width() + 1)));
+        geometry.moveTop(qBound(available.top(), geometry.top(), qMax(available.top(), available.bottom() - geometry.height() + 1)));
+        return geometry;
     }
 
     int lineEndingMode() const { return m_lineEndingMode; }
@@ -131,6 +166,7 @@ signals:
     void themeModeChanged();
 
 private:
+    QVariantMap m_uiPreferences;
     int m_appearanceMode;
     QString m_customAccent;
     bool m_useCustomAccent;

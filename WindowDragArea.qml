@@ -3,7 +3,8 @@ import QtQuick
 MouseArea {
     id: dragArea
     required property Window targetWindow
-    property rect normalGeometry: Qt.rect(0, 0, 1250, 850)
+    required property WindowStateController stateController
+    readonly property rect normalGeometry: stateController.normalGeometry
     property point pressPosition
     property real horizontalAnchor: 0.5
     property real verticalAnchor: 21
@@ -14,17 +15,11 @@ MouseArea {
     preventStealing: true
 
     function rememberGeometry() {
-        if (targetWindow.visibility === Window.Windowed)
-            normalGeometry = Qt.rect(targetWindow.x, targetWindow.y, targetWindow.width, targetWindow.height)
+        stateController.rememberGeometry()
     }
     function restoreForDrag(position: point) {
         if (!edgeToEdge) return
-        var size = normalGeometry
-        targetWindow.showNormal()
-        targetWindow.width = Math.max(targetWindow.minimumWidth, size.width)
-        targetWindow.height = Math.max(targetWindow.minimumHeight, size.height)
-        targetWindow.x = Math.round(position.x - targetWindow.width * horizontalAnchor)
-        targetWindow.y = Math.round(position.y - verticalAnchor)
+        stateController.restoreForDrag(position, horizontalAnchor, verticalAnchor)
     }
     onPressed: (mouse) => {
         pressPosition = mapToGlobal(mouse.x, mouse.y)
@@ -43,21 +38,6 @@ MouseArea {
         targetWindow.startSystemMove()
     }
     onDoubleClicked: {
-        if (edgeToEdge) targetWindow.showNormal()
-        else targetWindow.showMaximized()
-    }
-    Component.onCompleted: geometryTimer.start()
-    Timer {
-        id: geometryTimer
-        interval: 0
-        onTriggered: dragArea.rememberGeometry()
-    }
-    Connections {
-        target: dragArea.targetWindow
-        function onXChanged() { geometryTimer.restart() }
-        function onYChanged() { geometryTimer.restart() }
-        function onWidthChanged() { geometryTimer.restart() }
-        function onHeightChanged() { geometryTimer.restart() }
-        function onVisibilityChanged() { geometryTimer.restart() }
+        stateController.toggleMaximized()
     }
 }

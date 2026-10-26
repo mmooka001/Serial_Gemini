@@ -268,7 +268,7 @@ private:
         mainA.root->setProperty("loopInterval", 45);
         mainA.root->setProperty("globalTxHex", true);
         mainA.root->setProperty("sendInterval", 95);
-        mainA.input->setProperty("text", QStringLiteral("M;"));
+        mainA.input->setProperty("text", QStringLiteral("\"M;\""));
 
         rxB.clear(); txA = 0;
         const bool startedManual = invoke(mainA.inputSender, "toggleRepeat");

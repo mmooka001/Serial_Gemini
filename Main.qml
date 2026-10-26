@@ -8,11 +8,11 @@ import QtCore
 
 Window {
     id: window
-    width: 1250
-    height: 850
+    width: windowState.normalGeometry.width
+    height: windowState.normalGeometry.height
     minimumWidth: 700
     minimumHeight: 550
-    visible: true
+    visible: false
 
     // 窗口过窄时自动收起右侧功能面板与连接配置抽屉，避免中间区被压缩、面板被挤出屏幕。
     // layoutReady 防止初始化阶段 width 从 0 增长时误触发
@@ -23,12 +23,23 @@ Window {
     }
     title: qsTr("MySerial Gemini")
     color: "transparent"
-    property bool stayOnTop: false
+    property bool stayOnTop: settingsStore.uiPreference("stayOnTop", false)
+    onStayOnTopChanged: if (layoutReady) settingsStore.setUiPreference("stayOnTop", stayOnTop)
     flags: Qt.Window | Qt.FramelessWindowHint | (stayOnTop ? Qt.WindowStaysOnTopHint : 0)
 
     readonly property bool isNarrow: width < 1100
     readonly property bool isUltraNarrow: width < 900
     readonly property bool edgeToEdge: visibility === Window.Maximized || visibility === Window.FullScreen
+
+    WindowStateController {
+        id: windowState
+        targetWindow: window
+        normalGeometry: settingsStore.restoredWindowGeometry()
+        preferredVisibility: settingsStore.uiPreference("windowVisibility", Window.Windowed)
+        onNormalGeometryChanged: if (window.layoutReady) settingsStore.setUiPreference("windowGeometry", normalGeometry)
+        onPreferredVisibilityChanged: if (window.layoutReady) settingsStore.setUiPreference("windowVisibility", preferredVisibility)
+    }
+    onClosing: windowState.rememberGeometry()
 
     property int themeMode: settingsStore.themeMode
     readonly property bool isDark: appTheme.dark
@@ -66,7 +77,8 @@ Window {
     readonly property color clCanvas: appTheme.surface
     readonly property color clSurfaceLine: appTheme.line
     // 左侧面板统一状态：-1=全关 0=连接 1=指令 2=码表 3=设置（互斥）
-    property int sidePanel: 0
+    property int sidePanel: settingsStore.uiPreference("sidePanel", 0)
+    onSidePanelChanged: if (layoutReady) settingsStore.setUiPreference("sidePanel", sidePanel)
     property int sidePanelWidth: settingsStore.sidePanelWidth
     readonly property bool sidePanelDragActive: sidebarResize.active
     property int clickOffset: 0           // Click animation offset
@@ -92,7 +104,8 @@ Window {
             if (active) sidePanel = collapsed ? -1 : savedPanel
         }
     }
-    property int sendPanelHeight: 180
+    property int sendPanelHeight: settingsStore.uiPreference("sendPanelHeight", 180)
+    onSendPanelHeightChanged: if (layoutReady) settingsStore.setUiPreference("sendPanelHeight", sendPanelHeight)
     readonly property int minSendPanelHeight: 160
     readonly property int minTerminalHeight: 160
     readonly property int terminalSendGap: 15
@@ -104,11 +117,16 @@ Window {
     readonly property bool showTimeControl: sendCard.width >= (autoSending ? 449 : 385)
     readonly property bool showTxModeControl: sendCard.width >= (autoSending ? 374 : 310)
     readonly property bool showRxModeControl: sendCard.width >= (autoSending ? 264 : 200)
-    property bool globalRxHex: true 
+    property bool globalRxHex: settingsStore.uiPreference("rxHex", true)
+    onGlobalRxHexChanged: if (layoutReady) settingsStore.setUiPreference("rxHex", globalRxHex)
     property alias globalTxHex: inputSender.hexMode
-    property bool globalTimestamp: true
-    property int currentPageIndex: 0
-    property bool autoScroll: true
+    onGlobalTxHexChanged: if (layoutReady) settingsStore.setUiPreference("txHex", globalTxHex)
+    property bool globalTimestamp: settingsStore.uiPreference("timestamp", true)
+    onGlobalTimestampChanged: if (layoutReady) settingsStore.setUiPreference("timestamp", globalTimestamp)
+    property int currentPageIndex: settingsStore.uiPreference("page", 0)
+    onCurrentPageIndexChanged: if (layoutReady) settingsStore.setUiPreference("page", currentPageIndex)
+    property bool autoScroll: settingsStore.uiPreference("autoScroll", true)
+    onAutoScrollChanged: if (layoutReady) settingsStore.setUiPreference("autoScroll", autoScroll)
     property string checksumValue: ChecksumHelper.hexChecksumPreview(sendInput.text, globalTxHex, checksumCombo.currentIndex, settingsStore.dataEncoding)
 
     function exportTimestamp() {
@@ -147,16 +165,24 @@ Window {
     property var loopCmds: []
     property int loopIndex: -1
     property bool loopSending: false
-    property int loopInterval: 500
+    property int loopInterval: settingsStore.uiPreference("loopInterval", 500)
+    onLoopIntervalChanged: if (layoutReady) settingsStore.setUiPreference("loopInterval", loopInterval)
+    onSendIntervalChanged: if (layoutReady) settingsStore.setUiPreference("sendInterval", sendInterval)
     property var portList: []
 
     function refreshPorts() {
+        var preferredPort = settingsStore.uiPreference("portName", "")
         portList = serialManager.availablePorts()
+        for (var i = 0; i < portList.length; ++i) {
+            if (portList[i].name === preferredPort) { portCombo.currentIndex = i; break }
+        }
     }
 
     SendController {
         id: inputSender
         backend: serialManager
+        hexMode: settingsStore.uiPreference("txHex", true)
+        interval: settingsStore.uiPreference("sendInterval", 500)
         inputText: sendInput.text
         checksumType: checksumCombo.currentIndex
         onInputConverted: (hex) => sendInput.text = hex
@@ -212,17 +238,44 @@ Window {
     property int targetGroupIdx: -1
     property int targetCmdIdx: -1
     property var checkedMap: ({})
+    property var foldedGroups: ({})
+    property bool groupsCollapsedForReorder: false
+    property real groupDragScrollY: 0
+    property int groupDropIndex: -1
     CommandReorderController {
         id: commandReorder
         surface: rootRect
         view: cmdListView
+        onGroupDragEnded: {
+            groupsCollapsedForReorder = false
+            Qt.callLater(() => {
+                cmdListView.forceLayout()
+                if (groupDropIndex >= 0) {
+                    cmdListView.currentIndex = groupDropIndex
+                    cmdListView.positionViewAtIndex(groupDropIndex, ListView.Contain)
+                } else {
+                    cmdListView.contentY = Math.max(cmdListView.originY,
+                        Math.min(groupDragScrollY, cmdListView.originY + Math.max(0, cmdListView.contentHeight - cmdListView.height)))
+                }
+                groupDropIndex = -1
+            })
+        }
         onMoveRequested: (group, from, to, name, payload) => {
-            var selection = remapSelection(checkedMap, group, from, to)
+            var selection = group < 0 ? remapGroups(checkedMap, from, to, true) : remapSelection(checkedMap, group, from, to)
             var scrollY = cmdListView.contentY
-            if (commandStore.moveCommand(group, from, to, {name: name, payload: payload})) {
-                checkedMap = selection
-                Qt.callLater(() => cmdListView.contentY = Math.max(0, Math.min(scrollY, cmdListView.contentHeight - cmdListView.height)))
+            if (group < 0) {
+                groupDropIndex = to
+                foldedGroups = remapGroups(foldedGroups, from, to, false)
             }
+            var moved = group < 0 ? commandStore.moveGroup(from, to, name)
+                                  : commandStore.moveCommand(group, from, to, {name: name, payload: payload})
+            if (moved) {
+                checkedMap = selection
+                if (group >= 0) Qt.callLater(() => {
+                    cmdListView.forceLayout()
+                    cmdListView.contentY = Math.max(cmdListView.originY, Math.min(scrollY, cmdListView.originY + Math.max(0, cmdListView.contentHeight - cmdListView.height)))
+                })
+            } else if (group < 0) groupDropIndex = -1
         }
     }
 
@@ -531,6 +584,7 @@ Window {
                     WindowDragArea {
                         anchors.fill: parent
                         targetWindow: window
+                        stateController: windowState
                     }
                 }
 
@@ -569,7 +623,10 @@ Window {
                             radius: 8
                         }
                         onClicked: {
+                            windowState.rememberGeometry()
+                            windowState.restoring = true
                             window.stayOnTop = !window.stayOnTop
+                            Qt.callLater(() => windowState.showPreferred())
                         }
                     }
 
@@ -615,7 +672,7 @@ Window {
                             radius: 8
                         }
                         onClicked: {
-                            window.visibility = Window.Minimized
+                            windowState.minimize()
                         }
                     }
 
@@ -636,11 +693,7 @@ Window {
                             radius: 8
                         }
                         onClicked: {
-                            if (window.edgeToEdge) {
-                                window.showNormal()
-                            } else {
-                                window.showMaximized()
-                            }
+                            windowState.toggleMaximized()
                         }
                     }
 
@@ -663,7 +716,7 @@ Window {
                             radius: 8
                         }
                         onClicked: {
-                            Qt.quit()
+                            window.close()
                         }
                     }
                 }
@@ -758,6 +811,7 @@ Window {
                                 textRole: "name"
                                 portDetails: true
                                 font.pixelSize: 13
+                                onActivated: (index) => settingsStore.setUiPreference("portName", portList[index].name)
                             }
                         }
 
@@ -772,7 +826,8 @@ Window {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 34
                                 model: [9600, 19200, 38400, 57600, 115200, 230400, 256000, 460800, 921600, 1000000, 2000000]
-                                currentIndex: 4
+                                currentIndex: Math.max(0, model.indexOf(settingsStore.uiPreference("baudRate", 115200)))
+                                onActivated: settingsStore.setUiPreference("baudRate", parseInt(currentText))
                                 font.pixelSize: 13
                             }
                         }
@@ -788,7 +843,8 @@ Window {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 32
                                 model: [5, 6, 7, 8]
-                                currentIndex: 3
+                                currentIndex: settingsStore.uiPreference("dataBitsIndex", 3)
+                                onActivated: settingsStore.setUiPreference("dataBitsIndex", currentIndex)
                             }
                         }
 
@@ -804,7 +860,8 @@ Window {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 34
                                     model: ["1", "1.5", "2"]
-                                    currentIndex: 0
+                                    currentIndex: settingsStore.uiPreference("stopBitsIndex", 0)
+                                    onActivated: settingsStore.setUiPreference("stopBitsIndex", currentIndex)
                                 }
                             }
                             ColumnLayout {
@@ -816,7 +873,8 @@ Window {
                                     Layout.fillWidth: true
                                     Layout.preferredHeight: 34
                                     model: ["None", "Odd", "Even", "Mark", "Space"]
-                                    currentIndex: 0
+                                    currentIndex: settingsStore.uiPreference("parityIndex", 0)
+                                    onActivated: settingsStore.setUiPreference("parityIndex", currentIndex)
                                 }
                             }
                         }
@@ -832,7 +890,8 @@ Window {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 32
                                 model: ["None", "Hardware", "Software"]
-                                currentIndex: 0
+                                currentIndex: settingsStore.uiPreference("flowIndex", 0)
+                                onActivated: settingsStore.setUiPreference("flowIndex", currentIndex)
                             }
                         }
 
@@ -940,18 +999,45 @@ Window {
                                     boundsBehavior: Flickable.StopAtBounds
                                     spacing: 6
                                     model: commandStore.groups
+                                    cacheBuffer: groupsCollapsedForReorder ? count * 46 : 320
+                                    ScrollBar.vertical: SlimScrollBar { theme: appTheme }
 
                                     delegate: ColumnLayout {
-                                        width: cmdListView.width
+                                        id: groupDelegate
+                                        width: cmdListView.width - 10
+                                        height: groupsCollapsedForReorder ? 40 : implicitHeight
                                         spacing: 6
+                                        opacity: groupHeaderRect.reorderHeld ? 0.45 : 1
 
                                         property var group: modelData
-                                        property bool groupExpanded: true
+                                        property bool groupExpanded: !groupsCollapsedForReorder && foldedGroups[groupIndex] !== true
                                         property int groupIndex: index
+                                        function flushEdits() {
+                                            for (var i = 0; i < commandsRepeater.count; ++i) {
+                                                var card = commandsRepeater.itemAt(i)
+                                                if (card) card.commit()
+                                            }
+                                            commandStore.updateGroupName(groupIndex, groupNameField.text)
+                                        }
+                                        Connections {
+                                            target: commandStore
+                                            function onGroupRenamed(index, name) {
+                                                if (index === groupDelegate.groupIndex) groupNameField.text = name
+                                            }
+                                        }
 
                                         // Group Header
                                         Rectangle {
                                             id: groupHeaderRect
+                                            property bool reorderHeld: false
+                                            property bool suppressClick: false
+                                            readonly property string draftName: groupNameField.text
+                                            readonly property string draftPayload: ""
+                                            property point pressScenePosition
+                                            property point latestScenePosition
+                                            function flushCommit() {
+                                                commandStore.updateGroupName(groupDelegate.groupIndex, groupNameField.text)
+                                            }
                                             Layout.fillWidth: true
                                             height: 40
                                             radius: 10
@@ -959,6 +1045,83 @@ Window {
                                             border.color: appTheme.alpha(clHighlight, 0.18)
                                             border.width: 1
                                             clip: true
+                                            Item {
+                                                anchors.fill: parent
+                                                z: 10
+                                                PointHandler {
+                                                    id: groupPointer
+                                                    target: null
+                                                    acceptedButtons: Qt.LeftButton
+                                                    cursorShape: groupHeaderRect.reorderHeld ? Qt.ClosedHandCursor : undefined
+                                                    onActiveChanged: {
+                                                        if (active) {
+                                                            groupHeaderRect.pressScenePosition = point.scenePosition
+                                                            groupHeaderRect.latestScenePosition = point.scenePosition
+                                                            for (var button of [groupAddButton, groupDeleteButton]) {
+                                                                var local = button.mapFromItem(null, point.scenePosition.x, point.scenePosition.y)
+                                                                if (button.contains(local)) return
+                                                            }
+                                                            groupHoldTimer.start()
+                                                        } else {
+                                                            groupHoldTimer.stop()
+                                                            groupClickReset.start()
+                                                            if (groupHeaderRect.reorderHeld) {
+                                                                groupHeaderRect.reorderHeld = false
+                                                                commandReorder.finish(groupHeaderRect.latestScenePosition, groupNameField.text, "")
+                                                            }
+                                                        }
+                                                    }
+                                                    onPointChanged: {
+                                                        if (!active) return
+                                                        groupHeaderRect.latestScenePosition = point.scenePosition
+                                                        if (groupHeaderRect.reorderHeld) commandReorder.move(point.scenePosition)
+                                                        else if (Math.abs(point.scenePosition.x - groupHeaderRect.pressScenePosition.x)
+                                                                 + Math.abs(point.scenePosition.y - groupHeaderRect.pressScenePosition.y) > Qt.styleHints.startDragDistance)
+                                                            groupHoldTimer.stop()
+                                                    }
+                                                }
+                                                Timer {
+                                                    id: groupHoldTimer
+                                                    interval: 450
+                                                    onTriggered: {
+                                                        if (!groupPointer.active) return
+                                                        groupHeaderRect.reorderHeld = true
+                                                        groupHeaderRect.suppressClick = true
+                                                        groupNameField.deselect()
+                                                        groupHeaderRect.forceActiveFocus()
+                                                        groupDragScrollY = cmdListView.contentY
+                                                        groupDropIndex = -1
+                                                        // 收起前保存所有已创建编辑器，避免延后提交随委托销毁而丢失。
+                                                        for (var i = 0; i < cmdListView.count; ++i) {
+                                                            var row = cmdListView.itemAtIndex(i)
+                                                            if (row) row.flushEdits()
+                                                        }
+                                                        cmdListView.currentIndex = groupDelegate.groupIndex
+                                                        groupsCollapsedForReorder = true
+                                                        cmdListView.forceLayout()
+                                                        var cursor = cmdListView.mapFromItem(null, groupHeaderRect.latestScenePosition.x,
+                                                                                           groupHeaderRect.latestScenePosition.y)
+                                                        cmdListView.contentY = Math.max(cmdListView.originY,
+                                                            Math.min(groupDelegate.y + 20 - cursor.y,
+                                                                cmdListView.originY + Math.max(0, cmdListView.contentHeight - cmdListView.height)))
+                                                        var rows = {count: cmdListView.count, itemAt: function(i) { return cmdListView.itemAtIndex(i) }}
+                                                        commandReorder.begin(-1, groupDelegate.groupIndex, cmdListView.contentItem, rows,
+                                                                             groupHeaderRect, groupHeaderRect.latestScenePosition)
+                                                    }
+                                                }
+                                                Timer { id: groupClickReset; interval: 0; onTriggered: groupHeaderRect.suppressClick = false }
+                                            }
+                                            Keys.onEscapePressed: commandReorder.cancel()
+                                            Connections {
+                                                target: window
+                                                function onActiveChanged() {
+                                                    if (!window.active) {
+                                                        groupHoldTimer.stop()
+                                                        groupHeaderRect.suppressClick = false
+                                                        commandReorder.cancel()
+                                                    }
+                                                }
+                                            }
                                             Rectangle {
                                                 width: 3
                                                 anchors.left: parent.left
@@ -974,7 +1137,14 @@ Window {
                                                 id: groupHeaderMouse
                                                 anchors.fill: parent
                                                 hoverEnabled: true
-                                                onClicked: groupExpanded = !groupExpanded
+                                                onClicked: {
+                                                    if (groupHeaderRect.suppressClick) return
+                                                    groupDelegate.flushEdits()
+                                                    var folded = Object.assign({}, foldedGroups)
+                                                    if (groupExpanded) folded[groupIndex] = true
+                                                    else delete folded[groupIndex]
+                                                    foldedGroups = folded
+                                                }
                                             }
 
                                             RowLayout {
@@ -1009,6 +1179,7 @@ Window {
                                                         anchors.fill: parent
                                                         enabled: groupNameField.readOnly
                                                         onClicked: {
+                                                            if (groupHeaderRect.suppressClick) return
                                                             groupNameField.readOnly = false
                                                             groupNameField.forceActiveFocus()
                                                             groupNameField.selectAll()
@@ -1031,6 +1202,7 @@ Window {
                                                 }
 
                                                 UiButton {
+                                                    id: groupAddButton
                                                     glyph: "\uE710"
                                                     hint: "添加指令"
                                                     Layout.preferredWidth: 28
@@ -1039,6 +1211,7 @@ Window {
                                                 }
 
                                                 UiButton {
+                                                    id: groupDeleteButton
                                                     glyph: "\uE74D"
                                                     hint: "删除分组"
                                                     kind: "danger"
@@ -1064,7 +1237,11 @@ Window {
 
                                             Repeater {
                                                 id: commandsRepeater
-                                                model: group.commands
+                                                model: {
+                                                    var groups = commandStore.groups
+                                                    return groupExpanded && groupIndex >= 0 && groupIndex < groups.length
+                                                        ? groups[groupIndex].commands : []
+                                                }
 
                                                 delegate: CommandCard {
                                                     id: commandCard
@@ -1081,6 +1258,13 @@ Window {
                                                     property int groupIdx: parent.parent.groupIndex
                                                     property int cmdIdx: index
                                                     property string mapKey: groupIdx + ":" + cmdIdx
+                                                    Connections {
+                                                        target: commandStore
+                                                        function onCommandChanged(groupIndex, commandIndex, command) {
+                                                            if (groupIndex === commandCard.groupIdx && commandIndex === commandCard.cmdIdx)
+                                                                commandCard.modelData = command
+                                                        }
+                                                    }
                                                     onEdited: (name, payload) => commandStore.updateCommand(groupIdx, cmdIdx, name, payload)
                                                     onSendRequested: (payload, hex) => window.sendCommand(payload, hex)
                                                     onFormatToggled: (name, payload) => commandStore.updateCommand(groupIdx, cmdIdx, name, payload, !hexMode)
@@ -1461,7 +1645,7 @@ Window {
                                     visible: terminalCard.width >= 450
                                     text: "时间戳"
                                     selected: globalTimestamp
-                                    hint: "显示消息时间戳"
+                                    hint: "软件收到或写完这一批数据的时间；不是逐字节硬件时间戳"
                                     onClicked: globalTimestamp = !globalTimestamp
                                 }
                                 UiButton {
@@ -1490,11 +1674,19 @@ Window {
                                 ListView {
                                     id: terminalView
                                      anchors.fill: parent
+                                     anchors.rightMargin: 12
                                      anchors.topMargin: 4
                                      model: ListModel { id: terminalModel }
                                      spacing: 10
                                      clip: true
                                      boundsBehavior: Flickable.StopAtBounds
+                                    ScrollBar.vertical: SlimScrollBar {
+                                        theme: appTheme
+                                        parent: terminalView.parent
+                                        anchors.top: parent.top
+                                        anchors.bottom: parent.bottom
+                                        anchors.right: parent.right
+                                    }
                                     delegate: Column {
                                         id: terminalMessageDelegate
                                         width: terminalView.width
@@ -1717,6 +1909,8 @@ Window {
                                         backdropItem: sendCard
                                         anchors.fill: parent
                                         model: ["无校验", "异或 BCC", "Sum8", "CRC16"]
+                                        currentIndex: settingsStore.uiPreference("checksum", 0)
+                                        onCurrentIndexChanged: if (window.layoutReady) settingsStore.setUiPreference("checksum", currentIndex)
                                         font.pixelSize: 11
                                     }
                                 }
@@ -1724,11 +1918,11 @@ Window {
                             Text {
                                 Layout.fillWidth: true
                                 visible: text.length > 0
-                                text: inputSender.notice || (inputSender.needsConversion
+                                text: inputSender.notice || inputSender.hexInputError || (inputSender.needsConversion
                                       ? inputSender.conversionNotice
                                       : (!globalTxHex && settingsStore.lineEndingMode > 0
                                          ? "TXT 行尾：" + ["无", "LF (0A)", "CR (0D)", "CRLF (0D 0A)"][settingsStore.lineEndingMode] + "，可在设置中改为“无”。" : ""))
-                                color: inputSender.needsConversion || inputSender.notice === "请先连接串口。" ? appTheme.warning : clText
+                                color: inputSender.needsConversion || inputSender.hexInputError.length > 0 || inputSender.notice === "请先连接串口。" ? appTheme.warning : clText
                                 font.pixelSize: 11
                                 wrapMode: Text.Wrap
                                 maximumLineCount: 2
@@ -1753,7 +1947,7 @@ Window {
                                      font.pixelSize: 14
                                      padding: 0
                                      topPadding: 4
-                                     placeholderText: "键入内容并发送..."
+                                     placeholderText: globalTxHex ? 'HEX 字节或带双引号的文字，例如 01 "AT" 0D' : "键入内容并发送..."
                                      placeholderTextColor: grayPlaceholder
                                      background: null
                                      wrapMode: TextArea.Wrap
@@ -2198,8 +2392,8 @@ Window {
                 loopTimer.stop()
             }
         }
-        function onDataReceived(ascii, hex, isSent, isHex) {
-            terminalModel.append({ "contentAscii": ascii, "contentHex": hex, "isHexMode": isSent ? isHex : globalRxHex, "isSent": isSent, "timestamp": Qt.formatDateTime(new Date(), "hh:mm:ss.zzz") })
+        function onDataReceived(ascii, hex, isSent, isHex, timestampMs) {
+            terminalModel.append({ "contentAscii": ascii, "contentHex": hex, "isHexMode": isSent ? isHex : globalRxHex, "isSent": isSent, "timestamp": Qt.formatDateTime(new Date(timestampMs > 0 ? timestampMs : Date.now()), "hh:mm:ss.zzz") })
             if (autoScroll) {
                 terminalView.positionViewAtEnd()
             }
@@ -2230,6 +2424,7 @@ Window {
         updateAcrylicTint()
         serialManager.lineEndingMode = settingsStore.lineEndingMode
         startupPortRefreshTimer.start()
+        windowState.initialize()
     }
 
     Loader {

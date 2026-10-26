@@ -14,14 +14,21 @@ TestCase {
         minimumWidth: 300; minimumHeight: 240
         visible: true
         flags: Qt.Window | Qt.FramelessWindowHint
+        App.WindowStateController {
+            id: windowState
+            targetWindow: target
+            normalGeometry: Qt.rect(0, 0, 500, 360)
+        }
         App.WindowDragArea {
             id: dragArea
             anchors.fill: parent
             targetWindow: target
+            stateController: windowState
         }
     }
     function init() {
         failOnWarning(/.*/)
+        windowState.initialize()
         target.showNormal()
         target.width = 500
         target.height = 360

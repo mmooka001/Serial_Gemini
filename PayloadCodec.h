@@ -5,6 +5,9 @@
 #include <QRegularExpression>
 #include <QString>
 #include <QStringConverter>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonParseError>
 #ifdef Q_OS_WIN
 #include <QtCore/qt_windows.h>
 #endif
@@ -108,8 +111,59 @@ inline bool isHex(const QString &text) {
     return !compact.isEmpty() && compact.size() % 2 == 0 && digits.match(compact).hasMatch();
 }
 
+struct HexInput {
+    QByteArray bytes;
+    QString error;
+    bool containsText = false;
+    bool valid() const { return error.isEmpty() && !bytes.isEmpty(); }
+};
+
+inline HexInput parseHex(const QString &text, const QString &encoding) {
+    HexInput result;
+    int position = 0;
+    while (position < text.size()) {
+        if (text[position].isSpace()) { ++position; continue; }
+        const int start = position;
+        if (text[position] == '"') {
+            ++position;
+            bool escaped = false;
+            bool closed = false;
+            while (position < text.size()) {
+                const QChar ch = text[position++];
+                if (!escaped && ch == '"') { closed = true; break; }
+                if (!escaped && ch == '\\') escaped = true;
+                else escaped = false;
+            }
+            if (!closed) {
+                result.error = QStringLiteral("文字请用英文双引号成对包住，例如 01 \"AT\" 0D。");
+                return result;
+            }
+            QJsonParseError error;
+            const auto literal = QJsonDocument::fromJson(("[" + text.mid(start, position - start) + "]").toUtf8(), &error);
+            if (error.error != QJsonParseError::NoError || !literal.isArray() || !literal.array().first().isString()) {
+                result.error = QStringLiteral("引号内的换行或引号请使用 \\n、\\r、\\\" 等转义写法。");
+                return result;
+            }
+            result.bytes += encodeText(literal.array().first().toString(), encoding);
+            result.containsText = true;
+        } else {
+            while (position < text.size() && !text[position].isSpace() && text[position] != '"') ++position;
+            const QString token = text.mid(start, position - start);
+            if (!isHex(token)) {
+                result.error = QStringLiteral("HEX 模式只接受成对字节；文字请加英文双引号，例如 01 \"AT\" 0D。");
+                return result;
+            }
+            result.bytes += QByteArray::fromHex(compactHex(token).toLatin1());
+        }
+    }
+    if (result.bytes.isEmpty()) result.error = QStringLiteral("请输入至少一个字节。");
+    return result;
+}
+
 inline QByteArray decode(const QString &text, bool hex, const QString &encoding = QStringLiteral("UTF-8")) {
-    return hex && isHex(text) ? QByteArray::fromHex(compactHex(text).toLatin1()) : encodeText(text, encoding);
+    if (!hex) return encodeText(text, encoding);
+    const auto parsed = parseHex(text, encoding);
+    return parsed.valid() ? parsed.bytes : QByteArray();
 }
 
 inline QByteArray frame(QByteArray bytes, bool hex, int lineEnding, const QByteArray &checksum = {}) {

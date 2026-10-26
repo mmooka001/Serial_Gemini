@@ -19,6 +19,14 @@ TestCase {
         property string dataEncoding: "UTF-8"
         function isHexInput(text) { return /^(?:[0-9a-fA-F]{2})+$/.test(text.replace(/0x/gi, "").replace(/\s+/g, "")) }
         function textToHex(text) { return text.split("").map(ch => ch.charCodeAt(0).toString(16).padStart(2, "0")).join(" ").toUpperCase() }
+        function prepareHexInput(text) {
+            if (isHexInput(text)) return {valid: true, containsText: false, hex: text, error: ""}
+            if (text.startsWith('"') && text.endsWith('"')) {
+                try { return {valid: true, containsText: true, hex: textToHex(JSON.parse(text)), error: ""} }
+                catch (error) {}
+            }
+            return {valid: false, containsText: false, error: "文字请加双引号"}
+        }
         function sendData(text, hex) { count++; lastPayload = text; lastHex = hex; checksum = 0 }
         function sendDataWithChecksum(text, hex, type) { sendData(text, hex); checksum = type }
     }
@@ -56,25 +64,25 @@ TestCase {
         testCase.commandInterval = 500
     }
     function test_asciiConvertsOnceWithoutChangingHexMode() {
-        sender.inputText = "AT+RST"
+        sender.inputText = '"AT+RST"'
         verify(sender.needsConversion)
         verify(sender.sendOnce())
         compare(sender.inputText, "41 54 2B 52 53 54")
         compare(backend.lastPayload, sender.inputText)
         compare(backend.lastHex, true)
         compare(sender.hexMode, true)
-        compare(sender.notice, "检测到非hex内容，该内容将转换为UTF-8的hex编码发送")
+        compare(sender.notice, "引号内文本将转换为UTF-8的 HEX 编码发送")
         verify(sender.sendOnce())
         compare(backend.lastPayload, "41 54 2B 52 53 54")
     }
     function test_conversionHintTracksSelectedEncoding() {
-        sender.inputText = "AT+RST"
+        sender.inputText = '"AT+RST"'
         verify(sender.needsConversion)
         for (var encoding of ["UTF-8", "GBK", "GB2312", "ASCII", "ISO-8859-1"]) {
             backend.dataEncoding = encoding
-            compare(sender.conversionNotice, "检测到非hex内容，该内容将转换为" + encoding + "的hex编码发送")
+            compare(sender.conversionNotice, "引号内文本将转换为" + encoding + "的 HEX 编码发送")
             verify(sender.sendPreset("AT+RST", false))
-            compare(sender.notice, sender.conversionNotice)
+            compare(sender.notice, "TXT 指令已按" + encoding + "编码转换为 HEX 发送")
         }
         backend.dataEncoding = "UTF-8"
         compare(sender.notice, "")

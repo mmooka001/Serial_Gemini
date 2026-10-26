@@ -1,5 +1,6 @@
 #include "SerialManager.h"
 #include "ChecksumHelper.h"
+#include <QDateTime>
 
 SerialManager::SerialManager(QObject *parent)
     : QObject(parent), m_serialPort(new QSerialPort(this))
@@ -111,7 +112,9 @@ void SerialManager::sendDataWithChecksum(const QString &data, bool isHex, int ch
         return;
     }
 
-    const QByteArray payload = PayloadCodec::decode(data, isHex, m_dataEncoding);
+    const auto parsed = isHex ? PayloadCodec::parseHex(data, m_dataEncoding) : PayloadCodec::HexInput();
+    if (isHex && !parsed.valid()) { emit errorOccurred(parsed.error); return; }
+    const QByteArray payload = isHex ? parsed.bytes : PayloadCodec::encodeText(data, m_dataEncoding);
     const QByteArray checksum = ChecksumHelper::calculate(payload, static_cast<ChecksumHelper::ChecksumType>(checksumType));
     const QByteArray bytes = PayloadCodec::frame(payload, isHex, m_lineEndingMode, checksum);
 
@@ -142,19 +145,21 @@ void SerialManager::handleBytesWritten(qint64 count)
     m_pendingWrites.head().written += completed;
     m_writeInFlight -= completed;
     if (m_pendingWrites.head().written == m_pendingWrites.head().bytes.size()) {
+        const qint64 timestampMs = QDateTime::currentMSecsSinceEpoch();
         const auto frame = m_pendingWrites.dequeue();
         emit dataReceived(PayloadCodec::decodeText(frame.bytes, frame.encoding),
-                          frame.bytes.toHex(' ').toUpper(), true, frame.isHex);
+                          frame.bytes.toHex(' ').toUpper(), true, frame.isHex, timestampMs);
     }
     writeNextChunk();
 }
 
 void SerialManager::readData()
 {
+    const qint64 timestampMs = QDateTime::currentMSecsSinceEpoch();
     const QByteArray data = m_serialPort->readAll();
     if (data.isEmpty()) return;
 
-    emit dataReceived(m_rxDecoder.decode(data), data.toHex(' ').toUpper(), false);
+    emit dataReceived(m_rxDecoder.decode(data), data.toHex(' ').toUpper(), false, false, timestampMs);
 }
 
 void SerialManager::copyToClipboard(const QString &text)

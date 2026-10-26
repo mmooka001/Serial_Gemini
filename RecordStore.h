@@ -25,12 +25,13 @@ public:
     quint64 txCount() const { return m_txCount; }
 
     void addRecord(const QString &type, const QString &content,
-                   const QString &hexContent, int displayMode = 0) {
+                   const QString &hexContent, int displayMode = 0, qint64 timestampMs = 0) {
         QVariantMap rec;
         rec["type"] = type;
         rec["content"] = content;
         rec["hexContent"] = hexContent;
-        rec["timestamp"] = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss.zzz");
+        rec["timestamp"] = QDateTime::fromMSecsSinceEpoch(timestampMs > 0 ? timestampMs : QDateTime::currentMSecsSinceEpoch())
+                               .toString("yyyy-MM-dd hh:mm:ss.zzz");
         rec["displayMode"] = displayMode;
         m_records.append(rec);
 

@@ -9,7 +9,7 @@ set(PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}/../..")
 set(APP_QML
     Main.qml AppTheme.qml ActionButton.qml CommandCard.qml CommandReorderController.qml
     TerminalMessageText.qml PopupInputGuard.qml IntervalField.qml PanelDivider.qml SidebarResizeController.qml
-    WindowDragArea.qml FocusDismissLayer.qml SendController.qml SegmentedControl.qml
+    WindowDragArea.qml WindowStateController.qml SlimScrollBar.qml FocusDismissLayer.qml SendController.qml SegmentedControl.qml
     AccentColorPicker.qml LiquidGlassSelection.qml LiquidGlassToolbar.qml GlassComboBox.qml SerialLogo.qml
 )
 set(QML_FILES)

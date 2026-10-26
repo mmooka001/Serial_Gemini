@@ -10,8 +10,10 @@ QtObject {
     property bool running: false
     property string notice: ""
     readonly property string encoding: backend.dataEncoding
-    readonly property string conversionNotice: "检测到非hex内容，该内容将转换为" + encoding + "的hex编码发送"
-    readonly property bool needsConversion: hexMode && inputText.length > 0 && !backend.isHexInput(inputText)
+    readonly property var hexInput: hexMode ? backend.prepareHexInput(inputText) : ({valid: true, containsText: false, error: ""})
+    readonly property string hexInputError: hexMode && inputText.length > 0 && !hexInput.valid ? hexInput.error : ""
+    readonly property string conversionNotice: "引号内文本将转换为" + encoding + "的 HEX 编码发送"
+    readonly property bool needsConversion: hexMode && hexInput.valid && hexInput.containsText
     signal inputConverted(string hex)
     onInputTextChanged: notice = ""
     onEncodingChanged: notice = ""
@@ -19,12 +21,13 @@ QtObject {
     function validate(): bool {
         if (!backend.isOpen) { notice = "请先连接串口。"; return false }
         if (!inputText.length) { notice = "请输入要发送的内容。"; return false }
+        if (hexInputError.length) { notice = hexInputError; return false }
         notice = ""
         return true
     }
     function preparedInput(): string {
         if (!needsConversion) return inputText
-        var hex = backend.textToHex(inputText)
+        var hex = hexInput.hex
         inputConverted(hex)
         notice = conversionNotice
         return hex
@@ -41,9 +44,14 @@ QtObject {
         if (!payload.length) { notice = "指令内容为空，请先填写。"; return false }
         notice = ""
         var hex = presetHex || hexMode
-        if (hex && (!presetHex || !backend.isHexInput(payload))) {
+        if (presetHex) {
+            var parsed = backend.prepareHexInput(payload)
+            if (!parsed.valid) { notice = parsed.error; return false }
+            if (parsed.containsText) notice = conversionNotice
+            payload = parsed.hex
+        } else if (hex) {
             payload = backend.textToHex(payload)
-            notice = conversionNotice
+            notice = "TXT 指令已按" + encoding + "编码转换为 HEX 发送"
         }
         backend.sendData(payload, hex)
         return true
