@@ -15,6 +15,7 @@
 #include <QTest>
 #include <QThread>
 #include <QElapsedTimer>
+#include <QTemporaryDir>
 #include <iostream>
 #include <vector>
 
@@ -256,7 +257,8 @@ private:
     }
 
     SerialManager serial;
-    CommandStore commands;
+    QTemporaryDir commandDirectory;
+    CommandStore commands{nullptr, commandDirectory.path()};
     SettingsStore settings;
     RecordStore records;
     ChecksumHelper checksum;

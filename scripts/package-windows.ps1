@@ -32,6 +32,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Release configure failed.' }
 if ($LASTEXITCODE -ne 0) { throw 'Release build failed.' }
 
 New-Item -ItemType Directory -Path $stageDirectory, $artifactDirectory -Force | Out-Null
+New-Item -ItemType Directory -Path (Join-Path $stageDirectory 'Commands') | Out-Null
 $executable = Join-Path $stageDirectory 'GeminiSerial.exe'
 Copy-Item -LiteralPath (Join-Path $buildDirectory 'MySerial_Gemini.exe') -Destination $executable
 
@@ -55,7 +56,9 @@ Gemini Serial v$version - Windows x64
 请保留附带的 DLL、qml 和 platforms 等目录，不要只复制 EXE。
 
 长按左侧导航约 0.3 秒后可滑动切换；主题按钮可调整明暗及强调色。
-指令与配置保存在系统应用数据目录，升级时沿用已有数据。
+指令保存在 GeminiSerial.exe 旁的 Commands 文件夹，导入 JSON 会复制到此目录。
+首次运行会复制旧版指令，原文件保留。升级时请一并保留 Commands 文件夹。
+界面偏好与串口配置仍保存在系统应用数据目录。
 
 项目：https://github.com/mmooka001/Serial_Gemini
 更新内容：RELEASE_NOTES.md
@@ -106,7 +109,7 @@ The package includes the dynamically linked runtime DLLs so they can be replaced
 
 $requiredFiles = @('GeminiSerial.exe', 'Qt6Core.dll', 'Qt6Gui.dll', 'Qt6Quick.dll',
     'Qt6SerialPort.dll', 'platforms/qwindows.dll', 'libgcc_s_seh-1.dll',
-    'libstdc++-6.dll', 'libwinpthread-1.dll', 'qml/QtQuick/Effects/qmldir')
+    'libstdc++-6.dll', 'libwinpthread-1.dll', 'qml/QtQuick/Effects/qmldir', 'Commands')
 foreach ($relativePath in $requiredFiles) {
     if (-not (Test-Path -LiteralPath (Join-Path $stageDirectory $relativePath))) {
         throw "Missing runtime file: $relativePath"
@@ -116,6 +119,9 @@ $unexpected = Get-ChildItem -LiteralPath $stageDirectory -File -Recurse | Where-
     $_.Extension -in @('.pdb', '.log', '.cpp', '.h', '.ps1') -or $_.Name -in @('commands.json', 'stdout.txt', 'stderr.txt')
 }
 if ($unexpected) { throw 'Unexpected development or private files in release package.' }
+if (Get-ChildItem -LiteralPath (Join-Path $stageDirectory 'Commands') -Force) {
+    throw 'Release Commands directory must be empty; personal commands must not be packaged.'
+}
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [IO.Compression.ZipFile]::CreateFromDirectory($stageDirectory, $archive,
     [IO.Compression.CompressionLevel]::Optimal, $true)

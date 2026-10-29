@@ -44,7 +44,7 @@ struct MainInstance {
         QCoreApplication::setOrganizationDomain(QStringLiteral("codex.local"));
         appDataPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
         serial = std::make_unique<SerialManager>();
-        commands = std::make_unique<CommandStore>();
+        commands = std::make_unique<CommandStore>(nullptr, appDataPath + "/Commands");
         settings = std::make_unique<SettingsStore>();
         records = std::make_unique<RecordStore>();
         checksum = std::make_unique<ChecksumHelper>();

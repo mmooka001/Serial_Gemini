@@ -277,6 +277,7 @@ Rectangle {
                 id: sendButton
                 objectName: "commandSend"
                 theme: card.theme
+                kind: "accent"
                 glyph: "\uE724"
                 hint: "发送指令"
                 Layout.preferredWidth: 26
@@ -408,6 +409,7 @@ Rectangle {
                 id: sendAction
                 objectName: "commandMenuSend"
                 theme: card.theme
+                kind: "accent"
                 width: parent.width
                 leftAligned: true
                 glyph: "\uE724"

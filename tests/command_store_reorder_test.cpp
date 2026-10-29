@@ -2,6 +2,7 @@
 #include <QCoreApplication>
 #include <QScopeGuard>
 #include <QUuid>
+#include <QTemporaryDir>
 #include <cassert>
 #include <iostream>
 
@@ -16,7 +17,8 @@ int main(int argc, char **argv) {
         QDir().rmdir(directory);
     });
 
-    CommandStore store;
+    QTemporaryDir commandDirectory;
+    CommandStore store(nullptr, commandDirectory.path());
     store.addGroup("Commands");
     store.addCommand(0, "A", "AA", true);
     store.addCommand(0, "B", "AT", false);
@@ -44,7 +46,7 @@ int main(int argc, char **argv) {
     assert(commands[0].toMap()["name"] == "Edited A");
     assert(commands[1].toMap()["name"] == "B");
     assert(!commands[1].toMap()["isHex"].toBool());
-    CommandStore reloaded;
+    CommandStore reloaded(nullptr, commandDirectory.path());
     assert(reloaded.groups() == store.groups());
     std::cout << "Command reordering preserves edits, modes, other groups and saved order.\n";
 }

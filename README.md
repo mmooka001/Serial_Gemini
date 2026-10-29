@@ -25,6 +25,7 @@ Gemini Serial 是一款使用 **Qt 6、QML 和 C++17** 开发的现代化串口�
 - TXT、HEX 收发模式及双格式数据显示
 - BCC、SUM8、CRC16 Modbus 等校验方式
 - 指令分组、搜索、编辑、导入与导出
+- 软件旁的 Commands 指令文件库，支持文件切换、刷新、新建和打开目录
 - 多指令循环发送和可配置发送间隔
 - 自动发送、时间显示和收发字节统计
 - 通信记录清空与 CSV 导出
@@ -84,6 +85,31 @@ build/MySerial_Gemini.exe
 
 ## 使用说明
 
+### 指令文件库
+
+指令保存在可执行文件旁的 `Commands` 目录，每个 JSON 是一份独立指令库。指令面板搜索框上方可切换文件，旁边依次为新建、刷新、打开目录；选择过的文件会在下次启动时恢复。
+
+- 导入会先校验格式，再复制到 `Commands` 并打开；同名文件自动增加序号，原文件不会被覆盖。直接导入本目录已有 JSON 时只打开文件。
+- 编辑会自动保存到当前文件；切换、刷新和导入前会提交正在编辑的文字，并停止指令循环、清空勾选。
+- 首次运行会将旧版 AppData 中的 `commands.json` 复制为 `旧版指令.json`，保留旧文件。新用户会创建空的 `默认指令.json`。
+- 可以直接在文件管理器中添加或修改 JSON，然后点击刷新。格式错误时保留当前内容并显示原因。
+- 如果当前文件被外部修改、删除或不可写，自动保存会停止，未保存编辑保留在内存中，并以文件名后的 `*` 标记。可先导出备份，再刷新读取外部版本；放弃未保存修改和关闭程序前会再次确认。
+- 请将软件放在可写入的目录。升级或移动软件时一并保留 `Commands` 文件夹；界面偏好仍使用系统应用数据目录。
+
+JSON 沿用原有分组格式，`isHex` 可省略（默认为 TXT）：
+
+```json
+[
+  {
+    "name": "设备初始化",
+    "commands": [
+      { "name": "查询", "payload": "AT", "isHex": false },
+      { "name": "帧头", "payload": "AA 55", "isHex": true }
+    ]
+  }
+]
+```
+
 1. 在左侧选择串口并配置通信参数。
 2. 点击“建立串口连接”。
 3. 在底部选择 TXT 或 HEX 发送模式，输入数据后发送。
@@ -117,10 +143,11 @@ HEX 模式中，文字需要加英文双引号，可与字节混合，例如 `01
 
 ## 数据存储
 
-指令和设置保存在 Qt 标准应用数据目录中：
+指令文件与界面设置分别保存：
 
-- `commands.json`：指令分组与内容
-- `QSettings`：界面与通信相关设置
+- 软件旁 `Commands/*.json`：各份指令文件，编辑直接写回当前文件
+- `QSettings`：界面与通信相关设置，保存在系统标准设置位置
+- 旧版 AppData 的 `commands.json` 仅用于首次迁移，原文件保留
 
 ## 测试
 
@@ -138,7 +165,7 @@ powershell -ExecutionPolicy Bypass -File .\tests\send_toolbar_layout_test.ps1
 ./scripts/package-windows.ps1 -QtRoot D:/Qt/6.11.0/mingw_64 -CompilerBin D:/Qt/Tools/mingw1310_64/bin -NinjaExecutable E:/DevTools/ninja-win/ninja.exe
 ```
 
-脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。最新发布说明见 [v0.3.0 更新记录](docs/RELEASE_NOTES_v0.3.0.md)。
+脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。最新发布说明见 [v0.4.0 更新记录](docs/RELEASE_NOTES_v0.4.0.md)。
 
 ## 参与贡献
 

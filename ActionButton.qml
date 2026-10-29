@@ -11,6 +11,7 @@ Button {
     property bool leftAligned: false
     readonly property color foreground: !enabled ? theme.muted
         : kind === "primary" ? theme.primaryText
+        : kind === "accent" ? theme.primary
         : kind === "danger" ? theme.danger
         : selected ? theme.primary : theme.secondary
 

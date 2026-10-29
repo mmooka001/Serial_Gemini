@@ -39,7 +39,17 @@ Window {
         onNormalGeometryChanged: if (window.layoutReady) settingsStore.setUiPreference("windowGeometry", normalGeometry)
         onPreferredVisibilityChanged: if (window.layoutReady) settingsStore.setUiPreference("windowVisibility", preferredVisibility)
     }
-    onClosing: windowState.rememberGeometry()
+    property bool discardCommandEditsOnClose: false
+    onClosing: (event) => {
+        windowState.rememberGeometry()
+        if (discardCommandEditsOnClose) return
+        flushCommandEdits()
+        if (!commandStore.saveCurrent()) {
+            event.accepted = false
+            commandDiscardDialog.closingWindow = true
+            commandDiscardDialog.open()
+        }
+    }
 
     property int themeMode: settingsStore.themeMode
     readonly property bool isDark: appTheme.dark
@@ -242,6 +252,48 @@ Window {
     property bool groupsCollapsedForReorder: false
     property real groupDragScrollY: 0
     property int groupDropIndex: -1
+
+    function flushCommandEdits() {
+        for (var i = 0; i < cmdListView.count; ++i) {
+            var group = cmdListView.itemAtIndex(i)
+            if (group) group.flushEdits()
+        }
+    }
+
+    function prepareCommandLibraryChange() {
+        commandReorder.cancel()
+        flushCommandEdits()
+        loopSending = false
+        loopTimer.stop()
+        loopIndex = -1
+        loopCmds = []
+    }
+
+    function refreshCommandFiles() {
+        prepareCommandLibraryChange()
+        if (!commandStore.saveCurrent()) {
+            commandDiscardDialog.closingWindow = false
+            commandDiscardDialog.open()
+            return
+        }
+        commandStore.refreshFiles()
+    }
+
+    Connections {
+        target: commandStore
+        function onLibraryReloaded() {
+            loopSending = false
+            loopTimer.stop()
+            loopIndex = -1
+            loopCmds = []
+            checkedMap = ({})
+            foldedGroups = ({})
+            cmdSearchField.clear()
+            deleteConfirmOverlay.visible = false
+            Qt.callLater(() => cmdListView.positionViewAtBeginning())
+        }
+    }
+
     CommandReorderController {
         id: commandReorder
         surface: rootRect
@@ -948,8 +1000,82 @@ Window {
                                         text: "分组"
                                         Layout.preferredHeight: 32
                                         font.pixelSize: 12
+                                        enabled: commandStore.currentFile.length > 0 && !commandReorder.active
                                         onClicked: commandStore.addGroup("新分组")
                                     }
+                                }
+
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+                                    enabled: !commandReorder.active
+                                    ConfigComboBox {
+                                        id: commandFileCombo
+                                        objectName: "commandFileSelector"
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 40
+                                        Layout.preferredHeight: 34
+                                        model: commandStore.files
+                                        currentIndex: commandStore.files.indexOf(commandStore.currentFile)
+                                        displayText: (commandStore.currentFile || "选择指令文件")
+                                                     + (commandStore.hasUnsavedChanges ? " *" : "")
+                                        Accessible.name: "当前指令文件"
+                                        ToolTip.visible: hovered
+                                        ToolTip.text: commandStore.directory + "/" + commandStore.currentFile
+                                        ToolTip.delay: 650
+                                        onActivated: (index) => {
+                                            var file = commandStore.files[index]
+                                            window.prepareCommandLibraryChange()
+                                            commandStore.selectFile(file)
+                                            // 加载失败时仍显示原文件，避免选择框和实际内容不一致。
+                                            currentIndex = Qt.binding(() => commandStore.files.indexOf(commandStore.currentFile))
+                                        }
+                                    }
+                                    UiButton {
+                                        glyph: "\uE710"
+                                        hint: "新建指令文件"
+                                        Layout.preferredWidth: 28
+                                        Layout.preferredHeight: 30
+                                        leftPadding: 0
+                                        rightPadding: 0
+                                        onClicked: {
+                                            window.prepareCommandLibraryChange()
+                                            commandStore.createFile()
+                                        }
+                                    }
+                                    UiButton {
+                                        objectName: "refreshCommandFiles"
+                                        glyph: "\uE72C"
+                                        hint: "刷新目录并重新读取当前文件"
+                                        Layout.preferredWidth: 28
+                                        Layout.preferredHeight: 30
+                                        leftPadding: 0
+                                        rightPadding: 0
+                                        onClicked: window.refreshCommandFiles()
+                                    }
+                                    UiButton {
+                                        glyph: "\uE8B7"
+                                        hint: "打开 Commands 目录"
+                                        Layout.preferredWidth: 28
+                                        Layout.preferredHeight: 30
+                                        leftPadding: 0
+                                        rightPadding: 0
+                                        onClicked: Qt.openUrlExternally(window.fileUrlFromLocalPath(commandStore.directory))
+                                    }
+                                }
+
+                                Text {
+                                    Layout.fillWidth: true
+                                    visible: text.length > 0
+                                    text: commandStore.statusMessage
+                                    color: commandStore.hasError ? appTheme.warning : appTheme.muted
+                                    font.pixelSize: 11
+                                    wrapMode: Text.Wrap
+                                    maximumLineCount: 3
+                                    elide: Text.ElideRight
+                                    ToolTip.visible: commandStatusHover.hovered
+                                    ToolTip.text: text
+                                    HoverHandler { id: commandStatusHover }
                                 }
 
                                 // Search Box
@@ -1322,9 +1448,9 @@ Window {
                                         Layout.preferredWidth: 80
                                         Layout.preferredHeight: 24
                                         clip: true
-                                        text: loopSending ? "停止" : "循环"
+                                        text: loopSending ? "停止发送" : "循环发送"
                                         font.pixelSize: 10
-                                        kind: loopSending ? "danger" : "tonal"
+                                        kind: loopSending ? "danger" : "primary"
                                         selected: loopSending
                                         leftPadding: 4
                                         rightPadding: 4
@@ -1882,8 +2008,8 @@ Window {
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                     UiButton {
                                         anchors.fill: parent
-                                        text: autoSending ? "停止" : "循环"
-                                        kind: autoSending ? "danger" : "tonal"
+                                        text: autoSending ? "停止发送" : "循环发送"
+                                        kind: autoSending ? "danger" : "primary"
                                         selected: autoSending
                                         hint: autoSending ? "停止定时发送" : "按设定间隔重复发送"
                                         onClicked: {
@@ -2205,14 +2331,77 @@ Window {
             title: "导入指令预设"
             nameFilters: ["JSON files (*.json)", "All files (*)"]
             fileMode: FileDialog.OpenFile
-            onAccepted: commandStore.importFromFile(selectedFile.toString())
+            onAccepted: {
+                window.prepareCommandLibraryChange()
+                commandStore.importFromFile(selectedFile.toString())
+            }
         }
         FileDialog {
             id: exportFileDialog
             title: "导出指令预设"
             nameFilters: ["JSON files (*.json)", "All files (*)"]
             fileMode: FileDialog.SaveFile
-            onAccepted: commandStore.exportToFile(selectedFile.toString())
+            onAccepted: {
+                window.flushCommandEdits()
+                commandStore.exportToFile(selectedFile.toString())
+            }
+        }
+
+        Dialog {
+            id: commandDiscardDialog
+            property bool closingWindow: false
+            parent: Overlay.overlay
+            anchors.centerIn: parent
+            width: Math.min(360, window.width - 40)
+            padding: 18
+            modal: true
+            focus: true
+            closePolicy: Popup.CloseOnEscape
+            background: Rectangle {
+                color: appTheme.raised
+                radius: 14
+                border.color: appTheme.line
+            }
+            contentItem: ColumnLayout {
+                spacing: 14
+                Text {
+                    Layout.fillWidth: true
+                    text: "当前指令尚未保存"
+                    color: appTheme.text
+                    font.pixelSize: 15
+                    font.weight: Font.DemiBold
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: commandDiscardDialog.closingWindow
+                        ? "关闭会丢失未保存的修改。可先取消，再导出指令备份。"
+                        : "重新读取将放弃未保存的修改，使用目录中的文件。可先取消，再导出指令备份。"
+                    color: appTheme.secondary
+                    font.pixelSize: 12
+                    wrapMode: Text.Wrap
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+                    UiButton {
+                        text: "取消"
+                        kind: "tonal"
+                        Layout.fillWidth: true
+                        onClicked: commandDiscardDialog.close()
+                    }
+                    UiButton {
+                        text: commandDiscardDialog.closingWindow ? "放弃并关闭" : "放弃并刷新"
+                        kind: "danger"
+                        Layout.fillWidth: true
+                        onClicked: {
+                            commandDiscardDialog.close()
+                            if (commandDiscardDialog.closingWindow) {
+                                window.discardCommandEditsOnClose = true
+                                window.close()
+                            } else commandStore.refreshFiles(true)
+                        }
+                    }
+                }
+            }
         }
 
         Rectangle {
