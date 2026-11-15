@@ -174,7 +174,7 @@ powershell -ExecutionPolicy Bypass -File .\tests\send_toolbar_layout_test.ps1
 ./scripts/package-windows.ps1 -QtRoot D:/Qt/6.11.0/mingw_64 -CompilerBin D:/Qt/Tools/mingw1310_64/bin -NinjaExecutable E:/DevTools/ninja-win/ninja.exe
 ```
 
-脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。最新发布说明见 [v0.6.0 更新记录](docs/RELEASE_NOTES_v0.6.0.md)。
+脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。最新发布说明见 [v0.6.1 更新记录](docs/RELEASE_NOTES_v0.6.1.md)。
 
 ## 参与贡献
 

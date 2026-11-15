@@ -665,11 +665,11 @@ Window {
                     Repeater {
                         id: railRepeater
                         model: [
-                            { symbol: "\uE839", label: "连接" },
-                            { symbol: "\uE8A5", label: "指令" },
-                            { symbol: "\uE9D9", label: "码表" },
-                            { symbol: "\uE713", label: "设置" },
-                            { symbol: "\uE8AB", label: "比对" }
+                            { panel: 0, symbol: "\uE839", label: "连接" },
+                            { panel: 1, symbol: "\uE8A5", label: "指令" },
+                            { panel: 4, symbol: "\uE8AB", label: "比对" },
+                            { panel: 2, symbol: "\uE9D9", label: "码表" },
+                            { panel: 3, symbol: "\uE713", label: "设置" }
                         ]
                         delegate: Item {
                             id: railButton
@@ -735,12 +735,13 @@ Window {
                         return Qt.rect(origin.x, origin.y, width, height)
                     }
                     baseColor: window.clToolSurface
-                    currentIndex: sidePanel
+                    currentIndex: railRepeater.model.findIndex(entry => entry.panel === sidePanel)
                     count: railRepeater.count
                     spacing: railButtons.spacing
                     dark: isDark
                     onActivated: (index, toggle) => {
-                        sidePanel = toggle && sidePanel === index ? -1 : index
+                        const panel = railRepeater.model[index].panel
+                        sidePanel = toggle && sidePanel === panel ? -1 : panel
                         if (sidePanel >= 0 && currentPageIndex !== 0)
                             currentPageIndex = 0
                     }
@@ -2543,7 +2544,11 @@ Window {
                                     Rectangle {
                                         width: 60; height: 60; radius: 12
                                         color: appTheme.block
-                                        Text { text: "G"; color: whiteText; font.bold: true; font.pixelSize: 32; anchors.centerIn: parent }
+                                        SerialLogo {
+                                            anchors.centerIn: parent
+                                            scale: 1.25
+                                            strokeColor: window.whiteText
+                                        }
                                     }
                                     ColumnLayout {
                                         Text { text: "MySerial Gemini"; color: whiteText; font.bold: true; font.pixelSize: appTheme.uiPixels(22) }

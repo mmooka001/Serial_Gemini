@@ -233,11 +233,11 @@ public:
         auto *navigation = window->findChild<QQuickItem *>("toolNavigation");
         if (navigation) {
             const QPoint compareButton = navigation->mapToScene(
-                QPointF(navigation->width() / 2, 4 * 52 + 24)).toPoint();
+                QPointF(navigation->width() / 2, 2 * 52 + 24)).toPoint();
             QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, compareButton);
         }
         pump(150);
-        check(QStringLiteral("the fifth navigation button opens comparison on a real click"),
+        check(QStringLiteral("the third navigation button opens comparison on a real click"),
               window->property("sidePanel").toInt() == 4);
         auto *compare = window->findChild<QQuickItem *>("compareWorkspace");
         auto *left = window->findChild<QQuickItem *>("compareInputA");
