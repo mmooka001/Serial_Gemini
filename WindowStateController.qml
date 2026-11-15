@@ -14,10 +14,15 @@ QtObject {
         return mode === Window.Windowed || mode === Window.Maximized || mode === Window.FullScreen
     }
     function applyGeometry() {
-        targetWindow.width = Math.max(targetWindow.minimumWidth, normalGeometry.width)
-        targetWindow.height = Math.max(targetWindow.minimumHeight, normalGeometry.height)
-        targetWindow.x = normalGeometry.x
-        targetWindow.y = normalGeometry.y
+        applyWindowedGeometry(normalGeometry.x, normalGeometry.y)
+    }
+    function applyWindowedGeometry(x: int, y: int) {
+        const width = Math.max(targetWindow.minimumWidth, normalGeometry.width)
+        const height = Math.max(targetWindow.minimumHeight, normalGeometry.height)
+        if (targetWindow.width !== width) targetWindow.width = width
+        if (targetWindow.height !== height) targetWindow.height = height
+        if (targetWindow.x !== x) targetWindow.x = x
+        if (targetWindow.y !== y) targetWindow.y = y
     }
     function rememberGeometry() {
         if (!ready || restoring || resumePending || targetWindow.visibility !== Window.Windowed) return
@@ -29,18 +34,23 @@ QtObject {
         Qt.callLater(() => showPreferred())
     }
     function showPreferred() {
+        resumeTimer.stop()
+        resumePending = false
         restoring = true
         geometryTimer.stop()
-        if (preferredVisibility === Window.Maximized) targetWindow.showMaximized()
-        else if (preferredVisibility === Window.FullScreen) targetWindow.showFullScreen()
-        else {
-            targetWindow.showNormal()
+        if (preferredVisibility === Window.Maximized) {
+            if (targetWindow.visibility !== Window.Maximized) targetWindow.showMaximized()
+        } else if (preferredVisibility === Window.FullScreen) {
+            if (targetWindow.visibility !== Window.FullScreen) targetWindow.showFullScreen()
+        } else {
+            if (targetWindow.visibility !== Window.Windowed) targetWindow.showNormal()
             applyGeometry()
         }
         lastVisibleMode = preferredVisibility
         settleTimer.restart()
     }
     function minimize() {
+        resumeTimer.stop()
         rememberGeometry()
         if (isRestorable(targetWindow.visibility)) preferredVisibility = targetWindow.visibility
         lastVisibleMode = preferredVisibility
@@ -55,12 +65,15 @@ QtObject {
         showPreferred()
     }
     function restoreForDrag(position: point, horizontalAnchor: real, verticalAnchor: real) {
+        resumeTimer.stop()
+        resumePending = false
         preferredVisibility = Window.Windowed
         restoring = true
+        geometryTimer.stop()
+        const width = Math.max(targetWindow.minimumWidth, normalGeometry.width)
         targetWindow.showNormal()
-        applyGeometry()
-        targetWindow.x = Math.round(position.x - targetWindow.width * horizontalAnchor)
-        targetWindow.y = Math.round(position.y - verticalAnchor)
+        applyWindowedGeometry(Math.round(position.x - width * horizontalAnchor),
+                              Math.round(position.y - verticalAnchor))
         lastVisibleMode = Window.Windowed
         settleTimer.restart()
     }
@@ -84,10 +97,15 @@ QtObject {
     }
     property Connections watcher: Connections {
         target: controller.targetWindow
-        function onXChanged() { controller.geometryTimer.restart() }
-        function onYChanged() { controller.geometryTimer.restart() }
-        function onWidthChanged() { controller.geometryTimer.restart() }
-        function onHeightChanged() { controller.geometryTimer.restart() }
+        function queueGeometrySave() {
+            if (controller.ready && !controller.restoring && !controller.resumePending
+                    && target.visibility === Window.Windowed)
+                controller.geometryTimer.restart()
+        }
+        function onXChanged() { queueGeometrySave() }
+        function onYChanged() { queueGeometrySave() }
+        function onWidthChanged() { queueGeometrySave() }
+        function onHeightChanged() { queueGeometrySave() }
         function onVisibilityChanged() {
             if (!controller.ready) return
             var mode = target.visibility

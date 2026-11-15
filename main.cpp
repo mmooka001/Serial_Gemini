@@ -3,10 +3,14 @@
 #include <QQmlContext>
 #include <QUrl>
 #include <QQuickWindow>
+#include <QQuickStyle>
 #include <QPointer>
 #include <QAbstractNativeEventFilter>
 #include <QPlatformSurfaceEvent>
 #include <QTimer>
+#include <QOperatingSystemVersion>
+#include <QFont>
+#include <QFontDatabase>
 
 #ifdef Q_OS_WIN
 #include <windows.h>
@@ -50,7 +54,10 @@ typedef BOOL (WINAPI *SetWindowCompositionAttributeFn)(HWND, WINDOWCOMPOSITIONAT
 // QML 可调用的磨砂开关：enable 绑定窗口，setTint 按主题切染色
 class AcrylicHelper : public QObject, public QAbstractNativeEventFilter {
     Q_OBJECT
+    Q_PROPERTY(bool available READ available NOTIFY availableChanged)
 public:
+    bool available() const { return m_available; }
+    Q_SIGNAL void availableChanged();
     Q_INVOKABLE void enable(QQuickWindow *w) {
         if (!w || m_window == w) return;
         m_window = w;
@@ -58,7 +65,7 @@ public:
         qGuiApp->installNativeEventFilter(this);
         connect(w, &QWindow::flagsChanged, this, [this] { queueNativeRefresh(); });
         connect(w, &QWindow::visibilityChanged, this, [this] {
-            QTimer::singleShot(0, this, [this] { updateFrame(); });
+            queueFrameUpdate();
         });
         refreshNativeWindow();
     }
@@ -67,7 +74,9 @@ public:
         UINT gg = UINT(qBound(0.0, g, 1.0) * 255.0);
         UINT bb = UINT(qBound(0.0, b, 1.0) * 255.0);
         UINT aa = UINT(qBound(0.0, a, 1.0) * 255.0);
-        m_gradient = (aa << 24) | (bb << 16) | (gg << 8) | rr;
+        const UINT gradient = (aa << 24) | (bb << 16) | (gg << 8) | rr;
+        if (m_gradient == gradient && m_available) return;
+        m_gradient = gradient;
         apply();
     }
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override {
@@ -104,6 +113,14 @@ public:
         return QObject::eventFilter(object, event);
     }
 private:
+    void queueFrameUpdate() {
+        if (m_frameUpdatePending || m_refreshPending) return;
+        m_frameUpdatePending = true;
+        QTimer::singleShot(0, this, [this] {
+            m_frameUpdatePending = false;
+            if (!m_refreshPending) updateFrame();
+        });
+    }
     void queueNativeRefresh() {
         if (m_refreshPending) return;
         m_refreshPending = true;
@@ -153,7 +170,8 @@ private:
     }
 
     void apply() {
-        if (!m_hwnd) return;
+        if (!m_hwnd || QOperatingSystemVersion::current() <
+                QOperatingSystemVersion(QOperatingSystemVersion::Windows, 10, 0, 17763)) return;
         static SetWindowCompositionAttributeFn fn = []() -> SetWindowCompositionAttributeFn {
             HMODULE u32 = GetModuleHandleW(L"user32.dll");
             return reinterpret_cast<SetWindowCompositionAttributeFn>(
@@ -169,13 +187,28 @@ private:
         data.Attrib      = 19;              // WCA_ACCENT_POLICY
         data.Data        = &policy;
         data.SizeOfData  = sizeof(policy);
-        fn(m_hwnd, &data);
+        const bool enabled = fn(m_hwnd, &data);
+        if (m_available != enabled) {
+            m_available = enabled;
+            emit availableChanged();
+        }
     }
+    bool m_available = false;
     bool m_refreshPending = false;
+    bool m_frameUpdatePending = false;
     int m_cornerPreference = -1;
     HWND m_hwnd = nullptr;
     QPointer<QQuickWindow> m_window;
     UINT m_gradient = 0x80101014;            // 默认深色 tint (黑 50%)
+};
+#else
+class AcrylicHelper : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(bool available READ available CONSTANT)
+public:
+    bool available() const { return false; }
+    Q_INVOKABLE void enable(QQuickWindow *) {}
+    Q_INVOKABLE void setTint(double, double, double, double) {}
 };
 #endif
 
@@ -189,7 +222,16 @@ using namespace Qt::StringLiterals;
 
 int main(int argc, char *argv[])
 {
+    for (int i = 1; i < argc; ++i) {
+        if (QByteArray(argv[i]) == "--software-rendering")
+            QQuickWindow::setSceneGraphBackend(QStringLiteral("software"));
+    }
     QGuiApplication app(argc, argv);
+    QQuickStyle::setStyle(QStringLiteral("Basic"));
+#ifdef Q_OS_WIN
+    if (!QFontDatabase::hasFamily(QStringLiteral("Segoe Fluent Icons")))
+        QFont::insertSubstitution(QStringLiteral("Segoe Fluent Icons"), QStringLiteral("Segoe MDL2 Assets"));
+#endif
 
     // 固定设置身份，沿用界面偏好并定位旧版指令的迁移来源。
     app.setOrganizationName("Gemini");
@@ -207,18 +249,14 @@ int main(int argc, char *argv[])
     QObject::connect(&settingsStore, &SettingsStore::dataEncodingChanged, &serialManager, [&] {
         serialManager.setDataEncoding(settingsStore.dataEncoding());
     });
-#ifdef Q_OS_WIN
     AcrylicHelper acrylicHelper;
-#endif
 
     engine.rootContext()->setContextProperty("serialManager", &serialManager);
     engine.rootContext()->setContextProperty("commandStore", &commandStore);
     engine.rootContext()->setContextProperty("ChecksumHelper", &checksumHelper);
     engine.rootContext()->setContextProperty("settingsStore", &settingsStore);
     engine.rootContext()->setContextProperty("recordStore", &recordStore);
-#ifdef Q_OS_WIN
     engine.rootContext()->setContextProperty("acrylic", &acrylicHelper);
-#endif
 
     // Connect SerialManager data to RecordStore
     QObject::connect(&serialManager, &SerialManager::dataReceived, &recordStore,
@@ -241,6 +279,4 @@ int main(int argc, char *argv[])
     return app.exec();
 }
 
-#ifdef Q_OS_WIN
 #include "main.moc"
-#endif

@@ -12,6 +12,8 @@ int main(int argc, char **argv) {
     assert(!PayloadCodec::isHex("A"));
     assert(!PayloadCodec::isHex(QString::fromUtf8("１２")));
     assert(PayloadCodec::decode("AA 55 00", true) == raw);
+    const QString spacedHex = QStringLiteral("0xAA 0x55 00\n").repeated(100000);
+    assert(PayloadCodec::decode(spacedHex, true) == raw.repeated(100000));
     assert(PayloadCodec::decode("AT+RST", true).isEmpty());
     assert(PayloadCodec::decode("\"AT+RST\"", true) == QByteArray("AT+RST"));
     assert(PayloadCodec::decode("01 \"AT\" 0D", true).toHex() == "0141540d");

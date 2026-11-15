@@ -7,6 +7,7 @@ ComboBox {
     id: control
 
     property bool dark: true
+    property real uiFontScale: 1
     property bool portDetails: false
     property Item backdropItem: null
     property color textColor: "#ffffff"
@@ -21,7 +22,7 @@ ComboBox {
     rightPadding: 30
     topPadding: 0
     bottomPadding: 0
-    font.pixelSize: 12
+    font.pixelSize: Math.round(12 * uiFontScale)
 
     background: Rectangle {
         radius: 9
@@ -68,7 +69,7 @@ ComboBox {
                 width: parent.width
                 text: control.textRole ? String(option.modelData[control.textRole]) : String(option.modelData)
                 color: control.textColor
-                font.pixelSize: 12
+                font.pixelSize: control.font.pixelSize
                 font.weight: control.currentIndex === option.index ? Font.DemiBold : Font.Normal
                 elide: Text.ElideRight
             }
@@ -83,7 +84,7 @@ ComboBox {
                             + (info.manufacturer ? " (" + info.manufacturer + ")" : "")
                 }
                 color: control.secondaryTextColor
-                font.pixelSize: 10
+                font.pixelSize: Math.round(10 * control.uiFontScale)
                 wrapMode: Text.Wrap
             }
         }

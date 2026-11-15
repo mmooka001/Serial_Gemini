@@ -131,7 +131,7 @@ Item {
         height: 34
         spacing: 8
         Rectangle { Layout.preferredWidth: 28; Layout.preferredHeight: 28; radius: 8; color: picker.selectedColor; border.color: picker.theme.line }
-        Text { text: "HEX"; color: picker.theme.secondary; font.pixelSize: 10 }
+        Text { text: "HEX"; color: picker.theme.secondary; font.pixelSize: picker.theme.uiPixels(10) }
         TextField {
             id: hexField
             objectName: "hexField"
@@ -139,7 +139,7 @@ Item {
             Layout.preferredHeight: 32
             selectByMouse: true
             font.family: "Consolas"
-            font.pixelSize: 12
+            font.pixelSize: picker.theme.uiPixels(12)
             color: picker.theme.text
             placeholderText: "#RRGGBB"
             placeholderTextColor: picker.theme.muted

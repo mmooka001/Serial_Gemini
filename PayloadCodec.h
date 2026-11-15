@@ -3,6 +3,7 @@
 
 #include <QByteArray>
 #include <QRegularExpression>
+#include <QStringView>
 #include <QString>
 #include <QStringConverter>
 #include <QJsonDocument>
@@ -118,12 +119,41 @@ struct HexInput {
     bool valid() const { return error.isEmpty() && !bytes.isEmpty(); }
 };
 
+inline int hexDigit(QChar ch) {
+    const auto value = ch.unicode();
+    if (value >= '0' && value <= '9') return value - '0';
+    const auto lower = value | 0x20;
+    if (lower >= 'a' && lower <= 'f') return lower - 'a' + 10;
+    return -1;
+}
+
+inline bool appendHexToken(QStringView token, QByteArray &bytes) {
+    int high = -1;
+    const qsizetype initialSize = bytes.size();
+    for (qsizetype i = 0; i < token.size(); ++i) {
+        if (token[i] == '0' && i + 1 < token.size()
+                && (token[i + 1] == 'x' || token[i + 1] == 'X')) {
+            ++i;
+            continue;
+        }
+        const int digit = hexDigit(token[i]);
+        if (digit < 0) return false;
+        if (high < 0) {
+            high = digit;
+        } else {
+            bytes.append(char(high * 16 + digit));
+            high = -1;
+        }
+    }
+    return high < 0 && bytes.size() > initialSize;
+}
+
 inline HexInput parseHex(const QString &text, const QString &encoding) {
     HexInput result;
-    int position = 0;
+    qsizetype position = 0;
     while (position < text.size()) {
         if (text[position].isSpace()) { ++position; continue; }
-        const int start = position;
+        const qsizetype start = position;
         if (text[position] == '"') {
             ++position;
             bool escaped = false;
@@ -148,12 +178,10 @@ inline HexInput parseHex(const QString &text, const QString &encoding) {
             result.containsText = true;
         } else {
             while (position < text.size() && !text[position].isSpace() && text[position] != '"') ++position;
-            const QString token = text.mid(start, position - start);
-            if (!isHex(token)) {
+            if (!appendHexToken(QStringView(text).mid(start, position - start), result.bytes)) {
                 result.error = QStringLiteral("HEX 模式只接受成对字节；文字请加英文双引号，例如 01 \"AT\" 0D。");
                 return result;
             }
-            result.bytes += QByteArray::fromHex(compactHex(token).toLatin1());
         }
     }
     if (result.bytes.isEmpty()) result.error = QStringLiteral("请输入至少一个字节。");

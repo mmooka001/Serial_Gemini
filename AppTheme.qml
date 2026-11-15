@@ -1,6 +1,10 @@
 import QtQuick
 
 QtObject {
+    property real uiFontScale: 1
+    function uiPixels(base: real): int {
+        return Math.round(base * uiFontScale)
+    }
     property int mode: 4
     property int style: 2
     property int appearance: 0

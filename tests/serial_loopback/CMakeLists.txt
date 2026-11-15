@@ -3,7 +3,7 @@ project(serial_loopback_qa LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick SerialPort)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Quick SerialPort Test)
 get_filename_component(APP_ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 add_executable(serial_loopback_test
     ../serial_loopback_test.cpp
@@ -21,3 +21,9 @@ add_executable(serial_qml_workflow_test
 )
 target_include_directories(serial_qml_workflow_test PRIVATE "${APP_ROOT}")
 target_link_libraries(serial_qml_workflow_test PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::SerialPort)
+
+enable_testing()
+add_executable(serial_packet_test ../serial_packet_test.cpp "${APP_ROOT}/SerialManager.cpp" "${APP_ROOT}/SerialManager.h")
+target_include_directories(serial_packet_test PRIVATE "${APP_ROOT}")
+target_link_libraries(serial_packet_test PRIVATE Qt6::Core Qt6::Gui Qt6::SerialPort Qt6::Test)
+add_test(NAME serial_packet_test COMMAND serial_packet_test)

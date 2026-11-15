@@ -9,35 +9,50 @@ QtObject {
     property int interval: 500
     property bool running: false
     property string notice: ""
+    readonly property int livePreviewLimit: 8192
+    readonly property bool previewPending: previewTimer.running
     readonly property string encoding: backend.dataEncoding
-    readonly property var hexInput: hexMode ? backend.prepareHexInput(inputText) : ({valid: true, containsText: false, error: ""})
+    readonly property var hexInput: hexMode && !previewPending ? backend.prepareHexInput(inputText, false)
+        : ({valid: true, containsText: false, error: ""})
     readonly property string hexInputError: hexMode && inputText.length > 0 && !hexInput.valid ? hexInput.error : ""
     readonly property string conversionNotice: "引号内文本将转换为" + encoding + "的 HEX 编码发送"
     readonly property bool needsConversion: hexMode && hexInput.valid && hexInput.containsText
     signal inputConverted(string hex)
-    onInputTextChanged: notice = ""
+    onInputTextChanged: {
+        notice = ""
+        if (inputText.length > livePreviewLimit) previewTimer.restart()
+        else previewTimer.stop()
+    }
     onEncodingChanged: notice = ""
 
-    function validate(): bool {
+    property Timer previewTimer: Timer { interval: 180 }
+
+    function validate(parsed): bool {
         if (!backend.isOpen) { notice = "请先连接串口。"; return false }
         if (!inputText.length) { notice = "请输入要发送的内容。"; return false }
-        if (hexInputError.length) { notice = hexInputError; return false }
+        if (!parsed.valid) { notice = parsed.error; return false }
         notice = ""
         return true
     }
-    function preparedInput(): string {
-        if (!needsConversion) return inputText
-        var hex = hexInput.hex
-        inputConverted(hex)
+    function preparedInput(parsed): string {
+        if (!parsed.containsText) return inputText
+        // Avoid expanding a large quoted paste into a much larger editable HEX string.
+        if (!parsed.hex.length || parsed.hex.length > livePreviewLimit) {
+            notice = conversionNotice
+            return inputText
+        }
+        inputConverted(parsed.hex)
         notice = conversionNotice
-        return hex
+        return parsed.hex
     }
     function sendOnce(): bool {
-        if (!validate()) return false
-        var payload = preparedInput()
-        if (checksumType > 0) backend.sendDataWithChecksum(payload, hexMode, checksumType)
-        else backend.sendData(payload, hexMode)
-        return true
+        if (!backend.isOpen || !inputText.length) return validate(hexInput)
+        const parsed = previewPending && hexMode ? backend.prepareHexInput(inputText, false) : hexInput
+        if (!validate(parsed)) return false
+        const payload = preparedInput(parsed)
+        const accepted = checksumType > 0 ? backend.sendDataWithChecksum(payload, hexMode, checksumType)
+                                          : backend.sendData(payload, hexMode)
+        return accepted !== false
     }
     function sendPreset(payload: string, presetHex: bool): bool {
         if (!backend.isOpen) { notice = "请先连接串口。"; return false }
@@ -53,13 +68,14 @@ QtObject {
             payload = backend.textToHex(payload)
             notice = "TXT 指令已按" + encoding + "编码转换为 HEX 发送"
         }
-        backend.sendData(payload, hex)
-        return true
+        return backend.sendData(payload, hex) !== false
     }
     function toggleRepeat() {
         if (running) { running = false; return }
-        if (!validate()) return
-        preparedInput()
+        if (!backend.isOpen || !inputText.length) { validate(hexInput); return }
+        const parsed = previewPending && hexMode ? backend.prepareHexInput(inputText, false) : hexInput
+        if (!validate(parsed)) return
+        preparedInput(parsed)
         running = true
     }
     property Timer repeatTimer: Timer {

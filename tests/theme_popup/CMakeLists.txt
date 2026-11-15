@@ -7,7 +7,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml SerialPort QuickDialogs2
 qt_standard_project_setup()
 set(PROJECT_ROOT "${CMAKE_CURRENT_LIST_DIR}/../..")
 set(APP_QML
-    Main.qml AppTheme.qml ActionButton.qml CommandCard.qml CommandReorderController.qml
+    Main.qml HintBubble.qml CompareWorkspace.qml AppTheme.qml ActionButton.qml CommandCard.qml CommandReorderController.qml
     TerminalMessageText.qml IntervalField.qml PanelDivider.qml SidebarResizeController.qml
     WindowDragArea.qml WindowStateController.qml SlimScrollBar.qml FocusDismissLayer.qml SendController.qml SegmentedControl.qml
     AccentColorPicker.qml LiquidGlassSelection.qml LiquidGlassToolbar.qml GlassComboBox.qml SerialLogo.qml PopupInputGuard.qml

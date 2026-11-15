@@ -53,6 +53,8 @@ Gemini Serial 是一款使用 **Qt 6、QML 和 C++17** 开发的现代化串口�
 
 ### 环境要求
 
+使用 Qt 6.11 构建时，Windows x64 的支持范围从 Windows 10 1809 开始。原生磨砂不可用时会自动使用实色背景，缺少 Segoe Fluent Icons 时会改用 Segoe MDL2 Assets。遇到显卡或驱动渲染问题时，可用 `GeminiSerial.exe --software-rendering` 启动，此模式下玻璃控件使用圆角实色材质。
+
 1. 安装 Qt 6，并选择对应编译器套件，例如 MinGW 64-bit。
 2. 确保已安装 CMake 3.16 或更高版本。
 3. 推荐使用 Qt Creator 直接打开项目根目录的 `CMakeLists.txt`。
@@ -84,6 +86,13 @@ build/MySerial_Gemini.exe
 ```
 
 ## 使用说明
+
+### 终端与比对
+
+- **Enter** 发送，**Shift+Enter** 换行。状态栏显示当前行尾、编码和框选字节数。TXT 选区按对应编码计算，HEX 选区按覆盖的字节计算。
+- 在设置中选择接收分包方式并调整内容字号。按时间从首字节起计时，满 64 KiB 提前显示。按字节在达到指定大小时立即显示，在接收空闲时显示余包。
+- 手动发送框和指令栏各有独立循环间隔，范围为 1–3,600,000 ms。实际发送间隔受界面定时器、串口波特率和流控影响。发生写入超时或队列满时，循环会停止并提示。
+- 左侧「比对」有 A、B 两个可滚动的文本输入区。右侧保留完整的 A 原文，红色标记删改内容，绿色在下一行显示 B 的差异。右侧滚动条旁的红绿刻度标出差异在全文中的位置。
 
 ### 指令文件库
 
@@ -165,7 +174,7 @@ powershell -ExecutionPolicy Bypass -File .\tests\send_toolbar_layout_test.ps1
 ./scripts/package-windows.ps1 -QtRoot D:/Qt/6.11.0/mingw_64 -CompilerBin D:/Qt/Tools/mingw1310_64/bin -NinjaExecutable E:/DevTools/ninja-win/ninja.exe
 ```
 
-脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。最新发布说明见 [v0.4.0 更新记录](docs/RELEASE_NOTES_v0.4.0.md)。
+脚本构建 Release、部署 Qt 与编译器运行库，输出 ZIP 和 SHA-256 校验文件到 `release_artifacts/`。包内不包含源码、测试、日志或个人指令数据。最新发布说明见 [v0.6.0 更新记录](docs/RELEASE_NOTES_v0.6.0.md)。
 
 ## 参与贡献
 

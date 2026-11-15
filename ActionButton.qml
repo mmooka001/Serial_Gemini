@@ -15,21 +15,23 @@ Button {
         : kind === "danger" ? theme.danger
         : selected ? theme.primary : theme.secondary
 
-    implicitHeight: 30
+    implicitHeight: Math.max(30, contentItem.implicitHeight + 8)
     implicitWidth: Math.max(30, contentItem.implicitWidth + leftPadding + rightPadding)
     leftPadding: 10
     rightPadding: 10
     topPadding: 0
     bottomPadding: 0
     hoverEnabled: true
-    font.pixelSize: 11
+    font.pixelSize: theme.uiPixels(11)
     font.weight: Font.Medium
     opacity: enabled ? 1 : 0.5
     scale: down ? 0.97 : 1
     Behavior on scale { NumberAnimation { duration: 100; easing.type: Easing.OutCubic } }
-    ToolTip.visible: hovered && hint.length > 0
-    ToolTip.text: hint
-    ToolTip.delay: 650
+    HintBubble {
+        theme: control.theme
+        visible: control.hovered && !control.down && control.hint.length > 0
+        text: control.hint
+    }
     Accessible.name: text.length > 0 ? text : hint
 
     contentItem: Item {
@@ -54,7 +56,7 @@ Button {
                 visible: control.text.length > 0
                 text: control.text
                 font: control.font
-                height: 18
+                height: Math.max(18, implicitHeight)
                 verticalAlignment: Text.AlignVCenter
                 color: control.foreground
             }

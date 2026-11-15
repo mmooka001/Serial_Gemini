@@ -9,8 +9,9 @@ Item {
     implicitHeight: 32
 
     Shape {
-        x: -0.5
-        y: 3
+        // 轮廓（含描边）的边界中心是 (16.45, 13.05)。
+        x: root.width / 2 - 16.45
+        y: root.height / 2 - 13.05
         width: 32
         height: 32
         preferredRendererType: Shape.CurveRenderer

@@ -30,6 +30,7 @@ public:
 
     Q_INVOKABLE static QString hexChecksumPreview(const QString &data, bool isHex, int type,
                                                  const QString &encoding = QStringLiteral("UTF-8")) {
+        if (type < BCC || type > CRC16_Modbus) return {};
         const auto parsed = isHex ? PayloadCodec::parseHex(data, encoding) : PayloadCodec::HexInput();
         if (isHex && !parsed.valid()) return "";
         const QByteArray bytes = isHex ? parsed.bytes : PayloadCodec::encodeText(data, encoding);

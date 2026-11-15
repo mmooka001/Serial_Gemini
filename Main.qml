@@ -18,8 +18,15 @@ Window {
     // layoutReady 防止初始化阶段 width 从 0 增长时误触发
     property bool layoutReady: false
     onWidthChanged: {
-        if (!layoutReady) return
-        if (sidePanel >= 0 && width < 780) sidePanel = -1
+        if (layoutReady) narrowLayoutTimer.restart()
+    }
+    Timer {
+        id: narrowLayoutTimer
+        interval: 100
+        onTriggered: {
+            if (windowState.restoring || window.visibility === Window.Minimized) return
+            if (window.sidePanel >= 0 && window.width < 780) window.sidePanel = -1
+        }
     }
     title: qsTr("MySerial Gemini")
     color: "transparent"
@@ -34,6 +41,7 @@ Window {
     WindowStateController {
         id: windowState
         targetWindow: window
+        onRestoringChanged: if (!restoring && window.layoutReady) narrowLayoutTimer.restart()
         normalGeometry: settingsStore.restoredWindowGeometry()
         preferredVisibility: settingsStore.uiPreference("windowVisibility", Window.Windowed)
         onNormalGeometryChanged: if (window.layoutReady) settingsStore.setUiPreference("windowGeometry", normalGeometry)
@@ -51,6 +59,79 @@ Window {
         }
     }
 
+    readonly property bool useNativeAcrylic: acrylic.available === true
+    readonly property var lineEndings: ["无", "LF", "CR", "CRLF"]
+    property int contentTextSize: Math.max(8, Math.min(32, settingsStore.uiPreference("contentTextSize", 14)))
+    property int interfaceTextSize: Math.max(10, Math.min(20, settingsStore.uiPreference("interfaceTextSize", 14)))
+    property int receivePacketMode: settingsStore.uiPreference("receivePacketMode", 0)
+    property int receivePacketMs: settingsStore.uiPreference("receivePacketMs", 20)
+    property int receivePacketBytes: settingsStore.uiPreference("receivePacketBytes", 64)
+    readonly property int minimumLoopInterval: 1
+    readonly property int maximumLoopInterval: 3600000
+
+    function updateReceivePackets() {
+        serialManager.configureReceivePackets(receivePacketMode, receivePacketMs, receivePacketBytes)
+        settingsStore.setUiPreference("receivePacketMode", receivePacketMode)
+        settingsStore.setUiPreference("receivePacketMs", receivePacketMs)
+        settingsStore.setUiPreference("receivePacketBytes", receivePacketBytes)
+    }
+    onReceivePacketModeChanged: if (layoutReady) updateReceivePackets()
+    onReceivePacketMsChanged: if (layoutReady) updateReceivePackets()
+    onReceivePacketBytesChanged: if (layoutReady) updateReceivePackets()
+    onContentTextSizeChanged: if (layoutReady) settingsStore.setUiPreference("contentTextSize", contentTextSize)
+    onInterfaceTextSizeChanged: if (layoutReady) settingsStore.setUiPreference("interfaceTextSize", interfaceTextSize)
+
+    function countSelectedBytes(editor, currentEncoding) {
+        if (!editor || !editor.countsBytes || !editor.selectedText.length) return 0
+        if (!editor.countsHexBytes)
+            return serialManager.encodedByteCount(editor.selectedByteText ?? editor.selectedText,
+                                                  editor.byteEncoding || currentEncoding)
+        if (editor.spacedHexBytes) {
+            const start = editor.selectionStart
+            const end = editor.selectionEnd
+            const count = Math.ceil(end / 3) - Math.floor(start / 3)
+            return Math.max(0, count - (start % 3 === 2 ? 1 : 0))
+        }
+        return serialManager.prepareHexInput(editor.selectedText, false).byteCount
+    }
+    readonly property int selectedBytes: countSelectedBytes(activeFocusItem, settingsStore.dataEncoding)
+    readonly property bool hasByteSelection: activeFocusItem && activeFocusItem.countsBytes === true
+                                              && activeFocusItem.selectedText.length > 0
+
+    function clearTerminal() {
+        if (hasByteSelection) activeFocusItem.deselect()
+        serialManager.discardReceivePacket()
+        pendingTerminalRows.length = 0
+        terminalModel.clear()
+        recordStore.clearRecords()
+    }
+
+    property var pendingTerminalRows: []
+    function appendTerminalRow(ascii, hex, sent, hexMode, timestampMs, encoding) {
+        pendingTerminalRows.push({
+            contentAscii: ascii, contentHex: hex, isHexMode: hexMode,
+            isSent: sent, encoding: encoding,
+            timestamp: Qt.formatDateTime(new Date(timestampMs > 0 ? timestampMs : Date.now()), "hh:mm:ss.zzz")
+        })
+        if (!terminalBatchTimer.running) terminalBatchTimer.start()
+    }
+    Timer {
+        id: terminalBatchTimer
+        interval: 33
+        onTriggered: {
+            // Keep the newest rows when a burst exceeds the terminal's display history.
+            if (window.pendingTerminalRows.length > 10000)
+                window.pendingTerminalRows.splice(0, window.pendingTerminalRows.length - 10000)
+            const rows = window.pendingTerminalRows.splice(0, 256)
+            if (!rows.length) return
+            const removeCount = Math.max(0, terminalModel.count + rows.length - 10000)
+            if (removeCount) terminalModel.remove(0, removeCount)
+            terminalModel.append(rows)
+            if (window.autoScroll && window.sidePanel !== 4) Qt.callLater(window.followTerminal)
+            if (window.pendingTerminalRows.length) terminalBatchTimer.restart()
+        }
+    }
+
     property int themeMode: settingsStore.themeMode
     readonly property bool isDark: appTheme.dark
 
@@ -63,11 +144,22 @@ Window {
 
     AppTheme {
         id: appTheme
+        uiFontScale: window.interfaceTextSize / 14
         mode: window.themeMode
         style: settingsStore.colorStyle
         appearance: settingsStore.appearanceMode
         customAccent: settingsStore.customAccent
         customAccentEnabled: settingsStore.useCustomAccent
+    }
+    AppTheme {
+        id: commandTheme
+        uiFontScale: appTheme.uiFontScale * 15 / 14
+        mode: appTheme.mode
+        style: appTheme.style
+        appearance: appTheme.appearance
+        systemDark: appTheme.systemDark
+        customAccent: appTheme.customAccent
+        customAccentEnabled: appTheme.customAccentEnabled
     }
     Connections {
         target: appTheme
@@ -86,7 +178,7 @@ Window {
     readonly property color clToolSurface: appTheme.surface
     readonly property color clCanvas: appTheme.surface
     readonly property color clSurfaceLine: appTheme.line
-    // 左侧面板统一状态：-1=全关 0=连接 1=指令 2=码表 3=设置（互斥）
+    // 左侧面板统一状态：-1=全关 0=连接 1=指令 2=码表 3=设置 4=比对（互斥）
     property int sidePanel: settingsStore.uiPreference("sidePanel", 0)
     onSidePanelChanged: if (layoutReady) settingsStore.setUiPreference("sidePanel", sidePanel)
     property int sidePanelWidth: settingsStore.sidePanelWidth
@@ -119,14 +211,15 @@ Window {
     readonly property int minSendPanelHeight: 160
     readonly property int minTerminalHeight: 160
     readonly property int terminalSendGap: 15
-    readonly property int maxSendPanelHeight: Math.max(minSendPanelHeight, centerColumn.height - minTerminalHeight - terminalSendResizeHandle.height)
+    readonly property int maxSendPanelHeight: Math.max(minSendPanelHeight, centerColumn.height - minTerminalHeight - terminalSendGap)
 
     // 阈值包含控件实际宽度、左右内边距和行间距，避免窄窗口把控件裁成半截。
-    readonly property bool showChecksumControl: sendCard.width >= 550
-    readonly property bool showAutoControl: sendCard.width >= 450 || autoSending
-    readonly property bool showTimeControl: sendCard.width >= (autoSending ? 449 : 385)
-    readonly property bool showTxModeControl: sendCard.width >= (autoSending ? 374 : 310)
-    readonly property bool showRxModeControl: sendCard.width >= (autoSending ? 264 : 200)
+    readonly property real toolbarSizeFactor: Math.max(1, appTheme.uiFontScale)
+    readonly property bool showChecksumControl: sendCard.width >= 550 * toolbarSizeFactor
+    readonly property bool showAutoControl: sendCard.width >= 450 * toolbarSizeFactor || autoSending
+    readonly property bool showTimeControl: sendCard.width >= (autoSending ? 449 : 385) * toolbarSizeFactor
+    readonly property bool showTxModeControl: sendCard.width >= (autoSending ? 374 : 310) * toolbarSizeFactor
+    readonly property bool showRxModeControl: sendCard.width >= (autoSending ? 264 : 200) * toolbarSizeFactor
     property bool globalRxHex: settingsStore.uiPreference("rxHex", true)
     onGlobalRxHexChanged: if (layoutReady) settingsStore.setUiPreference("rxHex", globalRxHex)
     property alias globalTxHex: inputSender.hexMode
@@ -137,7 +230,9 @@ Window {
     onCurrentPageIndexChanged: if (layoutReady) settingsStore.setUiPreference("page", currentPageIndex)
     property bool autoScroll: settingsStore.uiPreference("autoScroll", true)
     onAutoScrollChanged: if (layoutReady) settingsStore.setUiPreference("autoScroll", autoScroll)
-    property string checksumValue: ChecksumHelper.hexChecksumPreview(sendInput.text, globalTxHex, checksumCombo.currentIndex, settingsStore.dataEncoding)
+    readonly property string checksumValue: checksumCombo.currentIndex > 0 && !inputSender.previewPending
+        ? ChecksumHelper.hexChecksumPreview(sendInput.text, globalTxHex, checksumCombo.currentIndex, settingsStore.dataEncoding)
+        : ""
 
     function exportTimestamp() {
         return Qt.formatDateTime(new Date(), "yyyyMMddhhmmss")
@@ -216,7 +311,11 @@ Window {
                 return
             }
             var cmd = loopCmds[loopIndex]
-            window.sendCommand(cmd.payload, cmd.isHex)
+            if (!window.sendCommand(cmd.payload, cmd.isHex)) {
+                loopSending = false
+                loopIndex = -1
+                return
+            }
             loopIndex++
             if (loopIndex >= loopCmds.length) loopIndex = 0  // loop forever
             if (loopSending) loopTimer.start()
@@ -367,11 +466,11 @@ Window {
     }
 
     component SidePanelHeading: Text {
-        Layout.preferredHeight: 32
+        Layout.preferredHeight: Math.max(32, implicitHeight + 8)
         verticalAlignment: Text.AlignVCenter
         color: window.whiteText
         font.bold: true
-        font.pixelSize: 15
+        font.pixelSize: appTheme.uiPixels(15)
     }
 
     component UiButton: ActionButton {
@@ -382,9 +481,14 @@ Window {
         theme: appTheme
     }
 
-    component IntervalControl: IntervalField { theme: appTheme }
+    component IntervalControl: IntervalField {
+        theme: appTheme
+        minimum: window.minimumLoopInterval
+        maximum: window.maximumLoopInterval
+    }
 
     component ConfigComboBox: GlassComboBox {
+        uiFontScale: appTheme.uiFontScale
         backdropItem: sidePanelCard
         dark: window.isDark
         textColor: window.whiteText
@@ -395,12 +499,96 @@ Window {
         accentColor: window.clHighlight
     }
 
+    component CompareInput: ScrollView {
+        id: pane
+        required property string editorName
+        required property string placeholder
+        readonly property alias text: editor.text
+        Layout.fillWidth: true
+        Layout.fillHeight: true
+        Layout.preferredHeight: 1
+        clip: true
+        contentWidth: availableWidth
+        rightPadding: comparisonScrollBar.width + 2
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical: SlimScrollBar {
+            id: comparisonScrollBar
+            objectName: pane.editorName + "ScrollBar"
+            parent: pane
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            theme: appTheme
+            policy: ScrollBar.AlwaysOn
+            interactive: true
+            opacity: 1
+        }
+        background: Rectangle {
+            radius: 10
+            color: appTheme.block
+            border.color: editor.activeFocus ? appTheme.primary : appTheme.line
+        }
+        TextArea {
+            id: editor
+            objectName: pane.editorName
+            readonly property bool countsBytes: true
+            readonly property bool countsHexBytes: false
+            placeholderText: pane.placeholder
+            placeholderTextColor: appTheme.muted
+            textFormat: TextEdit.PlainText
+            color: whiteText
+            font.family: "Consolas"
+            font.pixelSize: window.contentTextSize
+            wrapMode: TextEdit.Wrap
+            verticalAlignment: TextEdit.AlignTop
+            background: null
+            padding: 10
+            selectByMouse: true
+            selectionColor: appTheme.primary
+            selectedTextColor: appTheme.primaryText
+        }
+    }
+
+    component FontSizeSetting: RowLayout {
+        id: setting
+        required property string title
+        required property int size
+        required property int minimum
+        required property int maximum
+        property alias editorName: sizeInput.editorName
+        signal sizeEdited(int size)
+        spacing: 10
+        Layout.fillWidth: true
+        Text {
+            Layout.fillWidth: true
+            Layout.minimumWidth: 0
+            text: setting.title
+            color: whiteText
+            font.pixelSize: appTheme.uiPixels(12)
+            font.weight: Font.DemiBold
+            wrapMode: Text.Wrap
+        }
+        IntervalField {
+            id: sizeInput
+            theme: appTheme
+            framed: true
+            unit: "px"
+            Layout.preferredWidth: Math.max(78, appTheme.uiPixels(78))
+            Layout.preferredHeight: Math.max(28, appTheme.uiPixels(28))
+            minimum: setting.minimum
+            maximum: setting.maximum
+            interval: setting.size
+            hint: setting.title + " · " + minimum + "–" + maximum + " px"
+            onIntervalEdited: (value) => setting.sizeEdited(value)
+        }
+    }
+
     Rectangle {
         id: shellBackdrop
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.0; color: appTheme.shellStart }
-            GradientStop { position: 1.0; color: appTheme.shellEnd }
+            GradientStop { position: 0.0; color: window.useNativeAcrylic ? appTheme.shellStart : appTheme.surface }
+            GradientStop { position: 1.0; color: window.useNativeAcrylic ? appTheme.shellEnd : appTheme.workspace }
         }
     }
 
@@ -426,13 +614,13 @@ Window {
                 anchors.fill: parent
                 anchors.margins: 12
                 spacing: 6
-                Text { text: commandReorder.name; color: clText; font.pixelSize: 11; width: parent.width; elide: Text.ElideRight }
+                Text { text: commandReorder.name; color: clText; font.pixelSize: appTheme.uiPixels(11); width: parent.width; elide: Text.ElideRight }
                 Text {
                     text: commandReorder.payload
                     textFormat: Text.PlainText
                     color: whiteText
                     font.family: "Consolas"
-                    font.pixelSize: 13
+                    font.pixelSize: appTheme.uiPixels(13)
                     width: parent.width
                     wrapMode: Text.Wrap
                     maximumLineCount: 4
@@ -460,24 +648,13 @@ Window {
             anchors.bottom: parent.bottom
             color: "transparent"
 
-            // 软件图标的单色轮廓版，按可见图形的光学中心对齐。
-            Item {
-                width: parent.width
-                height: titleBar.height
-                SerialLogo {
-                    anchors.centerIn: parent
-                    width: 32
-                    height: 32
-                    strokeColor: window.whiteText
-                }
-            }
-
             Item {
                 id: railNavigation
+                objectName: "toolNavigation"
                 x: 0
                 y: bodyBg.y + 12
                 width: parent.width
-                height: 4 * 48 + 3 * 4
+                height: railButtons.implicitHeight
 
                 Column {
                     id: railButtons
@@ -491,14 +668,15 @@ Window {
                             { symbol: "\uE839", label: "连接" },
                             { symbol: "\uE8A5", label: "指令" },
                             { symbol: "\uE9D9", label: "码表" },
-                            { symbol: "\uE713", label: "设置" }
+                            { symbol: "\uE713", label: "设置" },
+                            { symbol: "\uE8AB", label: "比对" }
                         ]
                         delegate: Item {
                             id: railButton
                             required property int index
                             required property var modelData
                             width: railButtons.width
-                            height: 48
+                            height: railGlass.itemHeight
                             readonly property bool selected: railGlass.previewIndex === index
 
                             Rectangle {
@@ -516,7 +694,7 @@ Window {
                             Item {
                                 anchors.centerIn: parent
                                 width: parent.width
-                                height: 34
+                                height: 23 + railLabel.height
                                 scale: railGlass.pressedIndex === railButton.index && !railGlass.dragging ? 0.94 : 1
                                 Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
                                 Text {
@@ -531,13 +709,14 @@ Window {
                                     Behavior on color { ColorAnimation { duration: 180 } }
                                 }
                                 Text {
+                                    id: railLabel
                                     y: 23
                                     width: parent.width
-                                    height: 11
+                                    height: Math.max(11, implicitHeight)
                                     horizontalAlignment: Text.AlignHCenter
                                     verticalAlignment: Text.AlignVCenter
                                     text: railButton.modelData.label
-                                    font.pixelSize: 9
+                                    font.pixelSize: appTheme.uiPixels(9)
                                     color: railButton.selected ? clHighlight : clText
                                     Behavior on color { ColorAnimation { duration: 180 } }
                                 }
@@ -558,6 +737,7 @@ Window {
                     baseColor: window.clToolSurface
                     currentIndex: sidePanel
                     count: railRepeater.count
+                    spacing: railButtons.spacing
                     dark: isDark
                     onActivated: (index, toggle) => {
                         sidePanel = toggle && sidePanel === index ? -1 : index
@@ -576,7 +756,6 @@ Window {
             anchors.right: parent.right
             anchors.leftMargin: 0
             anchors.rightMargin: 8
-            anchors.topMargin: 6
             anchors.bottomMargin: 4
             color: clWorkspace
             radius: 20
@@ -584,13 +763,17 @@ Window {
 
         Rectangle {
             id: titleBar
+            readonly property int controlHeight: 42
+            readonly property int verticalInset: 3
             width: parent.width
-            height: 42
+            height: controlHeight + 2 * verticalInset
             color: "transparent"
             z: 100
             
             RowLayout {
                 anchors.fill: parent
+                anchors.topMargin: titleBar.verticalInset
+                anchors.bottomMargin: titleBar.verticalInset
                 spacing: 0
 
                 Row {
@@ -601,7 +784,7 @@ Window {
                         model: ["主控制台", "系统信息"]
                         Rectangle {
                             width: 110
-                            height: 42
+                            height: titleBar.controlHeight
                             color: "transparent"
                             Rectangle {
                                 anchors.fill: parent
@@ -617,7 +800,7 @@ Window {
                                 text: modelData
                                 anchors.centerIn: parent
                                 color: currentPageIndex === index ? whiteText : clText
-                                font.pixelSize: 12
+                                font.pixelSize: appTheme.uiPixels(12)
                                 font.bold: currentPageIndex === index
                             }
                             MouseArea { 
@@ -647,7 +830,7 @@ Window {
                     Text { 
                         text: "GEMINI SERIAL"
                         color: isDark ? Qt.rgba(255, 255, 255, 0.15) : Qt.rgba(0, 0, 0, 0.15)
-                        font.pixelSize: 9
+                        font.pixelSize: appTheme.uiPixels(9)
                         font.bold: true
                         anchors.verticalCenter: parent.verticalCenter
                         rightPadding: 20
@@ -656,8 +839,9 @@ Window {
                     Button {
                         id: pinBtn
                         width: 40
-                        height: 42
+                        height: titleBar.controlHeight
                         flat: true
+                        padding: 0
                         readonly property bool isTop: window.stayOnTop
                         contentItem: Text { 
                             text: "\uE718"
@@ -687,7 +871,7 @@ Window {
                         objectName: "themeToggleButton"
                         Accessible.name: "主题外观"
                         width: 40
-                        height: 42
+                        height: titleBar.controlHeight
                         flat: true
                         padding: 0
                         contentItem: Text { 
@@ -711,8 +895,9 @@ Window {
 
                     Button {
                         width: 45
-                        height: 42
+                        height: titleBar.controlHeight
                         flat: true
+                        padding: 0
                         contentItem: Text { 
                             text: "—"
                             color: clText
@@ -730,8 +915,9 @@ Window {
 
                     Button {
                         width: 45
-                        height: 42
+                        height: titleBar.controlHeight
                         flat: true
+                        padding: 0
                         contentItem: Text { 
                             text: window.edgeToEdge ? "\uE923" : "\uE922"
                             font.family: "Segoe Fluent Icons"
@@ -751,8 +937,9 @@ Window {
 
                     Button {
                         width: 45
-                        height: 42
+                        height: titleBar.controlHeight
                         flat: true
+                        padding: 0
                         contentItem: Text { 
                             text: "\uE8BB"
                             font.family: "Segoe Fluent Icons"
@@ -775,6 +962,16 @@ Window {
             }
         }
 
+        SerialLogo {
+            anchors.horizontalCenter: leftRail.horizontalCenter
+            anchors.horizontalCenterOffset: 2
+            anchors.verticalCenter: titleBar.verticalCenter
+            width: 32
+            height: 32
+            strokeColor: window.whiteText
+            z: 201
+        }
+
         StackLayout {
             anchors.fill: bodyBg
             anchors.margins: 12
@@ -783,13 +980,13 @@ Window {
             RowLayout {
                 spacing: 0
 
-                // ── 左侧面板：连接/指令/码表/设置（四选一互斥）──
+                // ── 左侧面板：连接/指令/码表/设置/比对（互斥）──
                 Rectangle {
                     id: sidePanelCard
                     Layout.preferredWidth: sidePanel < 0 ? 0 : effectiveSidePanelWidth
                     Layout.minimumWidth: Layout.preferredWidth
                     Layout.maximumWidth: Layout.preferredWidth
-                    Behavior on Layout.preferredWidth { enabled: !sidePanelDragActive; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                    Behavior on Layout.preferredWidth { enabled: !sidePanelDragActive && !windowState.restoring; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     Layout.fillHeight: true
                     visible: sidePanel >= 0 || width > 1
                     color: clToolSurface
@@ -821,12 +1018,11 @@ Window {
                     StackLayout {
                         id: sidePanelStack
                         anchors.fill: parent
-                        currentIndex: sidePanel < 0 ? 0 : (sidePanel === 0 ? 0 : 1)
+                        anchors.margins: 12
+                        currentIndex: sidePanel > 0 ? 1 : 0
 
                         // Page 0: 连接配置
                     Flickable {
-                        anchors.fill: parent
-                        anchors.margins: 12
                         contentHeight: configColumn.implicitHeight
                         clip: true
                         boundsBehavior: Flickable.StopAtBounds
@@ -845,7 +1041,7 @@ Window {
                             RowLayout {
                                 Text { text: "选择端口"
                                  color: appTheme.muted
-                                 font.pixelSize: 11
+                                 font.pixelSize: appTheme.uiPixels(11)
                                  Layout.fillWidth: true }
                                 UiButton {
                                     text: "刷新"
@@ -857,12 +1053,13 @@ Window {
                             }
                             ConfigComboBox {
                                 id: portCombo
+                                objectName: "connectionPortSelector"
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 34
                                 model: portList
                                 textRole: "name"
                                 portDetails: true
-                                font.pixelSize: 13
+                                font.pixelSize: appTheme.uiPixels(13)
                                 onActivated: (index) => settingsStore.setUiPreference("portName", portList[index].name)
                             }
                         }
@@ -872,7 +1069,7 @@ Window {
                             Layout.fillWidth: true
                             Text { text: "通信波特率"
                              color: appTheme.muted
-                             font.pixelSize: 11 }
+                             font.pixelSize: appTheme.uiPixels(11) }
                             ConfigComboBox {
                                 id: baudCombo
                                 Layout.fillWidth: true
@@ -880,7 +1077,7 @@ Window {
                                 model: [9600, 19200, 38400, 57600, 115200, 230400, 256000, 460800, 921600, 1000000, 2000000]
                                 currentIndex: Math.max(0, model.indexOf(settingsStore.uiPreference("baudRate", 115200)))
                                 onActivated: settingsStore.setUiPreference("baudRate", parseInt(currentText))
-                                font.pixelSize: 13
+                                font.pixelSize: appTheme.uiPixels(13)
                             }
                         }
 
@@ -889,7 +1086,7 @@ Window {
                             Layout.fillWidth: true
                             Text { text: "数据位"
                              color: appTheme.muted
-                             font.pixelSize: 11 }
+                             font.pixelSize: appTheme.uiPixels(11) }
                             ConfigComboBox {
                                 id: dataBitsCombo
                                 Layout.fillWidth: true
@@ -906,7 +1103,7 @@ Window {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 4
-                                Text { text: "停止位"; color: appTheme.muted; font.pixelSize: 10 }
+                                Text { text: "停止位"; color: appTheme.muted; font.pixelSize: appTheme.uiPixels(10) }
                                 ConfigComboBox {
                                     id: stopBitsCombo
                                     Layout.fillWidth: true
@@ -919,7 +1116,7 @@ Window {
                             ColumnLayout {
                                 Layout.fillWidth: true
                                 spacing: 4
-                                Text { text: "校验位"; color: appTheme.muted; font.pixelSize: 10 }
+                                Text { text: "校验位"; color: appTheme.muted; font.pixelSize: appTheme.uiPixels(10) }
                                 ConfigComboBox {
                                     id: parityCombo
                                     Layout.fillWidth: true
@@ -936,7 +1133,7 @@ Window {
                             Layout.fillWidth: true
                             Text { text: "流控制"
                              color: appTheme.muted
-                             font.pixelSize: 11 }
+                             font.pixelSize: appTheme.uiPixels(11) }
                             ConfigComboBox {
                                 id: flowCombo
                                 Layout.fillWidth: true
@@ -949,7 +1146,7 @@ Window {
 
                         UiButton {
                             id: connectBtn
-                            font.pixelSize: 13
+                            font.pixelSize: appTheme.uiPixels(13)
                             font.weight: Font.DemiBold
                              Layout.fillWidth: true
                              Layout.preferredHeight: 45
@@ -976,11 +1173,9 @@ Window {
                     }
                     } // Flickable
 
-                        // Page 1: 指令/码表/设置
+                        // Page 1: 指令/码表/设置/比对
                         StackLayout {
                             id: featurePanelStack
-                            anchors.fill: parent
-                            anchors.margins: 12
                             currentIndex: sidePanel >= 1 ? sidePanel - 1 : 0
 
                             // Tab 0: 指令 (Command Presets)
@@ -990,16 +1185,18 @@ Window {
                                 // Header
                                 RowLayout {
                                     Layout.fillWidth: true
-                                    Layout.preferredHeight: 32
+                                    Layout.preferredHeight: Math.max(32, commandTheme.uiPixels(32))
                                     SidePanelHeading {
+                                        font.pixelSize: commandTheme.uiPixels(15)
                                         text: "指令预设库"
                                     }
                                     Item { Layout.fillWidth: true }
                                     UiButton {
+                                        theme: commandTheme
                                         glyph: "\uE710"
                                         text: "分组"
-                                        Layout.preferredHeight: 32
-                                        font.pixelSize: 12
+                                        Layout.preferredHeight: Math.max(32, commandTheme.uiPixels(32))
+                                        font.pixelSize: commandTheme.uiPixels(12)
                                         enabled: commandStore.currentFile.length > 0 && !commandReorder.active
                                         onClicked: commandStore.addGroup("新分组")
                                     }
@@ -1011,18 +1208,21 @@ Window {
                                     enabled: !commandReorder.active
                                     ConfigComboBox {
                                         id: commandFileCombo
+                                        uiFontScale: commandTheme.uiFontScale
                                         objectName: "commandFileSelector"
                                         Layout.fillWidth: true
                                         Layout.minimumWidth: 40
-                                        Layout.preferredHeight: 34
+                                        Layout.preferredHeight: Math.max(34, commandTheme.uiPixels(34))
                                         model: commandStore.files
                                         currentIndex: commandStore.files.indexOf(commandStore.currentFile)
                                         displayText: (commandStore.currentFile || "选择指令文件")
                                                      + (commandStore.hasUnsavedChanges ? " *" : "")
                                         Accessible.name: "当前指令文件"
-                                        ToolTip.visible: hovered
-                                        ToolTip.text: commandStore.directory + "/" + commandStore.currentFile
-                                        ToolTip.delay: 650
+                                        HintBubble {
+                                            theme: commandTheme
+                                            visible: commandFileCombo.hovered && !commandFileCombo.popup.visible
+                                            text: commandStore.directory + "/" + commandStore.currentFile
+                                        }
                                         onActivated: (index) => {
                                             var file = commandStore.files[index]
                                             window.prepareCommandLibraryChange()
@@ -1032,10 +1232,11 @@ Window {
                                         }
                                     }
                                     UiButton {
+                                        theme: commandTheme
                                         glyph: "\uE710"
                                         hint: "新建指令文件"
-                                        Layout.preferredWidth: 28
-                                        Layout.preferredHeight: 30
+                                        Layout.preferredWidth: Math.max(28, commandTheme.uiPixels(28))
+                                        Layout.preferredHeight: Math.max(30, commandTheme.uiPixels(30))
                                         leftPadding: 0
                                         rightPadding: 0
                                         onClicked: {
@@ -1044,20 +1245,22 @@ Window {
                                         }
                                     }
                                     UiButton {
+                                        theme: commandTheme
                                         objectName: "refreshCommandFiles"
                                         glyph: "\uE72C"
                                         hint: "刷新目录并重新读取当前文件"
-                                        Layout.preferredWidth: 28
-                                        Layout.preferredHeight: 30
+                                        Layout.preferredWidth: Math.max(28, commandTheme.uiPixels(28))
+                                        Layout.preferredHeight: Math.max(30, commandTheme.uiPixels(30))
                                         leftPadding: 0
                                         rightPadding: 0
                                         onClicked: window.refreshCommandFiles()
                                     }
                                     UiButton {
+                                        theme: commandTheme
                                         glyph: "\uE8B7"
                                         hint: "打开 Commands 目录"
-                                        Layout.preferredWidth: 28
-                                        Layout.preferredHeight: 30
+                                        Layout.preferredWidth: Math.max(28, commandTheme.uiPixels(28))
+                                        Layout.preferredHeight: Math.max(30, commandTheme.uiPixels(30))
                                         leftPadding: 0
                                         rightPadding: 0
                                         onClicked: Qt.openUrlExternally(window.fileUrlFromLocalPath(commandStore.directory))
@@ -1069,19 +1272,23 @@ Window {
                                     visible: text.length > 0
                                     text: commandStore.statusMessage
                                     color: commandStore.hasError ? appTheme.warning : appTheme.muted
-                                    font.pixelSize: 11
+                                    font.pixelSize: commandTheme.uiPixels(11)
                                     wrapMode: Text.Wrap
                                     maximumLineCount: 3
                                     elide: Text.ElideRight
-                                    ToolTip.visible: commandStatusHover.hovered
-                                    ToolTip.text: text
+                                    id: commandStatus
+                                    HintBubble {
+                                        theme: commandTheme
+                                        visible: commandStatusHover.hovered
+                                        text: commandStatus.text
+                                    }
                                     HoverHandler { id: commandStatusHover }
                                 }
 
                                 // Search Box
                                 Rectangle {
                                     Layout.fillWidth: true
-                                    height: 36
+                                    Layout.preferredHeight: Math.max(36, commandTheme.uiPixels(36))
                                     radius: 8
                                     color: clInput
                                     border.color: clBorder
@@ -1102,12 +1309,13 @@ Window {
 
                                         TextField {
                                             id: cmdSearchField
+                                            verticalAlignment: TextInput.AlignVCenter
                                             Layout.fillWidth: true
                                             placeholderText: "搜索指令..."
                                             placeholderTextColor: grayPlaceholder
                                             background: Rectangle { color: "transparent" }
                                             color: whiteText
-                                            font.pixelSize: 12
+                                            font.pixelSize: commandTheme.uiPixels(12)
                                             leftPadding: 8
                                             selectByMouse: true
                                         }
@@ -1126,7 +1334,7 @@ Window {
                                     spacing: 6
                                     model: commandStore.groups
                                     cacheBuffer: groupsCollapsedForReorder ? count * 46 : 320
-                                    ScrollBar.vertical: SlimScrollBar { theme: appTheme }
+                                    ScrollBar.vertical: SlimScrollBar { theme: commandTheme }
 
                                     delegate: ColumnLayout {
                                         id: groupDelegate
@@ -1288,12 +1496,13 @@ Window {
 
                                                 TextField {
                                                     id: groupNameField
+                                                    verticalAlignment: TextInput.AlignVCenter
                                                     Layout.fillWidth: true
                                                     Layout.minimumWidth: 0
                                                     text: group.name
                                                     color: whiteText
                                                     font.bold: true
-                                                    font.pixelSize: 12
+                                                    font.pixelSize: commandTheme.uiPixels(12)
                                                     background: Rectangle { color: "transparent" }
                                                     selectByMouse: true
                                                     readOnly: true
@@ -1318,7 +1527,7 @@ Window {
                                                     visible: groupHeaderRect.width >= 210
                                                     color: clText
                                                     font.family: "Consolas"
-                                                    font.pixelSize: 10
+                                                    font.pixelSize: commandTheme.uiPixels(10)
                                                 }
                                                 Text {
                                                     text: groupExpanded ? "\uE70D" : "\uE76C"
@@ -1328,21 +1537,23 @@ Window {
                                                 }
 
                                                 UiButton {
+                                                    theme: commandTheme
                                                     id: groupAddButton
                                                     glyph: "\uE710"
                                                     hint: "添加指令"
-                                                    Layout.preferredWidth: 28
-                                                    Layout.preferredHeight: 28
+                                                    Layout.preferredWidth: Math.max(28, commandTheme.uiPixels(28))
+                                                    Layout.preferredHeight: Math.max(28, commandTheme.uiPixels(28))
                                                     onClicked: commandStore.addCommand(index, "新指令", "", false)
                                                 }
 
                                                 UiButton {
+                                                    theme: commandTheme
                                                     id: groupDeleteButton
                                                     glyph: "\uE74D"
                                                     hint: "删除分组"
                                                     kind: "danger"
-                                                    Layout.preferredWidth: 28
-                                                    Layout.preferredHeight: 28
+                                                    Layout.preferredWidth: Math.max(28, commandTheme.uiPixels(28))
+                                                    Layout.preferredHeight: Math.max(28, commandTheme.uiPixels(28))
                                                     onClicked: {
                                                         deleteType = "group"
                                                         targetGroupIdx = index
@@ -1374,7 +1585,9 @@ Window {
                                                     required property var modelData
                                                     required property int index
                                                     Layout.fillWidth: true
-                                                    theme: appTheme
+                                                    theme: commandTheme
+                                                    payloadFontSize: window.contentTextSize
+                                                    encoding: settingsStore.dataEncoding
                                                     backdropItem: rootRect
                                                     scrollContainer: cmdListView
                                                     commandName: modelData.name
@@ -1421,7 +1634,7 @@ Window {
                                         visible: commandStore.groups.length === 0
                                         text: "暂无指令分组\n点击「分组」添加"
                                         color: grayPlaceholder
-                                        font.pixelSize: 12
+                                        font.pixelSize: commandTheme.uiPixels(12)
                                         horizontalAlignment: Text.AlignHCenter
                                     }
                                 }
@@ -1432,24 +1645,30 @@ Window {
                                     Layout.fillWidth: true
                                     spacing: 3
                                     clip: true
-                                    property bool showImportExport: width >= 230
-                                    property int importExportButtonWidth: showImportExport ? 30 : 0
+                                    readonly property int intervalWidth: Math.max(88, commandTheme.uiPixels(88))
+                                    readonly property int fileButtonWidth: Math.max(30, commandTheme.uiPixels(22) + 8)
+                                    readonly property bool showImportExport: width >= Math.max(230,
+                                        intervalWidth + loopButton.Layout.minimumWidth + 2 * fileButtonWidth + 3 * spacing)
 
                                     IntervalControl {
-                                        Layout.preferredWidth: 88
-                                        Layout.preferredHeight: 28
+                                        theme: commandTheme
+                                        Layout.preferredWidth: Math.min(commandBottomBar.intervalWidth,
+                                            commandBottomBar.width - loopButton.Layout.minimumWidth - commandBottomBar.spacing)
+                                        Layout.preferredHeight: Math.max(28, commandTheme.uiPixels(28))
                                         interval: loopInterval
                                         onIntervalEdited: (milliseconds) => loopInterval = milliseconds
                                     }
 
                                     UiButton {
+                                        theme: commandTheme
+                                        id: loopButton
                                         Layout.fillWidth: true
-                                        Layout.minimumWidth: 54
+                                        Layout.minimumWidth: Math.max(54, implicitWidth)
                                         Layout.preferredWidth: 80
-                                        Layout.preferredHeight: 24
+                                        Layout.preferredHeight: Math.max(24, commandTheme.uiPixels(24))
                                         clip: true
                                         text: loopSending ? "停止发送" : "循环发送"
-                                        font.pixelSize: 10
+                                        font.pixelSize: commandTheme.uiPixels(10)
                                         kind: loopSending ? "danger" : "primary"
                                         selected: loopSending
                                         leftPadding: 4
@@ -1466,32 +1685,34 @@ Window {
                                     }
 
                                     UiButton {
-                                        Layout.preferredWidth: commandBottomBar.importExportButtonWidth
+                                        theme: commandTheme
+                                        Layout.preferredWidth: commandBottomBar.fileButtonWidth
                                         Layout.minimumWidth: 0
-                                        Layout.maximumWidth: 30
-                                        Layout.preferredHeight: 24
+                                        Layout.maximumWidth: commandBottomBar.fileButtonWidth
+                                        Layout.preferredHeight: Math.max(24, commandTheme.uiPixels(20))
                                         text: "导入"
                                         kind: "tonal"
                                         clip: true
                                         visible: commandBottomBar.showImportExport
                                         enabled: commandBottomBar.showImportExport
-                                        font.pixelSize: 11
+                                        font.pixelSize: commandTheme.uiPixels(11)
                                         leftPadding: 4
                                         rightPadding: 4
                                         onClicked: importFileDialog.open()
                                     }
 
                                     UiButton {
-                                        Layout.preferredWidth: commandBottomBar.importExportButtonWidth
+                                        theme: commandTheme
+                                        Layout.preferredWidth: commandBottomBar.fileButtonWidth
                                         Layout.minimumWidth: 0
-                                        Layout.maximumWidth: 30
-                                        Layout.preferredHeight: 24
+                                        Layout.maximumWidth: commandBottomBar.fileButtonWidth
+                                        Layout.preferredHeight: Math.max(24, commandTheme.uiPixels(20))
                                         text: "导出"
                                         kind: "tonal"
                                         clip: true
                                         visible: commandBottomBar.showImportExport
                                         enabled: commandBottomBar.showImportExport
-                                        font.pixelSize: 11
+                                        font.pixelSize: commandTheme.uiPixels(11)
                                         leftPadding: 4
                                         rightPadding: 4
                                         onClicked: {
@@ -1533,15 +1754,16 @@ Window {
                                         anchors.fill: parent
                                         anchors.margins: 10
                                         spacing: 6
-                                        Text { text: "进制转换"; color: clText; font.pixelSize: 11; font.bold: true }
+                                        Text { text: "进制转换"; color: clText; font.pixelSize: appTheme.uiPixels(11); font.bold: true }
                                         TextField {
                                             id: converterInput
+                                            verticalAlignment: TextInput.AlignVCenter
                                             Layout.fillWidth: true
                                             placeholderText: "输入数值..."
                                             placeholderTextColor: grayPlaceholder
                                             color: whiteText
                                             font.family: "Consolas"
-                                            font.pixelSize: 13
+                                            font.pixelSize: appTheme.uiPixels(13)
                                             background: Rectangle { color: clCard; radius: 6; border.color: converterInput.activeFocus ? clHighlight : clBorder }
                                             selectByMouse: true
                                             onTextChanged: {
@@ -1559,14 +1781,14 @@ Window {
                                         GridLayout {
                                             columns: 2; columnSpacing: 8; rowSpacing: 4
                                             Layout.fillWidth: true
-                                            Text { text: "HEX"; color: clText; font.pixelSize: 10; font.bold: true }
-                                            Text { id: hexOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
-                                            Text { text: "DEC"; color: clText; font.pixelSize: 10; font.bold: true }
-                                            Text { id: decOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
-                                            Text { text: "OCT"; color: clText; font.pixelSize: 10; font.bold: true }
-                                            Text { id: octOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true }
-                                            Text { text: "BIN"; color: clText; font.pixelSize: 10; font.bold: true }
-                                            Text { id: binOut; text: "-"; color: whiteText; font.pixelSize: 11; font.family: "Consolas"; Layout.fillWidth: true; wrapMode: Text.Wrap }
+                                            Text { text: "HEX"; color: clText; font.pixelSize: appTheme.uiPixels(10); font.bold: true }
+                                            Text { id: hexOut; text: "-"; color: whiteText; font.pixelSize: appTheme.uiPixels(11); font.family: "Consolas"; Layout.fillWidth: true }
+                                            Text { text: "DEC"; color: clText; font.pixelSize: appTheme.uiPixels(10); font.bold: true }
+                                            Text { id: decOut; text: "-"; color: whiteText; font.pixelSize: appTheme.uiPixels(11); font.family: "Consolas"; Layout.fillWidth: true }
+                                            Text { text: "OCT"; color: clText; font.pixelSize: appTheme.uiPixels(10); font.bold: true }
+                                            Text { id: octOut; text: "-"; color: whiteText; font.pixelSize: appTheme.uiPixels(11); font.family: "Consolas"; Layout.fillWidth: true }
+                                            Text { text: "BIN"; color: clText; font.pixelSize: appTheme.uiPixels(10); font.bold: true }
+                                            Text { id: binOut; text: "-"; color: whiteText; font.pixelSize: appTheme.uiPixels(11); font.family: "Consolas"; Layout.fillWidth: true; wrapMode: Text.Wrap }
                                         }
                                     }
                                 }
@@ -1574,7 +1796,7 @@ Window {
                                 Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.3 }
 
                                 // ASCII码表
-                                Text { text: "ASCII 码表"; color: clText; font.pixelSize: 11; font.bold: true }
+                                Text { text: "ASCII 码表"; color: clText; font.pixelSize: appTheme.uiPixels(11); font.bold: true }
                                 ListView {
                                     Layout.fillWidth: true
                                     height: 128 * 22
@@ -1590,8 +1812,8 @@ Window {
                                             anchors.leftMargin: 8
                                             anchors.rightMargin: 8
                                             spacing: 10
-                                            Text { text: index; color: clText; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 30 }
-                                            Text { text: "0x" + index.toString(16).toUpperCase().padStart(2, '0'); color: appTheme.muted; font.pixelSize: 10; font.family: "Consolas"; Layout.preferredWidth: 35 }
+                                            Text { text: index; color: clText; font.pixelSize: appTheme.uiPixels(10); font.family: "Consolas"; Layout.preferredWidth: 30 }
+                                            Text { text: "0x" + index.toString(16).toUpperCase().padStart(2, '0'); color: appTheme.muted; font.pixelSize: appTheme.uiPixels(10); font.family: "Consolas"; Layout.preferredWidth: 35 }
                                             Text {
                                                 text: {
                                                     if (index < 32) return ["NUL","SOH","STX","ETX","EOT","ENQ","ACK","BEL","BS","HT","LF","VT","FF","CR","SO","SI","DLE","DC1","DC2","DC3","DC4","NAK","SYN","ETB","CAN","EM","SUB","ESC","FS","GS","RS","US"][index]
@@ -1599,10 +1821,10 @@ Window {
                                                     if (index === 127) return "DEL"
                                                     return String.fromCharCode(index)
                                                 }
-                                                color: whiteText; font.pixelSize: 10; font.family: "Consolas"
+                                                color: whiteText; font.pixelSize: appTheme.uiPixels(10); font.family: "Consolas"
                                             }
                                             Item { Layout.fillWidth: true }
-                                            Text { text: index >= 32 && index < 127 ? String.fromCharCode(index) : ""; color: clText; font.pixelSize: 10 }
+                                            Text { text: index >= 32 && index < 127 ? String.fromCharCode(index) : ""; color: clText; font.pixelSize: appTheme.uiPixels(10) }
                                         }
                                     }
                                 }
@@ -1617,6 +1839,7 @@ Window {
                                 clip: true
                                 boundsBehavior: Flickable.StopAtBounds
                                 flickableDirection: Flickable.VerticalFlick
+                                ScrollBar.vertical: SlimScrollBar { theme: appTheme }
 
                                 ColumnLayout {
                                     id: settingsColumn
@@ -1628,11 +1851,75 @@ Window {
                                     text: "设置"
                                 }
 
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    implicitHeight: fontSettings.implicitHeight + 20
+                                    color: appTheme.alpha(appTheme.block, 0.55)
+                                    radius: 10
+                                    border.color: clBorder
+                                    ColumnLayout {
+                                        id: fontSettings
+                                        anchors.fill: parent
+                                        anchors.margins: 10
+                                        spacing: 8
+                                        FontSizeSetting {
+                                            editorName: "interfaceSizeInput"
+                                            title: "界面字号"
+                                            size: window.interfaceTextSize
+                                            minimum: 10
+                                            maximum: 20
+                                            onSizeEdited: (value) => window.interfaceTextSize = value
+                                        }
+                                        Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: clBorder }
+                                        FontSizeSetting {
+                                            editorName: "contentSizeInput"
+                                            title: "数据字号"
+                                            size: window.contentTextSize
+                                            minimum: 8
+                                            maximum: 32
+                                            onSizeEdited: (value) => window.contentTextSize = value
+                                        }
+                                    }
+                                }
+                                Text { text: "接收分包"; color: clText; font.pixelSize: appTheme.uiPixels(11); font.bold: true }
+                                ModeSwitch {
+                                    Layout.fillWidth: true
+                                    model: ["按时间", "按字节"]
+                                    currentIndex: window.receivePacketMode
+                                    onActivated: (index) => window.receivePacketMode = index
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    Text {
+                                        Layout.fillWidth: true
+                                        text: window.receivePacketMode === 0 ? "时间窗口" : "余包等待"
+                                        color: clText; font.pixelSize: appTheme.uiPixels(11)
+                                    }
+                                    IntervalField {
+                                        theme: appTheme
+                                        interval: window.receivePacketMs
+                                        minimum: 1; maximum: 10000
+                                        onIntervalEdited: (value) => window.receivePacketMs = value
+                                    }
+                                }
+                                RowLayout {
+                                    Layout.fillWidth: true
+                                    visible: window.receivePacketMode === 1
+                                    Text { Layout.fillWidth: true; text: "每包大小"; color: clText; font.pixelSize: appTheme.uiPixels(11) }
+                                    IntervalField {
+                                        theme: appTheme
+                                        interval: window.receivePacketBytes
+                                        minimum: 1; maximum: 65536; unit: "B"
+                                        hint: "1–65536 字节"
+                                        onIntervalEdited: (value) => window.receivePacketBytes = value
+                                    }
+                                }
+
                                 // 行尾模式
                                 ColumnLayout {
                                     spacing: 6
                                     Layout.fillWidth: true
-                                    Text { text: "行尾模式"; color: clText; font.pixelSize: 11; font.bold: true }
+                                    Text { text: "行尾模式"; color: clText; font.pixelSize: appTheme.uiPixels(11); font.bold: true }
                                     ModeSwitch {
                                         Layout.fillWidth: true
                                         Layout.preferredHeight: 32
@@ -1648,7 +1935,7 @@ Window {
                                 ColumnLayout {
                                     spacing: 6
                                     Layout.fillWidth: true
-                                    Text { text: "数据编码"; color: clText; font.pixelSize: 11; font.bold: true }
+                                    Text { text: "数据编码"; color: clText; font.pixelSize: appTheme.uiPixels(11); font.bold: true }
                                     ConfigComboBox {
                                         id: encodingCombo
                                         Layout.fillWidth: true
@@ -1665,20 +1952,20 @@ Window {
                                 ColumnLayout {
                                     spacing: 6
                                     Layout.fillWidth: true
-                                    Text { text: "串口参数"; color: clText; font.pixelSize: 11; font.bold: true }
+                                    Text { text: "串口参数"; color: clText; font.pixelSize: appTheme.uiPixels(11); font.bold: true }
                                     GridLayout {
                                         columns: 2
                                         columnSpacing: 12
                                         rowSpacing: 6
                                         Layout.fillWidth: true
-                                        Text { text: "数据位"; color: appTheme.muted; font.pixelSize: 11 }
-                                        Text { text: "8"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                        Text { text: "停止位"; color: appTheme.muted; font.pixelSize: 11 }
-                                        Text { text: "1"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                        Text { text: "校验位"; color: appTheme.muted; font.pixelSize: 11 }
-                                        Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
-                                        Text { text: "流控"; color: appTheme.muted; font.pixelSize: 11 }
-                                        Text { text: "None"; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                        Text { text: "数据位"; color: appTheme.muted; font.pixelSize: appTheme.uiPixels(11) }
+                                        Text { text: "8"; color: whiteText; font.pixelSize: appTheme.uiPixels(12); font.family: "Consolas" }
+                                        Text { text: "停止位"; color: appTheme.muted; font.pixelSize: appTheme.uiPixels(11) }
+                                        Text { text: "1"; color: whiteText; font.pixelSize: appTheme.uiPixels(12); font.family: "Consolas" }
+                                        Text { text: "校验位"; color: appTheme.muted; font.pixelSize: appTheme.uiPixels(11) }
+                                        Text { text: "None"; color: whiteText; font.pixelSize: appTheme.uiPixels(12); font.family: "Consolas" }
+                                        Text { text: "流控"; color: appTheme.muted; font.pixelSize: appTheme.uiPixels(11) }
+                                        Text { text: "None"; color: whiteText; font.pixelSize: appTheme.uiPixels(12); font.family: "Consolas" }
                                     }
                                 }
 
@@ -1687,7 +1974,7 @@ Window {
                                 // 十进制模式
                                 RowLayout {
                                     Layout.fillWidth: true
-                                    Text { text: "启用十进制显示模式"; color: clText; font.pixelSize: 12; Layout.fillWidth: true }
+                                    Text { text: "启用十进制显示模式"; color: clText; font.pixelSize: appTheme.uiPixels(12); Layout.fillWidth: true }
                                     Rectangle {
                                         width: 44; height: 24; radius: 12
                                         color: settingsStore.hasDecimalMode ? clHighlight : (isDark ? Qt.rgba(255,255,255,0.2) : Qt.rgba(0,0,0,0.15))
@@ -1708,6 +1995,19 @@ Window {
                                 Item { Layout.fillHeight: true }
                             }
                             }
+                            ColumnLayout {
+                                spacing: 10
+                                CompareInput {
+                                    id: compareInputA
+                                    editorName: "compareInputA"
+                                    placeholder: "键入比对内容A"
+                                }
+                                CompareInput {
+                                    id: compareInputB
+                                    editorName: "compareInputB"
+                                    placeholder: "键入比对内容B"
+                                }
+                            }
                         }
                     }
                 }
@@ -1715,7 +2015,7 @@ Window {
                 // 整条模块间隙均可拖动，提示柄位于间隙中央。
                 Item {
                     Layout.preferredWidth: sidePanel < 0 && !sidePanelDragActive ? 0 : panelGap
-                    Behavior on Layout.preferredWidth { enabled: !sidePanelDragActive; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                    Behavior on Layout.preferredWidth { enabled: !sidePanelDragActive && !windowState.restoring; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                     Layout.fillHeight: true
                     visible: sidePanel >= 0 || sidePanelDragActive || width > 1
 
@@ -1738,14 +2038,27 @@ Window {
                     }
                 }
 
+                CompareWorkspace {
+                    id: compareWorkspace
+                    visible: sidePanel === 4
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.minimumWidth: 0
+                    theme: appTheme
+                    textSize: window.contentTextSize
+                    textA: compareInputA.text
+                    textB: compareInputB.text
+                }
+
                 ColumnLayout {
                     id: centerColumn
+                    visible: sidePanel !== 4
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     Layout.minimumWidth: 0
                     spacing: 0
                     clip: true
-                    
+
                     Rectangle {
                         id: terminalCard
                          Layout.fillWidth: true
@@ -1762,16 +2075,16 @@ Window {
                             RowLayout {
                                 Text { text: "数据终端"
                                  color: clText
-                                 font.pixelSize: 11
+                                 font.pixelSize: appTheme.uiPixels(11)
                                  font.bold: true }
                                 Item { Layout.fillWidth: true }
-                                
+
                                 // 自动滚动开关
                                 UiButton {
                                     visible: terminalCard.width >= 450
                                     text: "时间戳"
                                     selected: globalTimestamp
-                                    hint: "软件收到或写完这一批数据的时间；不是逐字节硬件时间戳"
+                                    hint: "接收包首字节或本次写入完成的时间"
                                     onClicked: globalTimestamp = !globalTimestamp
                                 }
                                 UiButton {
@@ -1784,9 +2097,10 @@ Window {
                                 }
 
                                 UiButton { text: terminalCard.width >= 350 ? "清除" : ""
+                                 objectName: "clearTerminalButton"
                                  glyph: "\uE74D"
-                                 hint: "清空终端显示"
-                                 onClicked: { terminalModel.clear() } }
+                                 hint: "清除终端记录并重置收发统计"
+                                 onClicked: window.clearTerminal() }
                             }
                             Rectangle {
                                 Layout.fillWidth: true
@@ -1818,13 +2132,12 @@ Window {
                                         width: terminalView.width
                                          spacing: 3
                                          property bool expanded: false
-                                         property bool wasTruncated: false
                                         RowLayout {
                                             width: parent.width
                                              layoutDirection: model.isSent ? Qt.RightToLeft : Qt.LeftToRight
                                              spacing: 6
                                             Text { text: model.timestamp
-                                             font.pixelSize: 9
+                                             font.pixelSize: appTheme.uiPixels(9)
                                              color: appTheme.muted
                                              visible: globalTimestamp
                                              MouseArea {
@@ -1842,7 +2155,7 @@ Window {
                                                  color: appTheme.block
                                                 Text { text: model.isHexMode ? "HEX" : "TXT"
                                                  anchors.centerIn: parent
-                                                 font.pixelSize: 8
+                                                 font.pixelSize: appTheme.uiPixels(8)
                                                  font.bold: true
                                                  color: clText }
                                                 MouseArea { anchors.fill: parent
@@ -1869,19 +2182,46 @@ Window {
                                                         text: model.isHexMode ? model.contentHex : model.contentAscii
                                                         maximumWidth: terminalView.width * 0.75
                                                         expanded: terminalMessageDelegate.expanded
-                                                        onTruncatedChanged: if (!terminalMessageDelegate.expanded) terminalMessageDelegate.wasTruncated = truncated
-                                                        Component.onCompleted: if (!terminalMessageDelegate.expanded) terminalMessageDelegate.wasTruncated = truncated
+                                                        hexMode: model.isHexMode
+                                                        encoding: model.encoding
+                                                        textSize: window.contentTextSize
                                                     }
                                                     Text { id: msgToggle
-                                                     visible: expanded ? wasTruncated : msgText.truncated
-                                                     text: expanded ? "收起 ▴" : "展开全文 ▾"
+                                                     visible: expanded || msgText.truncated
+                                                     text: expanded ? "收起 ▴" : msgText.paged ? "分页查看 ▾" : "展开全文 ▾"
                                                      color: clText
-                                                     font.pixelSize: 9
+                                                     font.pixelSize: appTheme.uiPixels(9)
                                                      MouseArea {
                                                          anchors.fill: parent
                                                          cursorShape: Qt.PointingHandCursor
                                                          onClicked: expanded = !expanded
                                                      }
+                                                    }
+                                                    Flow {
+                                                        width: msgText.width
+                                                        spacing: 4
+                                                        visible: terminalMessageDelegate.expanded && msgText.paged
+                                                        UiButton {
+                                                            text: "上一页"
+                                                            enabled: msgText.page > 0
+                                                            onClicked: --msgText.page
+                                                        }
+                                                        Text {
+                                                            text: (msgText.page + 1) + " / " + msgText.pageCount
+                                                            color: clText
+                                                            font.pixelSize: appTheme.uiPixels(10)
+                                                            height: 30
+                                                            verticalAlignment: Text.AlignVCenter
+                                                        }
+                                                        UiButton {
+                                                            text: "下一页"
+                                                            enabled: msgText.page + 1 < msgText.pageCount
+                                                            onClicked: ++msgText.page
+                                                        }
+                                                        UiButton {
+                                                            text: "复制全文"
+                                                            onClicked: serialManager.copyToClipboard(msgText.text)
+                                                        }
                                                     }
                                                 }
                                             }
@@ -1933,18 +2273,18 @@ Window {
 
                                 Item {
                                     id: rxModeControl
-                                    Layout.preferredWidth: showRxModeControl ? 112 : 0
+                                    Layout.preferredWidth: showRxModeControl ? 112 * toolbarSizeFactor : 0
                                     Layout.minimumWidth: 0
                                     Layout.preferredHeight: 30
                                     opacity: showRxModeControl ? 1 : 0
                                     enabled: showRxModeControl
                                     clip: true
-                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on Layout.preferredWidth { enabled: !windowState.restoring; NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                     RowLayout {
                                         anchors.fill: parent
                                         spacing: 6
-                                        Text { text: "接收"; color: appTheme.muted; font.pixelSize: 10 }
+                                        Text { text: "接收"; color: appTheme.muted; font.pixelSize: appTheme.uiPixels(10) }
                                         ModeSwitch {
                                             Layout.fillWidth: true
                                             Layout.preferredHeight: 28
@@ -1957,18 +2297,18 @@ Window {
 
                                 Item {
                                     id: txModeControl
-                                    Layout.preferredWidth: showTxModeControl ? 112 : 0
+                                    Layout.preferredWidth: showTxModeControl ? 112 * toolbarSizeFactor : 0
                                     Layout.minimumWidth: 0
                                     Layout.preferredHeight: 30
                                     opacity: showTxModeControl ? 1 : 0
                                     enabled: showTxModeControl
                                     clip: true
-                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on Layout.preferredWidth { enabled: !windowState.restoring; NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                     RowLayout {
                                         anchors.fill: parent
                                         spacing: 6
-                                        Text { text: "发送"; color: appTheme.muted; font.pixelSize: 10 }
+                                        Text { text: "发送"; color: appTheme.muted; font.pixelSize: appTheme.uiPixels(10) }
                                         ModeSwitch {
                                             Layout.fillWidth: true
                                             Layout.preferredHeight: 28
@@ -1981,13 +2321,13 @@ Window {
 
                                 Item {
                                     id: timeControl
-                                    Layout.preferredWidth: showTimeControl ? 88 : 0
+                                    Layout.preferredWidth: showTimeControl ? 88 * toolbarSizeFactor : 0
                                     Layout.minimumWidth: 0
                                     Layout.preferredHeight: 30
                                     opacity: showTimeControl ? 1 : 0
                                     enabled: showTimeControl
                                     clip: true
-                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on Layout.preferredWidth { enabled: !windowState.restoring; NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                     IntervalControl {
                                         anchors.fill: parent
@@ -1998,15 +2338,16 @@ Window {
 
                                 Item {
                                     id: autoControl
-                                    Layout.preferredWidth: showAutoControl ? 64 : 0
+                                    Layout.preferredWidth: showAutoControl ? Math.max(64, repeatButton.implicitWidth) : 0
                                     Layout.minimumWidth: 0
                                     Layout.preferredHeight: 30
                                     opacity: showAutoControl ? 1 : 0
                                     enabled: showAutoControl
                                     clip: true
-                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on Layout.preferredWidth { enabled: !windowState.restoring; NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                     UiButton {
+                                        id: repeatButton
                                         anchors.fill: parent
                                         text: autoSending ? "停止发送" : "循环发送"
                                         kind: autoSending ? "danger" : "primary"
@@ -2018,17 +2359,36 @@ Window {
                                     }
                                 }
 
-                                Item { Layout.fillWidth: true }
+                                Text {
+                                    id: sendNotice
+                                    objectName: "sendNotice"
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                    Layout.leftMargin: text.length > 0 && showAutoControl ? 8 : 0
+                                    Layout.alignment: Qt.AlignVCenter
+                                    text: inputSender.notice || inputSender.hexInputError
+                                          || (inputSender.needsConversion ? inputSender.conversionNotice
+                                              : (!globalTxHex && settingsStore.lineEndingMode > 0
+                                                  ? "TXT 行尾：" + window.lineEndings[settingsStore.lineEndingMode] : ""))
+                                    color: inputSender.notice || inputSender.hexInputError || inputSender.needsConversion
+                                           ? appTheme.warning : clText
+                                    font.pixelSize: appTheme.uiPixels(11)
+                                    wrapMode: Text.WrapAnywhere
+                                    maximumLineCount: 2
+                                    elide: Text.ElideRight
+                                    HoverHandler { id: sendNoticeHover }
+                                    HintBubble { theme: appTheme; visible: sendNotice.truncated && sendNoticeHover.hovered; text: sendNotice.text }
+                                }
 
                                 Item {
                                     id: checksumControl
-                                    Layout.preferredWidth: showChecksumControl ? 90 : 0
+                                    Layout.preferredWidth: showChecksumControl ? 90 * toolbarSizeFactor : 0
                                     Layout.minimumWidth: 0
                                     Layout.preferredHeight: 30
                                     opacity: showChecksumControl ? 1 : 0
                                     enabled: showChecksumControl
                                     clip: true
-                                    Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                    Behavior on Layout.preferredWidth { enabled: !windowState.restoring; NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                     Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                     ConfigComboBox {
                                         id: checksumCombo
@@ -2037,22 +2397,9 @@ Window {
                                         model: ["无校验", "异或 BCC", "Sum8", "CRC16"]
                                         currentIndex: settingsStore.uiPreference("checksum", 0)
                                         onCurrentIndexChanged: if (window.layoutReady) settingsStore.setUiPreference("checksum", currentIndex)
-                                        font.pixelSize: 11
+                                        font.pixelSize: appTheme.uiPixels(11)
                                     }
                                 }
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                visible: text.length > 0
-                                text: inputSender.notice || inputSender.hexInputError || (inputSender.needsConversion
-                                      ? inputSender.conversionNotice
-                                      : (!globalTxHex && settingsStore.lineEndingMode > 0
-                                         ? "TXT 行尾：" + ["无", "LF (0A)", "CR (0D)", "CRLF (0D 0A)"][settingsStore.lineEndingMode] + "，可在设置中改为“无”。" : ""))
-                                color: inputSender.needsConversion || inputSender.hexInputError.length > 0 || inputSender.notice === "请先连接串口。" ? appTheme.warning : clText
-                                font.pixelSize: 11
-                                wrapMode: Text.Wrap
-                                maximumLineCount: 2
-                                elide: Text.ElideRight
                             }
                             Rectangle {
                                 Layout.fillWidth: true
@@ -2062,45 +2409,68 @@ Window {
                                     anchors.fill: parent
                                     spacing: 8
                                     clip: true
-                                    TextArea { id: sendInput
-                                     objectName: "sendMessageInput"
-                                     Accessible.name: "发送内容"
-                                     Layout.fillWidth: true
-                                     Layout.minimumWidth: 0
-                                     Layout.fillHeight: true
-                                     color: whiteText
-                                     font.family: "Consolas"
-                                     font.pixelSize: 14
-                                     padding: 0
-                                     topPadding: 4
-                                     placeholderText: globalTxHex ? 'HEX 字节或带双引号的文字，例如 01 "AT" 0D' : "键入内容并发送..."
-                                     placeholderTextColor: grayPlaceholder
-                                     background: null
-                                     wrapMode: TextArea.Wrap
-                                     Keys.onUpPressed: function(event) {
-                                         if (sendInput.cursorPosition === 0 || sendInput.text === "") {
-                                             navigateHistory("up")
-                                             event.accepted = true
-                                         } else {
-                                             event.accepted = false
-                                         }
-                                     }
-                                     Keys.onDownPressed: function(event) {
-                                         if (historyIndex >= 0) {
-                                             navigateHistory("down")
-                                             event.accepted = true
-                                         } else {
-                                             event.accepted = false
-                                         }
-                                     }
-                                     Keys.onReturnPressed: function(event) {
-                                         if (event.modifiers & Qt.ShiftModifier) {
-                                             doSend()
-                                             event.accepted = true
-                                         } else {
-                                             event.accepted = false
-                                         }
-                                     } }
+                                    ScrollView {
+                                        Layout.fillWidth: true
+                                        Layout.minimumWidth: 0
+                                        Layout.fillHeight: true
+                                        clip: true
+                                        contentWidth: availableWidth
+                                        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+                                        ScrollBar.vertical: SlimScrollBar { theme: appTheme; interactive: true }
+                                        TextArea {
+                                            id: sendInput
+                                            readonly property bool countsBytes: true
+                                            readonly property bool countsHexBytes: window.globalTxHex
+                                            readonly property bool spacedHexBytes: false
+                                            readonly property string byteEncoding: settingsStore.dataEncoding
+                                            objectName: "sendMessageInput"
+                                            Accessible.name: "发送内容"
+                                            color: whiteText
+                                            font.family: "Consolas"
+                                            font.pixelSize: window.contentTextSize
+                                            textFormat: TextEdit.PlainText
+                                            padding: 6
+                                            selectByMouse: true
+                                            selectionColor: appTheme.primary
+                                            selectedTextColor: appTheme.primaryText
+                                            verticalAlignment: TextEdit.AlignTop
+                                            Keys.priority: Keys.BeforeItem
+                                            placeholderText: globalTxHex ? 'HEX 字节或带双引号的文字，例如 01 "AT" 0D' : "键入内容并发送..."
+                                            placeholderTextColor: grayPlaceholder
+                                            background: null
+                                            wrapMode: TextArea.Wrap
+                                            Keys.onUpPressed: function(event) {
+                                                if (sendInput.cursorPosition === 0 || sendInput.text === "") {
+                                                    navigateHistory("up")
+                                                    event.accepted = true
+                                                } else {
+                                                    event.accepted = false
+                                                }
+                                            }
+                                            Keys.onDownPressed: function(event) {
+                                                if (historyIndex >= 0) {
+                                                    navigateHistory("down")
+                                                    event.accepted = true
+                                                } else {
+                                                    event.accepted = false
+                                                }
+                                            }
+                                            function handleEnter(event) {
+                                                if (inputMethodComposing) { event.accepted = false; return }
+                                                if (event.modifiers & Qt.ShiftModifier) {
+                                                    const position = selectionStart
+                                                    if (selectionEnd > position) remove(position, selectionEnd)
+                                                    insert(position, "\n")
+                                                    cursorPosition = position + 1
+                                                } else if (!event.isAutoRepeat) {
+                                                    doSend()
+                                                }
+                                                event.accepted = true
+                                            }
+                                            Keys.onReturnPressed: (event) => handleEnter(event)
+                                            Keys.onEnterPressed: (event) => handleEnter(event)
+                                        }
+                                    }
                                     Rectangle { Layout.preferredWidth: (checksumCombo.currentIndex > 0 && sendCard.width >= 165) ? 50 : 0
                                      Layout.minimumWidth: 0
                                      Layout.fillHeight: true
@@ -2108,25 +2478,26 @@ Window {
                                      radius: 8
                                      opacity: (checksumCombo.currentIndex > 0 && sendCard.width >= 165) ? 1 : 0
                                      visible: opacity > 0
-                                     Behavior on Layout.preferredWidth { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+                                     Behavior on Layout.preferredWidth { enabled: !windowState.restoring; NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
                                      Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
                                      Column { anchors.centerIn: parent
                                      spacing: 2
                                      Text { text: "校验"
                                      color: appTheme.muted
-                                     font.pixelSize: 9
+                                     font.pixelSize: appTheme.uiPixels(9)
                                      visible: window.width > 750 }
                                      Text { text: checksumValue
                                      color: whiteText
                                      font.bold: true
-                                     font.pixelSize: 13 } } }
+                                     font.pixelSize: appTheme.uiPixels(13) } } }
                                     UiButton { id: sendBtn
-                                     Layout.preferredWidth: 60
+                                     Layout.preferredWidth: Math.max(60, implicitWidth)
                                      Layout.minimumWidth: 60
                                      Layout.preferredHeight: 40
                                      Layout.alignment: Qt.AlignBottom
                                      text: "发送"
-                                     font.pixelSize: 12
+                                     hint: "Enter 发送 · Shift+Enter 换行"
+                                     font.pixelSize: appTheme.uiPixels(12)
                                      font.weight: Font.DemiBold
                                      kind: "primary"
                                      onClicked: doSend()
@@ -2175,14 +2546,14 @@ Window {
                                         Text { text: "G"; color: whiteText; font.bold: true; font.pixelSize: 32; anchors.centerIn: parent }
                                     }
                                     ColumnLayout {
-                                        Text { text: "MySerial Gemini"; color: whiteText; font.bold: true; font.pixelSize: 22 }
-                                        Text { text: "v0.1.2 Alpha Build"; color: clText; font.pixelSize: 13 }
+                                        Text { text: "MySerial Gemini"; color: whiteText; font.bold: true; font.pixelSize: appTheme.uiPixels(22) }
+                                        Text { text: "v" + Qt.application.version; color: clText; font.pixelSize: appTheme.uiPixels(13) }
                                     }
                                 }
                                 Rectangle { Layout.fillWidth: true; height: 1; color: clBorder; opacity: 0.5 }
                                 Text { 
                                     text: "一款基于 Qt 6 开发的现代化串口调试助手，支持双模式显示及智能校验。"
-                                    color: clText; font.pixelSize: 13; Layout.fillWidth: true; wrapMode: Text.Wrap
+                                    color: clText; font.pixelSize: appTheme.uiPixels(13); Layout.fillWidth: true; wrapMode: Text.Wrap
                                 }
                             }
                         }
@@ -2200,7 +2571,7 @@ Window {
                                 border.color: clBorder
                                 ColumnLayout {
                                     anchors.fill: parent; anchors.margins: 20; spacing: 12
-                                    Text { text: "运行环境"; color: whiteText; font.bold: true; font.pixelSize: 14 }
+                                    Text { text: "运行环境"; color: whiteText; font.bold: true; font.pixelSize: appTheme.uiPixels(14) }
                                     ListModel {
                                         id: envModel
                                         ListElement { k: "Qt Framework"; v: "6.11.0" }
@@ -2211,8 +2582,8 @@ Window {
                                     Repeater {
                                         model: envModel
                                         RowLayout {
-                                            Text { text: model.k; color: appTheme.muted; font.pixelSize: 12; Layout.preferredWidth: 100 }
-                                            Text { text: model.v; color: whiteText; font.pixelSize: 12; font.family: "Consolas" }
+                                            Text { text: model.k; color: appTheme.muted; font.pixelSize: appTheme.uiPixels(12); Layout.preferredWidth: 100 }
+                                            Text { text: model.v; color: whiteText; font.pixelSize: appTheme.uiPixels(12); font.family: "Consolas" }
                                         }
                                     }
                                 }
@@ -2226,10 +2597,10 @@ Window {
                                 border.color: clBorder
                                 ColumnLayout {
                                     anchors.fill: parent; anchors.margins: 20; spacing: 12
-                                    Text { text: "技术支持"; color: whiteText; font.bold: true; font.pixelSize: 14 }
+                                    Text { text: "技术支持"; color: whiteText; font.bold: true; font.pixelSize: appTheme.uiPixels(14) }
                                     Text { 
                                         text: "如果您在使用过程中遇到任何问题或有改进建议，请通过邮件联系开发者。"
-                                        color: clText; font.pixelSize: 12; Layout.fillWidth: true; wrapMode: Text.Wrap
+                                        color: clText; font.pixelSize: appTheme.uiPixels(12); Layout.fillWidth: true; wrapMode: Text.Wrap
                                     }
                                     Item { Layout.fillHeight: true }
                                     Rectangle {
@@ -2237,7 +2608,7 @@ Window {
                                         RowLayout {
                                             anchors.fill: parent; anchors.leftMargin: 15; anchors.rightMargin: 15
                                             Text { text: "\uE715"; font.family: "Segoe Fluent Icons"; font.pixelSize: 16; color: clText }
-                                            Text { text: "mmooka001@gmail.com"; color: whiteText; font.pixelSize: 13; font.bold: true }
+                                            Text { text: "mmooka001@gmail.com"; color: whiteText; font.pixelSize: appTheme.uiPixels(13); font.bold: true }
                                             Item { Layout.fillWidth: true }
                                             Rectangle {
                                                 Layout.preferredWidth: 44
@@ -2250,7 +2621,7 @@ Window {
                                                     anchors.centerIn: parent
                                                     text: "复制"
                                                     color: clHighlight
-                                                    font.pixelSize: 11
+                                                    font.pixelSize: appTheme.uiPixels(11)
                                                     font.bold: true
                                                 }
                                                 MouseArea {
@@ -2292,11 +2663,11 @@ Window {
                     Text { text: "确定要执行删除吗？"
                      color: whiteText
                      font.bold: true
-                     font.pixelSize: 16
+                     font.pixelSize: appTheme.uiPixels(16)
                      Layout.alignment: Qt.AlignHCenter }
                     Text { text: "操作后数据将无法恢复"
                      color: appTheme.muted
-                     font.pixelSize: 12
+                     font.pixelSize: appTheme.uiPixels(12)
                      Layout.alignment: Qt.AlignHCenter }
                     RowLayout {
                         spacing: 15
@@ -2368,7 +2739,7 @@ Window {
                     Layout.fillWidth: true
                     text: "当前指令尚未保存"
                     color: appTheme.text
-                    font.pixelSize: 15
+                    font.pixelSize: appTheme.uiPixels(15)
                     font.weight: Font.DemiBold
                 }
                 Text {
@@ -2377,7 +2748,7 @@ Window {
                         ? "关闭会丢失未保存的修改。可先取消，再导出指令备份。"
                         : "重新读取将放弃未保存的修改，使用目录中的文件。可先取消，再导出指令备份。"
                     color: appTheme.secondary
-                    font.pixelSize: 12
+                    font.pixelSize: appTheme.uiPixels(12)
                     wrapMode: Text.Wrap
                 }
                 RowLayout {
@@ -2407,7 +2778,7 @@ Window {
         Rectangle {
             id: statusBar
             width: parent.width
-            height: 28
+            height: Math.max(28, appTheme.uiPixels(23))
             color: "transparent"
             anchors.bottom: parent.bottom
             z: 100
@@ -2415,7 +2786,7 @@ Window {
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 15 + leftRailWidth
-                anchors.rightMargin: 15
+                anchors.rightMargin: 24
                 spacing: 15
 
                 RowLayout {
@@ -2429,24 +2800,32 @@ Window {
                     Text {
                         text: serialManager.isOpen ? "已连接" : "未连接"
                         color: clText
-                        font.pixelSize: 11
+                        font.pixelSize: appTheme.uiPixels(11)
                     }
+                }
+
+                Text {
+                    objectName: "selectedBytesStatus"
+                    text: "选区 " + window.selectedBytes + " B"
+                    visible: window.hasByteSelection
+                    color: clHighlight
+                    font.pixelSize: appTheme.uiPixels(10)
+                    font.family: "Consolas"
                 }
 
                 // RX/TX counters
                 RowLayout {
                     spacing: 12
-                    visible: serialManager.isOpen
                     Text {
                         text: "▼ RX: " + recordStore.rxCount + " B"
                         color: clText
-                        font.pixelSize: 10
+                        font.pixelSize: appTheme.uiPixels(10)
                         font.family: "Consolas"
                     }
                     Text {
                         text: "▲ TX: " + recordStore.txCount + " B"
                         color: clText
-                        font.pixelSize: 10
+                        font.pixelSize: appTheme.uiPixels(10)
                         font.family: "Consolas"
                     }
                 }
@@ -2457,19 +2836,19 @@ Window {
                 RowLayout {
                     spacing: 8
                     Text {
-                        text: "记录: " + recordStore.records.length
+                        text: "记录 " + recordStore.recordCount
                         color: clText
-                        font.pixelSize: 10
+                        font.pixelSize: appTheme.uiPixels(10)
                         opacity: 0.7
                     }
                     Rectangle {
-                        width: 42; height: 20; radius: 4
+                        width: Math.max(42, appTheme.uiPixels(32)); height: Math.max(20, appTheme.uiPixels(17)); radius: 4
                         color: exportMouse.containsMouse ? clInput : "transparent"
                         Text {
                             text: "导出"
                             anchors.centerIn: parent
                             color: clText
-                            font.pixelSize: 10
+                            font.pixelSize: appTheme.uiPixels(10)
                         }
                         MouseArea {
                             id: exportMouse
@@ -2481,32 +2860,14 @@ Window {
                             }
                         }
                     }
-                    Rectangle {
-                        width: 42; height: 20; radius: 4
-                        color: clearRecMouse.containsMouse ? clInput : "transparent"
-                        Text {
-                            text: "清空"
-                            anchors.centerIn: parent
-                            color: appTheme.muted
-                            font.pixelSize: 10
-                        }
-                        MouseArea {
-                            id: clearRecMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: {
-                                recordStore.clearRecords()
-                                terminalModel.clear()
-                            }
-                        }
-                    }
                 }
 
                 Text {
-                    text: "Support: mmooka001@gmail.com"
+                    text: "行尾 " + window.lineEndings[settingsStore.lineEndingMode]
+                          + (window.globalTxHex && settingsStore.lineEndingMode ? "（仅 TXT）" : "")
+                          + "  ·  " + settingsStore.dataEncoding
                     color: clText
-                    font.pixelSize: 11
-                    opacity: 0.8
+                    font.pixelSize: appTheme.uiPixels(10)
                 }
             }
         }
@@ -2581,18 +2942,23 @@ Window {
                 loopTimer.stop()
             }
         }
-        function onDataReceived(ascii, hex, isSent, isHex, timestampMs) {
-            terminalModel.append({ "contentAscii": ascii, "contentHex": hex, "isHexMode": isSent ? isHex : globalRxHex, "isSent": isSent, "timestamp": Qt.formatDateTime(new Date(timestampMs > 0 ? timestampMs : Date.now()), "hh:mm:ss.zzz") })
-            if (autoScroll) {
-                terminalView.positionViewAtEnd()
-            }
+        function onSendingStalled(error) {
+            inputSender.running = false
+            loopSending = false
+            loopIndex = -1
+            loopTimer.stop()
+            inputSender.notice = error
+        }
+        function onDataReceived(ascii, hex, isSent, isHex, timestampMs, encoding) {
+            window.appendTerminalRow(ascii, hex, isSent, isSent ? isHex : globalRxHex, timestampMs, encoding)
         }
         function onErrorOccurred(error) {
-            terminalModel.append({ "contentAscii": "错误: " + error, "contentHex": "", "isHexMode": false, "isSent": false, "timestamp": Qt.formatDateTime(new Date(), "hh:mm:ss.zzz") })
-            if (autoScroll) {
-                terminalView.positionViewAtEnd()
-            }
+            window.appendTerminalRow("错误: " + error, "", false, false, 0, settingsStore.dataEncoding)
         }
+    }
+
+    function followTerminal() {
+        if (autoScroll && sidePanel !== 4) terminalView.positionViewAtEnd()
     }
 
     // Sync line ending mode from settingsStore to serialManager
@@ -2600,9 +2966,6 @@ Window {
         target: settingsStore
         function onLineEndingModeChanged() {
             serialManager.lineEndingMode = settingsStore.lineEndingMode
-        }
-        function onCustomLineEndingChanged() {
-            // Custom line ending support can be added later
         }
     }
 
@@ -2612,6 +2975,7 @@ Window {
         acrylic.enable(window)
         updateAcrylicTint()
         serialManager.lineEndingMode = settingsStore.lineEndingMode
+        updateReceivePackets()
         startupPortRefreshTimer.start()
         windowState.initialize()
     }
@@ -2649,7 +3013,7 @@ Window {
                 id: themeColumn
                 width: parent.width
                 spacing: 10
-                Text { text: "外观"; color: whiteText; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Text { text: "外观"; color: whiteText; font.pixelSize: appTheme.uiPixels(14); font.weight: Font.DemiBold }
                 ModeSwitch {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 32
@@ -2657,7 +3021,7 @@ Window {
                     currentIndex: settingsStore.appearanceMode
                     onActivated: (index) => settingsStore.appearanceMode = index
                 }
-                Text { text: "配色风格"; color: appTheme.secondary; font.pixelSize: 11 }
+                Text { text: "配色风格"; color: appTheme.secondary; font.pixelSize: appTheme.uiPixels(11) }
                 ModeSwitch {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 30
@@ -2665,7 +3029,7 @@ Window {
                     currentIndex: settingsStore.colorStyle
                     onActivated: (index) => settingsStore.colorStyle = index
                 }
-                Text { text: "预设强调色"; color: appTheme.secondary; font.pixelSize: 11 }
+                Text { text: "预设强调色"; color: appTheme.secondary; font.pixelSize: appTheme.uiPixels(11) }
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
@@ -2680,9 +3044,11 @@ Window {
                             padding: 0
                             hoverEnabled: true
                             Accessible.name: String(modelData)
-                            ToolTip.visible: hovered
-                            ToolTip.text: String(modelData)
-                            ToolTip.delay: 500
+                            HintBubble {
+                                theme: appTheme
+                                visible: preset.hovered
+                                text: String(preset.modelData)
+                            }
                             background: Rectangle { radius: 9; color: preset.hovered ? appTheme.hover : "transparent" }
                             contentItem: Item {
                                 Rectangle {
@@ -2708,7 +3074,7 @@ Window {
                 }
                 RowLayout {
                     Layout.fillWidth: true
-                    Text { text: "自定义强调色"; color: appTheme.secondary; font.pixelSize: 11; Layout.fillWidth: true }
+                    Text { text: "自定义强调色"; color: appTheme.secondary; font.pixelSize: appTheme.uiPixels(11); Layout.fillWidth: true }
                     UiButton {
                         text: settingsStore.useCustomAccent ? "恢复预设" : "使用自定义"
                         Layout.preferredHeight: 24
@@ -2730,7 +3096,7 @@ Window {
                     Layout.fillWidth: true
                     text: settingsStore.colorStyle === 3 ? "单色风格保留灰阶，其他风格会显示强调色。" : "拖动色谱，或输入 HEX 后回车。"
                     color: appTheme.muted
-                    font.pixelSize: 10
+                    font.pixelSize: appTheme.uiPixels(10)
                     wrapMode: Text.Wrap
                 }
             }

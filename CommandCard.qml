@@ -6,6 +6,8 @@ import QtQuick.Templates as T
 Rectangle {
     id: card
     required property AppTheme theme
+    property int payloadFontSize: 13
+    property string encoding: "UTF-8"
     property Item backdropItem: null
     property Item scrollContainer: null
     property string commandName: ""
@@ -190,9 +192,11 @@ Rectangle {
                 Accessible.role: Accessible.CheckBox
                 Accessible.name: "加入循环发送"
                 Accessible.checked: card.loopSelected
-                ToolTip.visible: hovered
-                ToolTip.text: "加入循环发送"
-                ToolTip.delay: 650
+                HintBubble {
+                    theme: card.theme
+                    visible: loopButton.hovered
+                    text: "加入循环发送"
+                }
                 background: Item {
                     Rectangle {
                         anchors.centerIn: parent
@@ -222,12 +226,14 @@ Rectangle {
                 text: card.commandName
                 placeholderText: "指令名称"
                 placeholderTextColor: card.theme.muted
-                font.pixelSize: 11
+                font.pixelSize: card.theme.uiPixels(11)
                 color: activeFocus ? card.theme.text : card.theme.secondary
                 hoverEnabled: true
-                ToolTip.visible: hovered && !activeFocus && contentWidth > width
-                ToolTip.text: card.commandName
-                ToolTip.delay: 650
+                HintBubble {
+                    theme: card.theme
+                    visible: nameEditor.hovered && !nameEditor.activeFocus && nameEditor.contentWidth > nameEditor.width
+                    text: card.commandName
+                }
                 padding: 0
                 leftPadding: 6; rightPadding: 6; topPadding: 0; bottomPadding: 0
                 verticalAlignment: TextInput.AlignVCenter
@@ -254,9 +260,9 @@ Rectangle {
                 kind: "tonal"
                 selected: card.hexMode
                 Layout.preferredWidth: 34
-                Layout.preferredHeight: 24
+                Layout.preferredHeight: Math.max(24, card.theme.uiPixels(19))
                 leftPadding: 3; rightPadding: 3
-                font.pixelSize: 9
+                font.pixelSize: card.theme.uiPixels(9)
                 onClicked: card.formatToggled(nameEditor.text, payloadEditor.text)
             }
             ActionButton {
@@ -322,13 +328,17 @@ Rectangle {
                 }
             }
             TextArea {
+                readonly property bool countsBytes: true
+                readonly property bool countsHexBytes: card.hexMode
+                readonly property bool spacedHexBytes: false
+                readonly property string byteEncoding: card.encoding
                 id: payloadEditor
                 objectName: "commandPayloadEditor"
                 width: payloadView.availableWidth
                 text: card.payload
                 textFormat: TextEdit.PlainText
                 font.family: "Consolas"
-                font.pixelSize: 13
+                font.pixelSize: card.payloadFontSize
                 color: card.theme.text
                 wrapMode: TextEdit.Wrap
                 padding: 3

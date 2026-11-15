@@ -8,6 +8,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QQueue>
+#include <QTimer>
 
 #include "PayloadCodec.h"
 
@@ -34,6 +35,7 @@ public:
     QString dataEncoding() const { return m_dataEncoding; }
     void setDataEncoding(const QString &encoding) {
         if (m_dataEncoding == encoding) return;
+        flushReceivePacket();
         m_dataEncoding = encoding;
         m_rxDecoder.reset(encoding);
         emit dataEncodingChanged();
@@ -48,13 +50,23 @@ public:
     Q_INVOKABLE QVariantList availablePorts();
     Q_INVOKABLE bool openPort(const QString &portName, int baudRate, int dataBits = 8, int stopBits = 1, int parity = 0, int flowControl = 0);
     Q_INVOKABLE void closePort();
-    Q_INVOKABLE void sendData(const QString &data, bool isHex);
-    Q_INVOKABLE void sendDataWithChecksum(const QString &data, bool isHex, int checksumType);
+    Q_INVOKABLE bool sendData(const QString &data, bool isHex);
+    Q_INVOKABLE bool sendDataWithChecksum(const QString &data, bool isHex, int checksumType);
+    Q_INVOKABLE void configureReceivePackets(int mode, int milliseconds, int bytes);
+    Q_INVOKABLE void discardReceivePacket();
+    Q_INVOKABLE int encodedByteCount(const QString &text, const QString &encoding) const {
+        return PayloadCodec::encodeText(text, encoding).size();
+    }
     Q_INVOKABLE bool isHexInput(const QString &text) const { return PayloadCodec::isHex(text); }
-    Q_INVOKABLE QVariantMap prepareHexInput(const QString &text) const {
+    Q_INVOKABLE QVariantMap prepareHexInput(const QString &text, bool includeHex = true) const {
         const auto parsed = PayloadCodec::parseHex(text, m_dataEncoding);
+        // Only short quoted inputs need a formatted preview for the inline conversion.
+        constexpr qsizetype maxPreviewBytes = 2731;
+        const bool formatHex = includeHex || (parsed.containsText && parsed.bytes.size() <= maxPreviewBytes);
         return {{"valid", parsed.valid()}, {"containsText", parsed.containsText},
-                {"hex", parsed.bytes.toHex(' ').toUpper()}, {"error", parsed.error}};
+                {"hex", formatHex && parsed.valid()
+                            ? QString::fromLatin1(parsed.bytes.toHex(' ').toUpper()) : QString()},
+                {"byteCount", parsed.valid() ? parsed.bytes.size() : 0}, {"error", parsed.error}};
     }
     Q_INVOKABLE QString textToHex(const QString &text) const { return PayloadCodec::encodeText(text, m_dataEncoding).toHex(' ').toUpper(); }
     Q_INVOKABLE void copyToClipboard(const QString &text);
@@ -65,24 +77,40 @@ signals:
     void baudRateChanged();
     void lineEndingModeChanged();
     void dataEncodingChanged();
-    void dataReceived(const QString &ascii, const QString &hex, bool isSent = false, bool isHex = false, qint64 timestampMs = 0);
+    void dataReceived(const QString &ascii, const QString &hex, bool isSent = false, bool isHex = false,
+                      qint64 timestampMs = 0, const QString &encoding = QStringLiteral("UTF-8"));
     void errorOccurred(const QString &error);
+    void sendingStalled(const QString &error);
 
 private slots:
     void readData();
     void handleBytesWritten(qint64 count);
 
 private:
+    friend class SerialPacketTest;
     struct PendingWrite {
         QByteArray bytes;
         qint64 written = 0;
         bool isHex = false;
         QString encoding;
     };
-    void writeNextChunk();
+    bool writeNextChunk();
+    void bufferReceivedBytes(const QByteArray &bytes, qint64 timestamp);
+    void flushReceivePacket();
+    void emitReceivePacket(const QByteArray &bytes, qint64 timestamp);
+    void resetWrites();
     QSerialPort *m_serialPort;
     QQueue<PendingWrite> m_pendingWrites;
     qint64 m_writeInFlight = 0;
+    qsizetype m_queuedWriteBytes = 0;
+    QTimer m_writeWatchdog;
+    QTimer m_receiveDeadline;
+    QTimer m_receiveDrain;
+    QByteArray m_receivePacket;
+    qint64 m_receiveTimestamp = 0;
+    int m_packetMode = 0;
+    int m_packetMilliseconds = 0;
+    int m_packetBytes = 64;
     int m_lineEndingMode = 0;
     QString m_dataEncoding = QStringLiteral("UTF-8");
     PayloadCodec::StreamDecoder m_rxDecoder;

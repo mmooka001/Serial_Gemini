@@ -9,6 +9,7 @@ Item {
     property Item selectedItem: null
     property int selectedIndex: 0
     property bool dark: true
+    readonly property bool shaderAvailable: GraphicsInfo.api !== GraphicsInfo.Software
     property real horizontalInset: 4
     property real verticalInset: 2
     property int moveDuration: 380
@@ -67,7 +68,7 @@ Item {
         sourceRect: root.sourceItem ? root.sourceRect : Qt.rect(0, 0, root.width, root.height)
         hideSource: false
         visible: false
-        live: true
+        live: root.shaderAvailable
         textureSize: Qt.size(Math.ceil(root.width * Screen.devicePixelRatio),
                              Math.ceil(root.height * Screen.devicePixelRatio))
     }
@@ -77,7 +78,7 @@ Item {
         id: softBackdrop
         width: root.width
         height: root.height
-        source: root.blurRadius > 2 ? backdropTexture : null
+        source: root.shaderAvailable && root.blurRadius > 2 ? backdropTexture : null
         blurEnabled: true
         blurMax: 16
         blur: Math.min(1, root.blurRadius / 16)
@@ -91,11 +92,27 @@ Item {
         height: root.height
         sourceItem: root.blurRadius > 2 ? softBackdrop : null
         visible: false
-        live: root.blurRadius > 2
+        live: root.shaderAvailable && root.blurRadius > 2
         textureSize: backdropTexture.textureSize
     }
 
+    Rectangle {
+        visible: !root.shaderAvailable && root.selectedIndex >= 0
+        x: root.selectionRect.x
+        y: root.selectionRect.y
+        width: root.selectionRect.width
+        height: root.selectionRect.height
+        radius: root.cornerRadius
+        color: root.dark ? Qt.lighter(root.baseColor, 1.18) : Qt.darker(root.baseColor, 1.06)
+        border.color: root.dark ? "#35ffffff" : "#22000000"
+        Behavior on y {
+            enabled: root.ready && root.animationsEnabled
+            NumberAnimation { duration: root.moveDuration; easing.type: Easing.OutQuint }
+        }
+    }
+
     ShaderEffect {
+        visible: root.shaderAvailable
         anchors.fill: parent
         property var source: root.blurRadius > 2 ? blurredTexture : backdropTexture
         property vector2d surfaceSize: Qt.vector2d(width, height)

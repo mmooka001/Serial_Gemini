@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(MySerial_Gemini VERSION 0.4.0 LANGUAGES CXX)
+project(MySerial_Gemini VERSION 0.6.0 LANGUAGES CXX)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 确保找到所有必要的组件
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml SerialPort QuickDialogs2 ShaderTools)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Quick Qml SerialPort QuickControls2 QuickDialogs2 ShaderTools)
 
 qt_standard_project_setup()
 
@@ -35,7 +35,7 @@ target_compile_definitions(MySerial_Gemini PRIVATE GEMINI_SERIAL_VERSION="${PROJ
 qt_add_qml_module(MySerial_Gemini
     URI MySerial_Gemini
     VERSION 1.0
-    QML_FILES Main.qml AppTheme.qml ActionButton.qml CommandCard.qml CommandReorderController.qml TerminalMessageText.qml PopupInputGuard.qml IntervalField.qml PanelDivider.qml SidebarResizeController.qml WindowDragArea.qml WindowStateController.qml SlimScrollBar.qml FocusDismissLayer.qml SendController.qml SegmentedControl.qml AccentColorPicker.qml LiquidGlassSelection.qml LiquidGlassToolbar.qml GlassComboBox.qml SerialLogo.qml
+    QML_FILES Main.qml HintBubble.qml CompareWorkspace.qml AppTheme.qml ActionButton.qml CommandCard.qml CommandReorderController.qml TerminalMessageText.qml PopupInputGuard.qml IntervalField.qml PanelDivider.qml SidebarResizeController.qml WindowDragArea.qml WindowStateController.qml SlimScrollBar.qml FocusDismissLayer.qml SendController.qml SegmentedControl.qml AccentColorPicker.qml LiquidGlassSelection.qml LiquidGlassToolbar.qml GlassComboBox.qml SerialLogo.qml
 )
 
 qt_add_shaders(MySerial_Gemini "liquid_glass_shaders"
@@ -51,6 +51,7 @@ target_link_libraries(MySerial_Gemini PRIVATE
     Qt6::Quick 
     Qt6::Qml 
     Qt6::SerialPort
+    Qt6::QuickControls2
     Qt6::QuickDialogs2
 )
 

@@ -7,6 +7,9 @@
 #include <QMetaProperty>
 #include <QQuickItem>
 #include <QQuickWindow>
+#include <QQuickTextDocument>
+#include <QTextCursor>
+#include <QTextDocument>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QSerialPort>
@@ -195,6 +198,8 @@ public:
                   QStringLiteral("clipboard=%1 activeFocus=%2 selected=%3")
                       .arg(clipboardText).arg(editorObject->property("activeFocus").toBool())
                       .arg(editorObject->property("selectedText").toString()));
+            check(QStringLiteral("status shows the encoded byte count for the terminal selection"),
+                  window->property("selectedBytes").toInt() == xml.toUtf8().size());
 
             inputObject->setProperty("text", QString());
             const QPoint inputCenter = input->mapToItem(window->contentItem(), QPointF(input->width() / 2, input->height() / 2)).toPoint();
@@ -206,6 +211,165 @@ public:
                   QStringLiteral("pasted=%1 inputFocus=%2 input=(%3,%4 %5x%6) clipboard=%7")
                       .arg(pasted).arg(inputObject->property("activeFocus").toBool())
                       .arg(input->x()).arg(input->y()).arg(input->width()).arg(input->height()).arg(clipboardText));
+
+            window->setProperty("globalTxHex", false);
+            inputObject->setProperty("text", QStringLiteral("abc"));
+            inputObject->setProperty("cursorPosition", 3);
+            QTest::keyClick(window, Qt::Key_Return);
+            check(QStringLiteral("Enter attempts to send without inserting a newline"),
+                  inputObject->property("text").toString() == QStringLiteral("abc"));
+            auto *notice = window->findChild<QQuickItem *>("sendNotice");
+            check(QStringLiteral("send warning sits above a top-aligned editor"),
+                  notice && notice->property("text").toString() == QStringLiteral("请先连接串口。")
+                  && notice->mapToScene(QPointF()).y() < input->mapToScene(QPointF()).y()
+                  && inputObject->property("verticalAlignment").toInt() == Qt::AlignTop);
+            QTest::keyClick(window, Qt::Key_Return, Qt::ShiftModifier);
+            check(QStringLiteral("Shift+Enter inserts a newline"),
+                  inputObject->property("text").toString() == QStringLiteral("abc\n"));
+        }
+        check(QStringLiteral("terminal clear resets record count and counters"),
+              QMetaObject::invokeMethod(window, "clearTerminal") && records.recordCount() == 0
+              && records.rxCount() == 0 && records.txCount() == 0);
+        auto *navigation = window->findChild<QQuickItem *>("toolNavigation");
+        if (navigation) {
+            const QPoint compareButton = navigation->mapToScene(
+                QPointF(navigation->width() / 2, 4 * 52 + 24)).toPoint();
+            QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, compareButton);
+        }
+        pump(150);
+        check(QStringLiteral("the fifth navigation button opens comparison on a real click"),
+              window->property("sidePanel").toInt() == 4);
+        auto *compare = window->findChild<QQuickItem *>("compareWorkspace");
+        auto *left = window->findChild<QQuickItem *>("compareInputA");
+        auto *right = window->findChild<QQuickItem *>("compareInputB");
+        auto *result = window->findChild<QQuickItem *>("compareResultText");
+        auto *quickDocument = result ? result->property("textDocument").value<QQuickTextDocument *>() : nullptr;
+        QTextDocument *document = quickDocument ? quickDocument->textDocument() : nullptr;
+        if (compare && left && right && result && document) {
+            const auto backgroundAt = [document](int position) {
+                QTextCursor cursor(document);
+                cursor.setPosition(position + 1);
+                return cursor.charFormat().background();
+            };
+            left->setProperty("text", "ABCDEF");
+            right->setProperty("text", QString());
+            const QPoint inputB = right->mapToScene(QPointF(14, 14)).toPoint();
+            QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, inputB);
+            QGuiApplication::clipboard()->setText(QStringLiteral("ABxyCDEF"));
+            QTest::keyClick(window, Qt::Key_V, Qt::ControlModifier);
+            pump(230);
+            check(QStringLiteral("editing either input updates the comparison automatically"),
+                  compare->isVisible() && left->isVisible() && right->isVisible()
+                  && left->mapToScene(QPointF()).x() < compare->mapToScene(QPointF()).x()
+                  && left->mapToScene(QPointF()).y() < right->mapToScene(QPointF()).y()
+                  && document->toPlainText() == QStringLiteral("ABCDEF\nxy"), document->toPlainText());
+            check(QStringLiteral("inserted text is highlighted beneath the intact A line"),
+                  backgroundAt(0).style() == Qt::NoBrush
+                  && backgroundAt(5).style() == Qt::NoBrush
+                  && backgroundAt(7).color() == QColor(compare->property("addedBackground").toString()));
+
+            const QString original = QStringLiteral("  <A>&\n\nold\ntail");
+            left->setProperty("text", original);
+            right->setProperty("text", QStringLiteral("  <A>&\n\nnew\ntail"));
+            pump(230);
+            check(QStringLiteral("replacement keeps all of A verbatim and marks both changed spans"),
+                  document->toPlainText() == QStringLiteral("  <A>&\n\nold\nnew\ntail")
+                  && backgroundAt(8).color() == QColor(compare->property("removedBackground").toString())
+                  && backgroundAt(12).color() == QColor(compare->property("addedBackground").toString()),
+                  document->toPlainText());
+
+            right->setProperty("text", original);
+            pump(230);
+            check(QStringLiteral("matching text leaves the entire original visible without highlights"),
+                  document->toPlainText() == original && backgroundAt(8).style() == Qt::NoBrush
+                  && compare->property("summary").toString() == QStringLiteral("两份内容一致"));
+
+            const QString whitespace = QStringLiteral("\n  x\t  \n");
+            left->setProperty("text", whitespace);
+            right->setProperty("text", whitespace);
+            pump(230);
+            check(QStringLiteral("leading and trailing line breaks, spaces and tabs stay visible"),
+                  document->toPlainText() == whitespace);
+
+            const QString countedText = QStringLiteral("中\nA");
+            left->setProperty("text", countedText);
+            right->setProperty("text", countedText);
+            pump(230);
+            result->forceActiveFocus();
+            QTest::keyClick(window, Qt::Key_A, Qt::ControlModifier);
+            const QString encoding = settings.dataEncoding();
+            settings.setDataEncoding(QStringLiteral("UTF-8"));
+            const bool utf8Count = window->property("hasByteSelection").toBool()
+                && window->property("selectedBytes").toInt() == 5;
+            settings.setDataEncoding(QStringLiteral("GBK"));
+            check(QStringLiteral("comparison result selection counts encoded bytes including line breaks"),
+                  utf8Count && window->property("selectedBytes").toInt() == 4);
+            settings.setDataEncoding(encoding);
+
+            const QString commonLines = QStringLiteral("unchanged line\n").repeated(120);
+            left->setProperty("text", commonLines + "old");
+            right->setProperty("text", commonLines + "new");
+            pump(230);
+            for (const auto *name : {"compareInputAScrollBar", "compareInputBScrollBar", "compareResultScrollBar"}) {
+                auto *bar = window->findChild<QQuickItem *>(name);
+                bool scrolled = false;
+                if (bar && bar->isVisible() && bar->property("size").toReal() < 1) {
+                    const QPoint bottom = bar->mapToScene(QPointF(bar->width() / 2, bar->height() - 8)).toPoint();
+                    QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, bottom);
+                    pump(60);
+                    scrolled = bar->property("position").toReal() > 0;
+                }
+                check(QStringLiteral("%1 scrolls long text on click").arg(QString::fromLatin1(name)), scrolled,
+                      bar ? QStringLiteral("visible=%1 size=%2 position=%3 geometry=%4,%5 %6x%7")
+                                .arg(bar->isVisible()).arg(bar->property("size").toReal()).arg(bar->property("position").toReal())
+                                .arg(bar->mapToScene(QPointF()).x()).arg(bar->mapToScene(QPointF()).y())
+                                .arg(bar->width()).arg(bar->height()) : QStringLiteral("missing"));
+            }
+        } else {
+            check(QStringLiteral("comparison workspace and its editors are available"), false);
+        }
+        window->setProperty("sidePanel", 3);
+        pump(160);
+        auto *interfaceSize = window->findChild<QQuickItem *>("interfaceSizeInput");
+        auto *contentSize = window->findChild<QQuickItem *>("contentSizeInput");
+        auto *contentUp = window->findChild<QQuickItem *>("contentSizeInputUp");
+        auto *contentDown = window->findChild<QQuickItem *>("contentSizeInputDown");
+        auto *port = window->findChild<QQuickItem *>("connectionPortSelector");
+        auto *commandFile = window->findChild<QQuickItem *>("commandFileSelector");
+        if (interfaceSize && contentSize && contentUp && contentDown && port && commandFile && input) {
+            const auto enterSize = [&](QQuickItem *field, const QString &value) {
+                field->forceActiveFocus();
+                field->setProperty("text", value);
+                QTest::keyClick(window, Qt::Key_Return);
+                pump(50);
+            };
+            const int originalInterface = window->property("interfaceTextSize").toInt();
+            const int originalSend = input->property("font").value<QFont>().pixelSize();
+            const int originalContent = window->property("contentTextSize").toInt();
+            enterSize(interfaceSize, "20");
+            check(QStringLiteral("interface size scales the port dropdown without changing message fonts"),
+                  window->property("interfaceTextSize").toInt() == 20
+                  && port->property("font").value<QFont>().pixelSize() == qRound(13.0 * 20 / 14)
+                  && input->property("font").value<QFont>().pixelSize() == originalSend);
+            enterSize(contentSize, "18");
+            const auto clickArrow = [&](QQuickItem *arrow) {
+                const QPoint point = arrow->mapToScene(QPointF(arrow->width()/2, arrow->height()/2)).toPoint();
+                QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, point);
+                pump(40);
+            };
+            clickArrow(contentUp);
+            const int raisedSize = input->property("font").value<QFont>().pixelSize();
+            clickArrow(contentDown);
+            check(QStringLiteral("data font arrows step the shared size and persist it"),
+                  raisedSize == 19 && input->property("font").value<QFont>().pixelSize() == 18
+                  && settings.uiPreference("contentTextSize", 0).toInt() == 18);
+            enterSize(interfaceSize, "14");
+            check(QStringLiteral("commands use the equivalent of the former 15 px scale at 14 px"),
+                  commandFile->property("font").value<QFont>().pixelSize() == qRound(12.0 * 15 / 14));
+            window->setProperty("interfaceTextSize", originalInterface);
+            window->setProperty("contentTextSize", originalContent);
+        } else {
+            check(QStringLiteral("font settings and their target controls are present"), false);
         }
         check(QStringLiteral("terminal selection test did not open a serial port"), !serial.isOpen());
         serial.closePort();
@@ -273,6 +437,7 @@ private:
 int main(int argc, char **argv) {
     qputenv("QT_QPA_PLATFORM", "offscreen");
     qputenv("QT_QUICK_BACKEND", "software");
+    qputenv("QT_QUICK_CONTROLS_STYLE", "Basic");
     QGuiApplication app(argc, argv);
     QCoreApplication::setOrganizationName(QStringLiteral("CodexThemePopupQA"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("codex.local"));

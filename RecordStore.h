@@ -13,6 +13,7 @@ class RecordStore : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(QVariantList records READ records NOTIFY recordsChanged)
+    Q_PROPERTY(int recordCount READ recordCount NOTIFY recordsChanged)
     Q_PROPERTY(quint64 rxCount READ rxCount NOTIFY rxCountChanged)
     Q_PROPERTY(quint64 txCount READ txCount NOTIFY txCountChanged)
 
@@ -21,6 +22,7 @@ public:
         , m_rxCount(0), m_txCount(0) {}
 
     QVariantList records() const { return m_records; }
+    int recordCount() const { return m_records.size(); }
     quint64 rxCount() const { return m_rxCount; }
     quint64 txCount() const { return m_txCount; }
 
@@ -37,10 +39,10 @@ public:
 
         // Update counters
         if (type == "read") {
-            m_rxCount += hexContent.split(' ', Qt::SkipEmptyParts).size();
+            m_rxCount += hexByteCount(hexContent);
             emit rxCountChanged();
         } else if (type == "write") {
-            m_txCount += hexContent.split(' ', Qt::SkipEmptyParts).size();
+            m_txCount += hexByteCount(hexContent);
             emit txCountChanged();
         }
 
@@ -90,6 +92,17 @@ signals:
     void txCountChanged();
 
 private:
+    static qsizetype hexByteCount(const QString &hex) {
+        qsizetype count = 0;
+        bool inByte = false;
+        for (const QChar ch : hex) {
+            const bool digit = ch != ' ';
+            if (digit && !inByte) ++count;
+            inByte = digit;
+        }
+        return count;
+    }
+
     QVariantList m_records;
     quint64 m_rxCount;
     quint64 m_txCount;

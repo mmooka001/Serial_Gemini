@@ -64,4 +64,18 @@ TestCase {
         editor.selectAll()
         compare(editor.selectedText, message.text)
     }
+    function test_largeMessageOnlyLaysOutOnePage() {
+        const source = "0123456789 ".repeat(25000)
+        message.text = source
+        const editor = findChild(message, "terminalTextEditor")
+        compare(editor.length, 510)
+        verify(message.truncated)
+        message.expanded = true
+        compare(editor.text, source.slice(0, message.pageSize))
+        message.page = 1
+        compare(editor.text, source.slice(message.pageSize, 2 * message.pageSize))
+        message.expanded = false
+        compare(message.page, 0)
+        compare(editor.length, 510)
+    }
 }

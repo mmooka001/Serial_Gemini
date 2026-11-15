@@ -46,7 +46,7 @@ Rectangle {
                 contentItem: Text {
                     text: String(segment.modelData)
                     color: segment.selected ? control.theme.primaryText : control.theme.secondary
-                    font.pixelSize: control.textSize
+                    font.pixelSize: control.theme.uiPixels(control.textSize)
                     font.weight: segment.selected ? Font.DemiBold : Font.Medium
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter

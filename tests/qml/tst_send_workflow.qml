@@ -19,7 +19,7 @@ TestCase {
         property string dataEncoding: "UTF-8"
         function isHexInput(text) { return /^(?:[0-9a-fA-F]{2})+$/.test(text.replace(/0x/gi, "").replace(/\s+/g, "")) }
         function textToHex(text) { return text.split("").map(ch => ch.charCodeAt(0).toString(16).padStart(2, "0")).join(" ").toUpperCase() }
-        function prepareHexInput(text) {
+        function prepareHexInput(text, includeHex) {
             if (isHexInput(text)) return {valid: true, containsText: false, hex: text, error: ""}
             if (text.startsWith('"') && text.endsWith('"')) {
                 try { return {valid: true, containsText: true, hex: textToHex(JSON.parse(text)), error: ""} }
@@ -100,6 +100,17 @@ TestCase {
         compare(backend.lastPayload, "AA 55 00")
         compare(backend.checksum, 2)
     }
+    function test_sendValidatesLargeInputDuringPreviewDelay() {
+        sender.inputText = "AA ".repeat(3000) + "Z"
+        verify(sender.previewPending)
+        verify(!sender.sendOnce())
+        compare(backend.count, 0)
+        const payload = '"' + "A".repeat(9000) + '"'
+        sender.inputText = payload
+        verify(sender.sendOnce())
+        compare(backend.lastPayload, payload)
+        compare(sender.inputText, payload)
+    }
     function test_asciiPresetUsesHexWithoutChangingItsSourceOrMode() {
         var source = "AB"
         sender.inputText = "48"
@@ -172,7 +183,7 @@ TestCase {
         compare(sender.interval, 800)
         field.forceActiveFocus()
         field.remove(0, field.length)
-        field.insert(0, "9")
+        field.insert(0, "0")
         commandIntervalButton.forceActiveFocus()
         compare(sender.interval, 800)
         compare(field.text, "800")

@@ -28,11 +28,13 @@ TestCase {
     }
     function init() {
         failOnWarning(/.*/)
+        windowState.preferredVisibility = Window.Windowed
+        windowState.normalGeometry = Qt.rect(120, 140, 500, 360)
         windowState.initialize()
-        target.showNormal()
-        target.width = 500
-        target.height = 360
-        tryCompare(dragArea, "normalGeometry", Qt.rect(target.x, target.y, 500, 360))
+        tryVerify(() => target.visibility === Window.Windowed
+                     && target.x === 120 && target.y === 140
+                     && target.width === 500 && target.height === 360
+                     && !windowState.restoring)
     }
     function test_maximizedDragRestoresSizeStateAndPointerAnchor() {
         target.showMaximized()
@@ -62,5 +64,16 @@ TestCase {
         tryCompare(target, "visibility", Window.Maximized)
         mouseClick(dragArea, 100, 21)
         compare(target.visibility, Window.Maximized)
+    }
+    function test_repeatedStateChangesPreserveNormalGeometry() {
+        for (const mode of [Window.Maximized, Window.FullScreen, Window.Maximized]) {
+            windowState.preferredVisibility = mode
+            windowState.showPreferred()
+            tryCompare(target, "visibility", mode)
+            windowState.toggleMaximized()
+            tryVerify(() => target.visibility === Window.Windowed
+                         && target.x === 120 && target.y === 140
+                         && target.width === 500 && target.height === 360)
+        }
     }
 }
